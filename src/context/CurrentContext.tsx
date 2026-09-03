@@ -386,6 +386,42 @@ export const INITIAL_TOOLS: ToolItem[] = [
     updatedAt: new Date().toISOString(),
     seoKeywords: ['form filler tool', 'auto fill copy', 'profile data store'],
   },
+  {
+    id: 'sleep-calculator',
+    title: 'Sleep Cycle Calculator',
+    category: 'Calculators & Converters',
+    description: 'Calculate 90-minute REM sleep cycles to find optimal bedtime or wake-up times.',
+    iconName: 'Moon',
+    status: 'completed',
+    notes: 'Calculates 90-minute sleep cycles with 14-minute average fall-asleep offset.',
+    features: ['Sleep NOW wake-up times', 'Target wake-up bedtime calculator', 'Optimal REM cycle breakdown'],
+    updatedAt: new Date().toISOString(),
+    seoKeywords: ['sleep calculator', 'sleep cycle calculator', 'rem sleep calculator'],
+  },
+  {
+    id: 'tip-calculator',
+    title: 'Tip & Bill Split Calculator',
+    category: 'Calculators & Converters',
+    description: 'Calculate tip percentages, total bill amount, and split cost per person instantly.',
+    iconName: 'Percent',
+    status: 'completed',
+    notes: 'Quick tip percentage presets (10%, 15%, 18%, 20%, 25%) and diner split calculation.',
+    features: ['Tip presets 10%-25%', 'Per diner split breakdown', 'Total bill calculation'],
+    updatedAt: new Date().toISOString(),
+    seoKeywords: ['tip calculator', 'calculate tip online', 'bill tip splitter'],
+  },
+  {
+    id: 'html-to-pdf',
+    title: 'HTML Code to PDF Converter',
+    category: 'Document & File Utilities',
+    description: 'Convert raw HTML code or uploaded .HTML files into clean, beautifully styled PDF documents.',
+    iconName: 'FileCode',
+    status: 'completed',
+    notes: 'Live HTML code editor, template presets, and clean isolated PDF printing engine.',
+    features: ['Live HTML Code Editor', '.HTML File Upload', 'Clean 1-Click PDF Export'],
+    updatedAt: new Date().toISOString(),
+    seoKeywords: ['html to pdf converter', 'convert html to pdf online', 'html code to pdf'],
+  },
 ];
 
 interface CurrentContextType {
@@ -406,7 +442,7 @@ interface CurrentContextType {
 
 const CurrentContext = createContext<CurrentContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'toolip_tools_status_v2';
+const STORAGE_KEY = 'toolip_tools_status_v3';
 
 export const CurrentContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tools, setTools] = useState<ToolItem[]>(INITIAL_TOOLS);

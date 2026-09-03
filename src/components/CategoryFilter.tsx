@@ -32,15 +32,15 @@ export const CategoryFilter: React.FC = () => {
             onClick={() => setActiveCategory(name)}
             className={`flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
               isActive
-                ? 'bg-gray-900 text-white shadow-md border border-gray-900'
-                : 'bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 border border-gray-200/90 shadow-2xs'
+                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-400 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/40'
+                : 'bg-slate-900/80 hover:bg-slate-800 text-gray-400 hover:text-white border border-slate-800/80 shadow-xs'
             }`}
           >
             {icon}
             <span>{name}</span>
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500 font-bold'
+                isActive ? 'bg-white/20 text-white font-bold' : 'bg-slate-800 text-gray-400'
               }`}
             >
               {count}

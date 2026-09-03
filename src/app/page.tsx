@@ -28,35 +28,35 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col justify-between relative overflow-hidden bg-[#FAF8F5] text-gray-900 font-sans selection:bg-indigo-500 selection:text-white">
-      {/* CityAI / Osilion Soft Pastel Ambient Radial Blurs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-200/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-40 right-1/4 w-96 h-96 bg-sky-200/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-96 left-1/3 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen flex flex-col justify-between relative overflow-hidden bg-[#0B0F19] text-white font-sans selection:bg-indigo-500 selection:text-white">
+      {/* Aura Glass Radiant Neon Ambient Glows */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-40 right-1/4 w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[600px] left-1/3 w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div>
         {/* Navigation Bar */}
         <Navbar onOpenDashboard={() => setIsDashboardOpen(true)} />
 
         {/* Main Workspace Container */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 relative z-10">
-          
+        <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 relative z-10">
+
           {/* CityAI Inspired Hero Section */}
           <div className="text-center space-y-6 max-w-3xl mx-auto pt-6">
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-gray-200 text-indigo-700 text-xs font-semibold shadow-xs">
-              <Sparkles className="h-4 w-4 text-indigo-600" />
-              <span>Toolip • 29 Everyday Utilities & Developer Tools</span>
+            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-indigo-300 text-xs font-semibold shadow-lg backdrop-blur-xl">
+              {/* <Sparkles className="h-4 w-4 text-indigo-400" /> */}
+              <span>Toolip • 31 Everyday Utilities & Developer Tools</span>
             </div>
 
-            <h1 className="text-4xl sm:text-6xl font-extrabold text-gray-900 tracking-tight leading-tight">
-              Streamline Everyday Tasks with <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-600">
-                Modern Client-Side Tools
+            <h1 className="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-tight">
+              Streamline Everyday Tasks <br />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-300 to-cyan-400">
+                Modern Tools
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed font-medium">
-              Fast, private everyday utilities built for office and personal productivity. No popups, no tracking — 100% full standalone pages.
+            <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto leading-relaxed font-normal">
+              Fast, private everyday utilities built for office and personal productivity.
             </p>
 
             {/* CityAI Inspired Pill Search Input Bar */}
@@ -67,10 +67,10 @@ export default function Home() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search passport photo, invoice, SVG editor, speech transcriber..."
-                  className="w-full pl-5 pr-12 py-3.5 bg-white border border-gray-200/90 focus:border-indigo-500 rounded-full text-xs text-gray-900 placeholder-gray-400 focus:outline-none shadow-lg transition-all"
+                  className="w-full pl-5 pr-12 py-3.5 bg-slate-900/90 border border-slate-800 focus:border-indigo-500 rounded-full text-xs text-white placeholder-gray-500 focus:outline-none shadow-2xl transition-all backdrop-blur-xl"
                 />
                 <button
-                  className="absolute right-2 h-9 w-9 bg-gray-900 hover:bg-black rounded-full flex items-center justify-center text-white shadow-md hover:scale-105 transition-transform"
+                  className="absolute right-2 h-9 w-9 bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-400 hover:scale-105 rounded-full flex items-center justify-center text-white shadow-lg transition-transform"
                 >
                   <Search className="h-4 w-4" />
                 </button>
@@ -78,145 +78,142 @@ export default function Home() {
             </div>
 
             {/* Status Tracker Summary Bar */}
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            {/* <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <button
                 onClick={() => setIsDashboardOpen(true)}
-                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-white border border-gray-200 hover:border-indigo-300 text-xs text-gray-700 hover:text-gray-900 transition-all shadow-xs"
+                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-slate-900/90 border border-slate-800 hover:border-indigo-500/40 text-xs text-gray-300 hover:text-white transition-all shadow-md backdrop-blur-xl"
               >
-                <SlidersHorizontal className="h-4 w-4 text-indigo-600" />
+                <SlidersHorizontal className="h-4 w-4 text-indigo-400" />
                 <span className="font-semibold">CurrentContext Tracker:</span>
-                <span className="font-bold text-emerald-600">{stats.completed} Completed</span>
-                <span className="text-gray-300">•</span>
-                <span className="font-bold text-amber-600">{stats.working} Working</span>
-                <span className="text-gray-300">•</span>
-                <span className="font-bold text-indigo-600">{stats.planned} Planned</span>
+                <span className="font-bold text-emerald-400">{stats.completed} Completed</span>
+                <span className="text-gray-600">•</span>
+                <span className="font-bold text-amber-400">{stats.working} Working</span>
+                <span className="text-gray-600">•</span>
+                <span className="font-bold text-indigo-400">{stats.planned} Planned</span>
               </button>
-            </div>
+            </div> */}
           </div>
 
-          {/* Osilion Bento Box Showcase Grid (Featured Tools in Bright Pastel Containers) */}
-          <div className="space-y-4 pt-4">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-500" />
+          {/* Osilion Bento Box Showcase Grid (Featured Tools) */}
+          {/* <div className="space-y-4 pt-4">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-400" />
               <span>Featured Bento Box Workspace Tools</span>
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Bento Card 1: Passport Photo Maker (Warm Lavender Tint) */}
               <Link
                 href="/tools/passport-photo-maker"
-                className="group relative p-6 rounded-3xl bg-gradient-to-br from-purple-100/70 via-white to-purple-50/50 border border-purple-200/90 hover:border-purple-400 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 space-y-4 overflow-hidden"
+                className="group relative p-6 rounded-3xl bg-gradient-to-br from-purple-900/40 via-purple-950/80 to-slate-900 border border-purple-500/30 hover:border-purple-400 transition-all shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-1 space-y-4 overflow-hidden backdrop-blur-xl"
               >
                 <div className="flex justify-between items-start">
-                  <div className="h-12 w-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md">
+                  <div className="h-12 w-12 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shadow-md">
                     <Camera className="h-6 w-6" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-purple-200/80 text-purple-900 text-[10px] font-extrabold tracking-wider">
+                  <span className="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-extrabold tracking-wider border border-purple-500/30">
                     &lt; 80 KB GUARANTEED
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-extrabold text-gray-900 group-hover:text-purple-700 transition-colors">
+                  <h3 className="text-xl font-extrabold text-white group-hover:text-purple-300 transition-colors">
                     Passport Photo Maker & Editor
                   </h3>
-                  <p className="text-xs text-gray-600 mt-1 leading-relaxed font-medium">
+                  <p className="text-xs text-gray-400 mt-1 leading-relaxed font-normal">
                     Live contrast, tilt angle, auto smoother filter, and guaranteed under 80 KB size optimizer.
                   </p>
                 </div>
-                <div className="flex items-center text-xs font-bold text-purple-700 group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center text-xs font-bold text-purple-400 group-hover:translate-x-1 transition-transform">
                   <span>Launch Standalone Workspace</span>
                   <ArrowUpRight className="h-4 w-4 ml-1" />
                 </div>
               </Link>
 
-              {/* Bento Card 2: SVG Code Editor (Soft Mint Tint) */}
               <Link
                 href="/tools/svg-code-editor"
-                className="group relative p-6 rounded-3xl bg-gradient-to-br from-emerald-100/70 via-white to-emerald-50/50 border border-emerald-200/90 hover:border-emerald-400 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 space-y-4 overflow-hidden"
+                className="group relative p-6 rounded-3xl bg-gradient-to-br from-emerald-900/40 via-emerald-950/80 to-slate-900 border border-emerald-500/30 hover:border-emerald-400 transition-all shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1 space-y-4 overflow-hidden backdrop-blur-xl"
               >
                 <div className="flex justify-between items-start">
-                  <div className="h-12 w-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                  <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow-md">
                     <Code2 className="h-6 w-6" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-200/80 text-emerald-900 text-[10px] font-extrabold tracking-wider">
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold tracking-wider border border-emerald-500/30">
                     BI-DIRECTIONAL GLOW
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-extrabold text-gray-900 group-hover:text-emerald-700 transition-colors">
+                  <h3 className="text-xl font-extrabold text-white group-hover:text-emerald-300 transition-colors">
                     SVG Code Editor & Preview
                   </h3>
-                  <p className="text-xs text-gray-600 mt-1 leading-relaxed font-medium">
+                  <p className="text-xs text-gray-400 mt-1 leading-relaxed font-normal">
                     Real-time SVG code renderer with repeatable element glow highlighting on code hover & preview click.
                   </p>
                 </div>
-                <div className="flex items-center text-xs font-bold text-emerald-700 group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center text-xs font-bold text-emerald-400 group-hover:translate-x-1 transition-transform">
                   <span>Launch Standalone Workspace</span>
                   <ArrowUpRight className="h-4 w-4 ml-1" />
                 </div>
               </Link>
 
-              {/* Bento Card 3: Enterprise Invoice Generator (Soft Sky Blue Tint) */}
               <Link
                 href="/tools/invoice-generator"
-                className="group relative p-6 rounded-3xl bg-gradient-to-br from-sky-100/70 via-white to-sky-50/50 border border-sky-200/90 hover:border-sky-400 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 space-y-4 overflow-hidden"
+                className="group relative p-6 rounded-3xl bg-gradient-to-br from-sky-900/40 via-sky-950/80 to-slate-900 border border-sky-500/30 hover:border-sky-400 transition-all shadow-2xl hover:shadow-sky-500/10 hover:-translate-y-1 space-y-4 overflow-hidden backdrop-blur-xl"
               >
                 <div className="flex justify-between items-start">
-                  <div className="h-12 w-12 rounded-2xl bg-sky-600 text-white flex items-center justify-center shadow-md">
+                  <div className="h-12 w-12 rounded-2xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sky-300 shadow-md">
                     <Receipt className="h-6 w-6" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-sky-200/80 text-sky-900 text-[10px] font-extrabold tracking-wider">
+                  <span className="px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-extrabold tracking-wider border border-sky-500/30">
                     1-PAGE PDF EXPORT
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-extrabold text-gray-900 group-hover:text-sky-700 transition-colors">
+                  <h3 className="text-xl font-extrabold text-white group-hover:text-sky-300 transition-colors">
                     Enterprise Invoice Generator
                   </h3>
-                  <p className="text-xs text-gray-600 mt-1 leading-relaxed font-medium">
+                  <p className="text-xs text-gray-400 mt-1 leading-relaxed font-normal">
                     Top header logo, background logo watermark, domain URL, tax calculations, and 1-page pristine PDF export.
                   </p>
                 </div>
-                <div className="flex items-center text-xs font-bold text-sky-700 group-hover:translate-x-1 transition-transform">
+                <div className="flex items-center text-xs font-bold text-sky-400 group-hover:translate-x-1 transition-transform">
                   <span>Launch Standalone Workspace</span>
                   <ArrowUpRight className="h-4 w-4 ml-1" />
                 </div>
               </Link>
             </div>
-          </div>
+          </div> */}
 
           {/* Category Filter Pills Bar */}
           <div className="pt-4">
             <CategoryFilter />
           </div>
 
-          {/* All 29 Tools Grid */}
+          {/* All 31 Tools Grid */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                <Layers className="h-4 w-4 text-indigo-600" />
+              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                <Layers className="h-4 w-4 text-indigo-400" />
                 <span>All Standalone Utility Tools ({filteredTools.length})</span>
               </h2>
 
               {searchQuery && (
-                <span className="text-xs font-semibold text-indigo-600">
+                <span className="text-xs font-semibold text-indigo-400">
                   Showing results for "{searchQuery}"
                 </span>
               )}
             </div>
 
             {filteredTools.length === 0 ? (
-              <div className="py-16 text-center text-gray-500 bg-white border border-gray-200 rounded-3xl shadow-sm">
+              <div className="py-16 text-center text-gray-400 bg-slate-900/60 border border-slate-800 rounded-3xl shadow-xl">
                 <p className="text-sm font-medium">No tools found matching your search query.</p>
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="mt-3 text-xs text-indigo-600 underline font-bold"
+                  className="mt-3 text-xs text-indigo-400 underline font-bold"
                 >
                   Clear search filters
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredTools.map((tool) => (
                   <ToolCard key={tool.id} tool={tool} />
                 ))}

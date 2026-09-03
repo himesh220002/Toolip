@@ -61,19 +61,19 @@ export const SleepCalculator: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Mode Switcher */}
-      <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl max-w-sm">
+      <div className="flex p-1 bg-gray-100 border border-gray-200 rounded-2xl max-w-sm shadow-xs">
         <button
           onClick={() => setCalcMode('wake')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            calcMode === 'wake' ? 'bg-purple-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+            calcMode === 'wake' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'
           }`}
         >
           If I sleep NOW → Wake at?
         </button>
         <button
           onClick={() => setCalcMode('bed')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            calcMode === 'bed' ? 'bg-purple-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+            calcMode === 'bed' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'
           }`}
         >
           Target Wake Time → Bedtime?
@@ -82,19 +82,19 @@ export const SleepCalculator: React.FC = () => {
 
       {calcMode === 'bed' && (
         <div className="space-y-1 max-w-xs">
-          <label className="text-xs font-semibold text-gray-300">I want to wake up at:</label>
+          <label className="text-xs font-semibold text-gray-700">I want to wake up at:</label>
           <input
             type="time"
             value={targetTime}
             onChange={(e) => setTargetTime(e.target.value)}
-            className="w-full px-4 py-2.5 bg-gray-900 border border-gray-800 rounded-xl text-sm text-gray-200 focus:outline-none"
+            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none shadow-xs"
           />
         </div>
       )}
 
       {/* Suggested Sleep Windows */}
       <div className="space-y-3">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400">
+        <h4 className="text-xs font-bold uppercase tracking-widest text-purple-700">
           {calcMode === 'wake' ? 'Recommended Wake Up Times:' : 'Recommended Bedtimes:'}
         </h4>
 
@@ -102,17 +102,17 @@ export const SleepCalculator: React.FC = () => {
           {results.map((item, idx) => (
             <div
               key={idx}
-              className={`p-4 rounded-xl border transition-all ${
+              className={`p-4 rounded-2xl border transition-all ${
                 item.cycles === 5 || item.cycles === 6
-                  ? 'bg-purple-950/60 border-purple-500/30 text-white shadow-lg'
-                  : 'bg-gray-900/60 border-gray-800 text-gray-300'
+                  ? 'bg-purple-50 border-purple-200 text-purple-950 shadow-md'
+                  : 'bg-white border-gray-200 text-gray-800'
               }`}
             >
-              <div className="text-2xl font-extrabold font-mono text-purple-300">
+              <div className="text-2xl font-extrabold font-mono text-purple-700">
                 {item.timeString}
               </div>
-              <div className="text-xs font-semibold text-gray-300 mt-1">{item.hours} Hours Sleep</div>
-              <div className="text-[10px] text-gray-400 mt-0.5">{item.quality}</div>
+              <div className="text-xs font-bold text-gray-800 mt-1">{item.hours} Hours Sleep</div>
+              <div className="text-[10px] text-purple-700 font-semibold mt-0.5">{item.quality}</div>
             </div>
           ))}
         </div>
