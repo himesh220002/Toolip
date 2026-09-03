@@ -1,86 +1,91 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useCurrentContext, ToolStatus } from '@/context/CurrentContext';
-import {
-  Wrench,
-  Search,
-  SlidersHorizontal,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Sparkles,
-  LayoutGrid,
-} from 'lucide-react';
+import React from 'react';
+import { useCurrentContext } from '@/context/CurrentContext';
+import { Search, Crosshair, Shield, Hexagon } from 'lucide-react';
 
-interface NavbarProps {
-  onOpenDashboard: () => void;
-}
-
-export const Navbar: React.FC<NavbarProps> = ({ onOpenDashboard }) => {
-  const { searchQuery, setSearchQuery, stats } = useCurrentContext();
+export const Navbar: React.FC = () => {
+  const { searchQuery, setSearchQuery } = useCurrentContext();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl shadow-2xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
-          
-          {/* Brand Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-sky-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <Wrench className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-xl tracking-tight text-white">Toolip</span>
-                <span className="px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-full">
-                  31 Standalone Tools
-                </span>
+    <header className="sticky top-0 z-40 w-full">
+      {/* Top hazard accent line - keep as subtle brand accent */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-halo-cyan via-vice-pink to-vice-orange opacity-80" />
+
+      <div className="relative bg-gunmetal-900/95 backdrop-blur-2xl border-b border-white/[0.07] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+        <div className="absolute inset-0 hex-grid opacity-[0.03] pointer-events-none" />
+
+        <div className="relative max-w-[1480px] mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-[64px] sm:h-[68px] gap-4">
+
+            {/* Left: Brand */}
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="relative h-9 w-9 sm:h-10 sm:w-10 clip-chamfer bg-gradient-to-br from-halo-cyan to-halo-electric p-[1.5px] shadow-halo shrink-0">
+                <div className="h-full w-full clip-chamfer bg-gunmetal-700 flex items-center justify-center">
+                  <Crosshair className="h-5 w-5 text-halo-cyan" />
+                </div>
               </div>
-              <p className="text-xs text-gray-400 hidden sm:block font-medium">Everyday Utilities & Developer Tools</p>
+              <div className="leading-none">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display text-[22px] sm:text-[24px] tracking-[0.04em] text-white leading-none">TOOLIP</span>
+                  <span className="hidden sm:inline-flex items-center gap-1.5 font-mono text-[8px] tracking-[0.18em] text-halo-cyan/80 border border-halo-cyan/20 bg-halo-cyan/10 px-2 py-0.5 clip-chamfer-sm font-bold">
+                    <Hexagon className="h-2.5 w-2.5" /> UTILITY
+                  </span>
+                </div>
+                <div className="font-mono text-[8px] tracking-[0.20em] font-bold text-white/40 mt-0.5 hidden sm:block">
+                  31 TOOLS • READY TO USE
+                </div>
+              </div>
+            </div>
+
+            {/* Center: Search */}
+            <div className="flex-1 max-w-[560px] hidden md:flex items-center">
+              <div className="relative flex-1 group">
+                <div className="absolute -inset-[1px] clip-chamfer bg-gradient-to-r from-halo-cyan/40 via-white/5 to-vice-pink/30 opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                <div className="relative clip-chamfer bg-[#0D1222] border border-white/[0.08] group-focus-within:border-halo-cyan/40 flex items-center h-10 overflow-hidden transition-colors">
+                  <div className="pl-3 pr-2 text-white/25">
+                    <Search className="h-4 w-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search — passport, SVG, invoice, PDF..."
+                    className="flex-1 bg-transparent text-[13px] font-tech font-medium tracking-[0.02em] text-white placeholder:text-white/30 placeholder:font-mono placeholder:text-[11px] focus:outline-none pr-2"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="mr-1 px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/10 clip-chamfer-sm font-mono text-[10px] font-bold text-white/50 hover:text-white transition-colors"
+                    >
+                      CLR
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Mobile search + subtle status dot (lightweight) */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex md:hidden items-center">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="w-32 sm:w-40 pl-7 pr-2 py-2 bg-[#0D1222] border border-white/10 clip-chamfer-sm font-mono text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-halo-cyan/30"
+                  />
+                </div>
+              </div>
+
+              {/* Lightweight live dot - not a full tracker button */}
+              <div className="hidden sm:flex items-center gap-1.5 pl-3 border-l border-white/10">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" />
+                <span className="font-mono text-[9px] tracking-[0.16em] font-bold text-white/30">ONLINE</span>
+              </div>
             </div>
           </div>
-
-          {/* Search Bar */}
-          <div className="flex-1 max-w-md mx-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tools (e.g., pdf, passport photo, SVG, invoice)..."
-                className="w-full pl-9 pr-4 py-2 text-xs bg-slate-900/90 border border-slate-800 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-inner"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-gray-400 hover:text-white"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Context Status Dashboard Button */}
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={onOpenDashboard}
-              className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-gray-300 hover:text-white text-xs font-semibold transition-all shadow-md group"
-            >
-              <SlidersHorizontal className="h-4 w-4 text-indigo-400 group-hover:rotate-90 transition-transform duration-300" />
-              <span className="hidden md:inline">Tag Tracker</span>
-              <div className="flex items-center space-x-1 pl-1">
-                <span className="px-1.5 py-0.5 text-[10px] rounded-md bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30">
-                  {stats.completed} Done
-                </span>
-              </div>
-            </button>
-          </div>
-
         </div>
       </div>
     </header>

@@ -134,8 +134,8 @@ export const PdfTools: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Mode Switcher */}
-      <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl max-w-xs">
+      {/* Mode Switcher — larger, clearer */}
+      <div className="flex p-1.5 bg-gunmetal-800 border border-white/10 rounded-xl max-w-sm clip-chamfer-sm">
         <button
           onClick={() => {
             setMode('merge');
@@ -143,10 +143,10 @@ export const PdfTools: React.FC = () => {
             setErrorMsg('');
             setStatusMsg('');
           }}
-          className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-sm font-bold transition-all ${
             mode === 'merge'
-              ? 'bg-sky-500 text-white shadow-md'
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-halo-cyan text-gunmetal-900 shadow-halo'
+              : 'text-white/50 hover:text-white hover:bg-white/5'
           }`}
         >
           <Layers className="h-4 w-4" />
@@ -159,10 +159,10 @@ export const PdfTools: React.FC = () => {
             setErrorMsg('');
             setStatusMsg('');
           }}
-          className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-sm font-bold transition-all ${
             mode === 'split'
-              ? 'bg-sky-500 text-white shadow-md'
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-halo-cyan text-gunmetal-900 shadow-halo'
+              : 'text-white/50 hover:text-white hover:bg-white/5'
           }`}
         >
           <Split className="h-4 w-4" />
@@ -170,8 +170,8 @@ export const PdfTools: React.FC = () => {
         </button>
       </div>
 
-      {/* Upload Zone */}
-      <div className="border-2 border-dashed border-gray-800 hover:border-sky-500/50 rounded-2xl p-8 text-center bg-gray-950/40 transition-colors">
+      {/* Upload Zone — fixed contrast on dark */}
+      <div className="border-2 border-dashed border-white/15 hover:border-halo-cyan/40 rounded-2xl p-10 text-center bg-white/[0.03] hover:bg-halo-cyan/[0.04] transition-colors group">
         <input
           type="file"
           accept="application/pdf"
@@ -180,16 +180,19 @@ export const PdfTools: React.FC = () => {
           className="hidden"
           id="pdf-input"
         />
-        <label htmlFor="pdf-input" className="cursor-pointer space-y-3 block">
-          <div className="mx-auto h-12 w-12 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
-            <Upload className="h-6 w-6" />
+        <label htmlFor="pdf-input" className="cursor-pointer space-y-4 block">
+          <div className="mx-auto h-14 w-14 clip-chamfer bg-halo-cyan/10 border border-halo-cyan/20 text-halo-cyan flex items-center justify-center group-hover:bg-halo-cyan/15 transition-colors">
+            <Upload className="h-7 w-7" />
           </div>
           <div>
-            <span className="text-sm font-semibold text-white">
+            <span className="text-[15px] font-bold text-white tracking-[0.02em]">
               {mode === 'merge' ? 'Click to select PDFs to merge' : 'Click to select PDF to split'}
             </span>
-            <p className="text-xs text-gray-500 mt-1">Accepts .pdf files (Client-side fast processing)</p>
+            <p className="text-[13px] text-white/45 mt-1.5 font-mono">Accepts .pdf files • Client-side, instant</p>
           </div>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 clip-chamfer-sm font-mono text-xs font-bold text-white/60 group-hover:text-halo-cyan group-hover:border-halo-cyan/30">
+            BROWSE FILES
+          </span>
         </label>
       </div>
 

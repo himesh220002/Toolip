@@ -3,9 +3,9 @@ import './globals.css';
 import { CurrentContextProvider } from '@/context/CurrentContext';
 
 export const metadata: Metadata = {
-  title: 'Toolip - 19 Everyday Internet Utilities & Developer Tools',
+  title: 'Toolip — 31 Everyday Utilities & Tools',
   description:
-    'Free online utility tools: PDF merger, image compressor, QR code generator, loan EMI calculator, word counter, password generator, age calculator, and more.',
+    '31 fast, private everyday utilities for PDFs, images, calculators and office work. All client-side, no tracking — instant in your browser.',
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-[#0B0F19] text-gray-100 antialiased min-h-screen">
+      <body className="bg-gunmetal text-gray-100 antialiased min-h-screen selection:bg-vice-pink selection:text-white">
         <CurrentContextProvider>{children}</CurrentContextProvider>
       </body>
     </html>
