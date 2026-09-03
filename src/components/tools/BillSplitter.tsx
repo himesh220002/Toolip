@@ -119,9 +119,9 @@ export const BillSplitter: React.FC = () => {
   };
 
   const copyItemizedSummary = () => {
-    let summary = `Itemized Bill Split Summary:\nSubtotal: ₹${itemizedRes.rawSubtotal}\nTip Amount: ₹${tipAmountInput} (${equalTipPct}%)\nGrand Total: ₹${itemizedRes.grandTotal}\n\nMember Individual Shares:\n`;
+    let summary = `========================================\nITEMIZED BILL PORTION SPLIT SUMMARY\n========================================\nSubtotal: ₹${itemizedRes.rawSubtotal.toFixed(2)}\nTip Amount: ₹${tipAmountInput} (${equalTipPct}%)\nGrand Total: ₹${itemizedRes.grandTotal.toFixed(2)}\n\nMEMBER INDIVIDUAL SHARES:\n`;
     Object.entries(itemizedRes.memberTotals).forEach(([m, data]) => {
-      summary += `- ${m}: ₹${data.finalTotal.toFixed(2)} (Subtotal: ₹${data.itemSubtotal.toFixed(2)}, Tip: ₹${data.tipShare.toFixed(2)})\n`;
+      summary += `\n👤 ${m}\nTotal Share: ₹${data.finalTotal.toFixed(2)}\nSubtotal: ₹${data.itemSubtotal.toFixed(2)} | Tip: ₹${data.tipShare.toFixed(2)}\nItems: ${data.itemsList.length > 0 ? data.itemsList.join(', ') : 'None'}\n`;
     });
     navigator.clipboard.writeText(summary);
     setCopied(true);
@@ -134,17 +134,15 @@ export const BillSplitter: React.FC = () => {
       <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl max-w-sm">
         <button
           onClick={() => setSplitMode('itemized')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            splitMode === 'itemized' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-          }`}
+          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${splitMode === 'itemized' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
         >
           Portion-Based Itemized Split
         </button>
         <button
           onClick={() => setSplitMode('equal')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            splitMode === 'equal' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-          }`}
+          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${splitMode === 'equal' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
         >
           Equal Split
         </button>
@@ -285,11 +283,10 @@ export const BillSplitter: React.FC = () => {
                         <button
                           key={m}
                           onClick={() => toggleItemMember(item.id, m)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${
-                            isShared
-                              ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                              : 'bg-gray-800 border-gray-700 text-gray-500 line-through'
-                          }`}
+                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${isShared
+                            ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                            : 'bg-gray-800 border-gray-700 text-gray-500 line-through'
+                            }`}
                         >
                           {m}
                         </button>
@@ -355,10 +352,10 @@ export const BillSplitter: React.FC = () => {
                       ₹{data.finalTotal.toFixed(2)}
                     </span>
                   </div>
-                  <div className="text-[10px] text-gray-400 space-y-1 border-t border-gray-800/60 pt-2 font-mono">
+                  <div className="text-[14px] text-gray-400 space-y-1 border-t border-gray-800/60 pt-2 font-mono">
                     <div>Subtotal: ₹{data.itemSubtotal.toFixed(2)} | Tip: ₹{data.tipShare.toFixed(2)}</div>
                     {data.itemsList.length > 0 && (
-                      <div className="text-[10px] text-sky-300 font-sans leading-tight">
+                      <div className="text-[14px] text-sky-300 font-sans leading-tight">
                         <span className="font-semibold text-gray-500">Items:</span> {data.itemsList.join(', ')}
                       </div>
                     )}

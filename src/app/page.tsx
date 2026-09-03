@@ -39,7 +39,7 @@ export default function Home() {
         <Navbar onOpenDashboard={() => setIsDashboardOpen(true)} />
 
         {/* Main Workspace Container */}
-        <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 relative z-10">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 relative z-10">
 
           {/* CityAI Inspired Hero Section */}
           <div className="text-center space-y-6 max-w-3xl mx-auto pt-6">

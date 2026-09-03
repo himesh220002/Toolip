@@ -39,6 +39,7 @@ import { FormFiller } from '@/components/tools/FormFiller';
 import { SleepCalculator } from '@/components/tools/SleepCalculator';
 import { TipCalculator } from '@/components/tools/TipCalculator';
 import { HtmlToPdf } from '@/components/tools/HtmlToPdf';
+import { LoanCalculator } from '@/components/tools/LoanCalculator';
 
 const STATUS_TAGS: { value: ToolStatus; label: string; bg: string; text: string }[] = [
   { value: 'planned', label: 'Planned', bg: 'bg-purple-500/20 border-purple-500/30', text: 'text-purple-300' },
@@ -161,6 +162,9 @@ export default function ToolDetailPage() {
         return <TipCalculator />;
       case 'html-to-pdf':
         return <HtmlToPdf />;
+      case 'loan-calculator':
+      case 'loan-emi-calculator':
+        return <LoanCalculator />;
       default:
         return (
           <div className="p-8 text-center text-gray-400 text-sm">
@@ -248,7 +252,7 @@ export default function ToolDetailPage() {
           </div>
 
           {/* Context Notes Drawer */}
-          <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
+          {/* <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
             <div className="flex-1 flex items-start space-x-2">
               <span className="text-indigo-400 font-bold">Context Note:</span>
               {isEditingNotes ? (
@@ -284,7 +288,7 @@ export default function ToolDetailPage() {
                 <span>Edit Note</span>
               </button>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* Dedicated Tool Interactive Full-Page Workspace Component */}

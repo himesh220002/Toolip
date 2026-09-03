@@ -17,16 +17,28 @@ import {
   Palette,
   Eye,
   Pipette,
+  Video,
+  VideoOff,
+  Square,
+  X,
 } from 'lucide-react';
 
 export const PassportPhotoMaker: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [originalFileName, setOriginalFileName] = useState<string>('photo.jpg');
 
-  // Zoom & Pan Position State
+  // Camera Live Capture State
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Zoom, Pan & Flip State
   const [zoomScale, setZoomScale] = useState<number>(1.0); // 0.5x to 3.0x
   const [panX, setPanX] = useState<number>(0); // -200 to 200 px
   const [panY, setPanY] = useState<number>(0); // -200 to 200 px
+  const [isFlippedX, setIsFlippedX] = useState<boolean>(false);
+  const [isFlippedY, setIsFlippedY] = useState<boolean>(false);
 
   // Background Filler State
   const [bgColor, setBgColor] = useState<string>('#FFFFFF'); // Default Official White
@@ -60,6 +72,64 @@ export const PassportPhotoMaker: React.FC = () => {
     { label: 'Warm Cream', color: '#FAF5EF' },
   ];
 
+  // Camera Control Functions
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setIsCameraActive(true);
+    } catch (err: any) {
+      console.error('Camera access error:', err);
+      setCameraError('Unable to access camera. Please allow webcam permissions or upload an image.');
+    }
+  };
+
+  // Attach camera stream to video element as soon as React mounts the video node
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch((err) => console.warn('Video play error:', err));
+    }
+  }, [isCameraActive]);
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  const capturePhotoFromCamera = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const captureCanvas = document.createElement('canvas');
+    captureCanvas.width = video.videoWidth || 1280;
+    captureCanvas.height = video.videoHeight || 720;
+    const ctx = captureCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw video frame to canvas
+    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+    const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.95);
+    
+    stopCamera();
+    setSelectedImage(dataUrl);
+    setOriginalFileName('webcam_snapshot.jpg');
+    resetPositionAndZoom();
+  };
+
+  // Stop camera when unmounting
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -74,6 +144,8 @@ export const PassportPhotoMaker: React.FC = () => {
     setZoomScale(1.0);
     setPanX(0);
     setPanY(0);
+    setIsFlippedX(false);
+    setIsFlippedY(false);
   };
 
   // Re-render live canvas whenever parameters change
@@ -86,6 +158,8 @@ export const PassportPhotoMaker: React.FC = () => {
     zoomScale,
     panX,
     panY,
+    isFlippedX,
+    isFlippedY,
     bgColor,
     contrast,
     brightness,
@@ -185,6 +259,7 @@ export const PassportPhotoMaker: React.FC = () => {
 
       ctx.translate(centerX, centerY);
       ctx.rotate((tilt * Math.PI) / 180);
+      ctx.scale(isFlippedX ? -1 : 1, isFlippedY ? -1 : 1);
 
       // Filter Effects
       const contrastVal = 100 + contrast;
@@ -232,7 +307,6 @@ export const PassportPhotoMaker: React.FC = () => {
     if (!isDragging) return;
     const newPanX = e.clientX - dragStart.x;
     const newPanY = e.clientY - dragStart.y;
-    // Bound pan range
     setPanX(Math.min(250, Math.max(-250, newPanX)));
     setPanY(Math.min(250, Math.max(-250, newPanY)));
   };
@@ -255,27 +329,143 @@ export const PassportPhotoMaker: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Upload Zone */}
+      {/* Upload Zone & Live Camera Launch Option */}
       {!selectedImage ? (
-        <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-3xl p-10 text-center bg-slate-900/40 backdrop-blur-xl transition-all">
-          <input
-            type="file"
-            accept="image/jpeg, image/png, image/webp"
-            onChange={handleFileSelect}
-            className="hidden"
-            id="passport-input"
-          />
-          <label htmlFor="passport-input" className="cursor-pointer space-y-4 block">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shadow-lg">
-              <Camera className="h-7 w-7" />
+        <div className="space-y-4">
+          {/* Live Camera Feed Modal Overlay / Container */}
+          {isCameraActive ? (
+            <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-4 backdrop-blur-xl flex flex-col items-center">
+              <div className="flex items-center justify-between w-full border-b border-slate-800 pb-3">
+                <div className="flex items-center space-x-2 text-xs font-bold text-rose-400">
+                  <Video className="h-4 w-4 animate-pulse" />
+                  <span>Live Webcam Passport Capture</span>
+                </div>
+
+                <button
+                  onClick={stopCamera}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Video Stream Container with Passport Face Target Guide Overlay */}
+              <div className="relative w-full max-w-md aspect-[4/3] rounded-2xl bg-black overflow-hidden border-2 border-indigo-500/50 shadow-2xl flex items-center justify-center">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  onLoadedMetadata={() => {
+                    if (videoRef.current) {
+                      videoRef.current.play().catch((err) => console.warn('Video play error:', err));
+                    }
+                  }}
+                  className="w-full h-full object-cover transform -scale-x-100"
+                />
+
+                {/* SVG Passport Face & Eye Alignment Guide Overlay */}
+                <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center p-2">
+                  <svg className="w-full h-full max-w-[280px] max-h-[350px]" viewBox="0 0 200 260" fill="none">
+                    {/* Glowing Emerald Oval Face Target */}
+                    <ellipse
+                      cx="100"
+                      cy="110"
+                      rx="62"
+                      ry="82"
+                      stroke="#10b981"
+                      strokeWidth="2.5"
+                      strokeDasharray="6 4"
+                      className="drop-shadow-[0_0_10px_rgba(16,185,129,0.9)]"
+                    />
+                    {/* Eye Level Line */}
+                    <line x1="45" y1="95" x2="155" y2="95" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.85" />
+                    {/* Vertical Center Line */}
+                    <line x1="100" y1="25" x2="100" y2="230" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.85" />
+                    {/* Shoulder Line Target Arc */}
+                    <path d="M 20 250 Q 100 195 180 250" stroke="#a855f7" strokeWidth="2" strokeDasharray="4 4" opacity="0.85" />
+                    {/* Top Head Target Badge */}
+                    <rect x="50" y="10" width="100" height="22" rx="6" fill="#0b0f19" stroke="#10b981" strokeWidth="1" />
+                    <text x="100" y="25" textAnchor="middle" fill="#34d399" fontSize="10" fontWeight="bold" fontFamily="monospace">
+                      ALIGN FACE & EYES
+                    </text>
+                  </svg>
+                </div>
+              </div>
+
+              {/* Snap Action Button */}
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={capturePhotoFromCamera}
+                  className="flex items-center space-x-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-extrabold text-sm shadow-xl shadow-emerald-500/25 transition-all hover:scale-105"
+                >
+                  <Camera className="h-5 w-5" />
+                  <span>📸 Snap & Use Passport Photo</span>
+                </button>
+
+                <button
+                  onClick={stopCamera}
+                  className="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-gray-300 font-semibold text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <div>
-              <span className="text-base font-extrabold text-white">Upload User Photo for Passport Converter</span>
-              <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
-                Includes interactive Zoom In/Out, Canvas Drag-to-Position, Auto Edge Color Matching, and guaranteed &lt; 80 KB size optimizer.
-              </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Option 1: Live Webcam Capture Right Away */}
+              <button
+                onClick={startCamera}
+                className="p-8 rounded-3xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/80 border-2 border-indigo-500/40 hover:border-indigo-400 text-center flex flex-col items-center justify-center space-y-3 shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-1 transition-all group cursor-pointer"
+              >
+                <div className="h-16 w-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Video className="h-8 w-8 text-indigo-400 animate-pulse" />
+                </div>
+                <div>
+                  <div className="text-base font-extrabold text-white group-hover:text-indigo-300 transition-colors">
+                    📷 Live Camera Capture Right Away
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 max-w-xs">
+                    Snap your portrait instantly with a live webcam face alignment overlay guide!
+                  </p>
+                </div>
+                <span className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-extrabold text-xs shadow-md">
+                  Launch Webcam Stream ➔
+                </span>
+              </button>
+
+              {/* Option 2: Upload File Drop Zone */}
+              <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-3xl p-8 text-center bg-slate-900/40 backdrop-blur-xl flex flex-col items-center justify-center transition-all">
+                <input
+                  type="file"
+                  accept="image/jpeg, image/png, image/webp"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="passport-input"
+                />
+                <label htmlFor="passport-input" className="cursor-pointer space-y-3 block w-full">
+                  <div className="mx-auto h-16 w-16 rounded-2xl bg-slate-800 border border-slate-700 text-gray-300 flex items-center justify-center shadow-lg">
+                    <Upload className="h-7 w-7 text-sky-400" />
+                  </div>
+                  <div>
+                    <span className="text-base font-extrabold text-white">Upload Existing Photo</span>
+                    <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+                      Select JPG, PNG, or WEBP photo from your computer.
+                    </p>
+                  </div>
+                  <span className="inline-block px-3.5 py-1.5 rounded-xl bg-slate-800 text-gray-200 font-bold text-xs border border-slate-700">
+                    Browse Files
+                  </span>
+                </label>
+              </div>
             </div>
-          </label>
+          )}
+
+          {cameraError && (
+            <div className="p-3 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-300 text-xs font-semibold text-center">
+              {cameraError}
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -287,6 +477,14 @@ export const PassportPhotoMaker: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs">
+              <button
+                onClick={startCamera}
+                className="px-3.5 py-1.5 rounded-xl bg-indigo-600/30 border border-indigo-500/40 hover:bg-indigo-600 text-indigo-200 hover:text-white font-semibold transition-all flex items-center space-x-1.5"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                <span>Retake with Camera</span>
+              </button>
+
               <button
                 onClick={resetAll}
                 className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white font-semibold transition-all border border-slate-700/60"
@@ -374,6 +572,34 @@ export const PassportPhotoMaker: React.FC = () => {
                   onChange={(e) => setPanY(Number(e.target.value))}
                   className="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer"
                 />
+              </div>
+
+              {/* Flip Controls */}
+              <div className="pt-1 space-y-1.5">
+                <label className="text-xs text-gray-300 font-semibold">Flip Photo (Mirror):</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsFlippedX(!isFlippedX)}
+                    className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center space-x-1 ${
+                      isFlippedX
+                        ? 'bg-indigo-600 text-white border-indigo-400 shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    <span>↔ Mirror (Flip H)</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsFlippedY(!isFlippedY)}
+                    className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center space-x-1 ${
+                      isFlippedY
+                        ? 'bg-indigo-600 text-white border-indigo-400 shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    <span>↕ Flip Vertical</span>
+                  </button>
+                </div>
               </div>
 
               <div className="text-[11px] text-gray-400 italic">

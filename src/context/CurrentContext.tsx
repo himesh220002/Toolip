@@ -28,6 +28,7 @@ export interface ToolItem {
   features: string[];
   updatedAt: string;
   seoKeywords: string[];
+  imageUrl?: string;
 }
 
 export const INITIAL_TOOLS: ToolItem[] = [
