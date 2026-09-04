@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   FileCode,
   Download,
@@ -70,9 +70,31 @@ const DEFAULT_HTML = `<!DOCTYPE html>
 
 export const HtmlToPdf: React.FC = () => {
   const [htmlCode, setHtmlCode, resetHtmlCode] = useLocalStorage<string>('toolip_html_code', DEFAULT_HTML);
-  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [copied, setCopied] = useState<boolean>(false);
-  const [themeStyle, setThemeStyle] = useState<'default' | 'modern' | 'minimalist'>('default');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [dynamicHeight, setDynamicHeight] = useState<string>('50vh');
+
+  // Auto expand editor & preview height based on code content, min-h 50vh up to 100vh
+  useEffect(() => {
+    const calculateDynamicHeight = () => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        const scrollH = textareaRef.current.scrollHeight;
+        textareaRef.current.style.height = '';
+
+        const vh = window.innerHeight;
+        const minH = vh * 0.5; // Always at least 50vh
+        const maxH = vh * 0.95; // Up to 100vh (~95vh viewport limit)
+
+        const computed = Math.min(Math.max(scrollH + 50, minH), maxH);
+        setDynamicHeight(`${computed}px`);
+      }
+    };
+
+    calculateDynamicHeight();
+    window.addEventListener('resize', calculateDynamicHeight);
+    return () => window.removeEventListener('resize', calculateDynamicHeight);
+  }, [htmlCode]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -198,8 +220,11 @@ export const HtmlToPdf: React.FC = () => {
       {/* Editor & Preview Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Code Editor */}
-        <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
+        <div
+          style={{ height: dynamicHeight }}
+          className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl flex flex-col min-h-[50vh] max-h-[95vh] transition-[height] duration-200"
+        >
+          <div className="flex items-center justify-between shrink-0">
             <label className="text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
               <Code className="h-4 w-4" />
               <span>HTML Source Editor</span>
@@ -214,17 +239,21 @@ export const HtmlToPdf: React.FC = () => {
           </div>
 
           <textarea
+            ref={textareaRef}
             value={htmlCode}
             onChange={(e) => setHtmlCode(e.target.value)}
             placeholder="Type or paste your raw HTML markup here..."
-            className="w-full h-[100vh] p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-sky-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none shadow-inner leading-relaxed"
+            className="w-full flex-1 p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-sky-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none shadow-inner leading-relaxed overflow-auto"
           />
         </div>
 
         {/* Right Column: Live Rendered Output */}
-        <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-2">
+        <div
+          style={{ height: dynamicHeight }}
+          className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl backdrop-blur-xl flex flex-col justify-between space-y-3 min-h-[50vh] max-h-[95vh] transition-[height] duration-200"
+        >
+          <div className="flex flex-col flex-1 min-h-0 space-y-2">
+            <div className="flex items-center justify-between shrink-0">
               <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
                 <Eye className="h-4 w-4" />
                 <span>Live Document Render</span>
@@ -235,7 +264,7 @@ export const HtmlToPdf: React.FC = () => {
             </div>
 
             {/* Render Frame */}
-            <div className="w-full h-[100vh] bg-white rounded-2xl border border-slate-700 shadow-2xl overflow-auto p-2">
+            <div className="w-full flex-1 min-h-0 bg-white rounded-2xl border border-slate-700 shadow-2xl overflow-hidden p-1">
               <iframe
                 title="HTML Render Preview"
                 srcDoc={htmlCode}
@@ -248,7 +277,7 @@ export const HtmlToPdf: React.FC = () => {
           {/* Download Action Footer */}
           <button
             onClick={printToPdf}
-            className="w-full flex items-center justify-center space-x-2 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-extrabold text-sm shadow-xl shadow-emerald-500/20 transition-all hover:scale-[1.01]"
+            className="w-full shrink-0 flex items-center justify-center space-x-2 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-extrabold text-sm shadow-xl shadow-emerald-500/20 transition-all hover:scale-[1.01]"
           >
             <Download className="h-4 w-4" />
             <span>Download Formatted PDF Document</span>
