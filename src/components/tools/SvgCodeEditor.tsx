@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Code2, Eye, Download, Copy, Check, Sparkles, Layers, RefreshCw } from 'lucide-react';
+import { Code2, Eye, Download, Copy, Check, Orbit, Sparkles, Layers, RefreshCw } from 'lucide-react';
 
 const PRESET_SVGS: Record<string, string> = {
   Badge: `<svg width="240" height="240" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -161,14 +161,14 @@ export const SvgCodeEditor: React.FC = () => {
       {/* Bi-Directional Indicator Strip */}
       <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-xs text-sky-300 flex items-center justify-between">
         <span className="flex items-center space-x-2">
-          <Sparkles className="h-4 w-4 text-sky-400 animate-spin" />
+          <Orbit className="h-4 w-4 text-sky-400 animate-spin transition-all duration-600" />
           <span>
             <strong>Repeatable Bi-Directional Glow:</strong> Click any shape in Preview to glow Code line • Hover/Touch code line or cursor to glow Preview shape!
           </span>
         </span>
         {(codeGlowLineIdx !== null || hoveredShapeIdx !== null) && (
           <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-mono font-bold animate-pulse">
-            ★ Active Glow: Line #{ (codeGlowLineIdx !== null ? codeGlowLineIdx : (hoveredShapeIdx || 0)) + 1 }
+            ★ Active Glow: Line #{(codeGlowLineIdx !== null ? codeGlowLineIdx : (hoveredShapeIdx || 0)) + 1}
           </span>
         )}
       </div>
@@ -197,11 +197,10 @@ export const SvgCodeEditor: React.FC = () => {
                       setCodeGlowLineIdx(idx);
                       setTimeout(() => setCodeGlowLineIdx(null), 1200);
                     }}
-                    className={`h-5 cursor-pointer text-[10px] transition-all ${
-                      isGlowing
-                        ? 'text-rose-400 font-bold bg-rose-500/20 scale-105 border-l-2 border-rose-400'
-                        : 'hover:text-sky-400'
-                    }`}
+                    className={`h-5 cursor-pointer text-[10px] transition-all ${isGlowing
+                      ? 'text-rose-400 font-bold bg-rose-500/20 scale-105 border-l-2 border-rose-400'
+                      : 'hover:text-sky-400'
+                      }`}
                   >
                     {idx + 1}
                   </div>

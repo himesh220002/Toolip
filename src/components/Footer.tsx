@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Crosshair } from 'lucide-react';
 
 export const Footer: React.FC = () => {
@@ -88,7 +89,7 @@ export const Footer: React.FC = () => {
           {/* Bottom brand row — Toolip only */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-7 sm:pb-8">
             {/* Left: Toolip */}
-            <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-4 hover:opacity-90 transition-opacity">
               <div className="h-9 w-9 clip-chamfer bg-gradient-to-br from-halo-cyan to-halo-electric p-[1.5px] shadow-halo">
                 <div className="h-full w-full clip-chamfer bg-[#1A1A1A] flex items-center justify-center">
                   <Crosshair className="h-5 w-5 text-halo-cyan" />
@@ -101,7 +102,7 @@ export const Footer: React.FC = () => {
               <span className="hidden sm:inline-flex ml-2 px-2 py-1 bg-white/[0.06] border border-white/10 clip-chamfer-sm font-mono text-[8px] tracking-[0.16em] font-bold text-white/40">
                 CLIENT-SIDE • NO CLOUD
               </span>
-            </div>
+            </Link>
 
             {/* Right: Build meta */}
             <div className="flex flex-col sm:items-end items-center gap-1 text-center sm:text-right">

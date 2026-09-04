@@ -49,13 +49,13 @@ export const INITIAL_TOOLS: ToolItem[] = [
     id: 'image-to-pdf',
     title: 'Image to PDF Converter',
     category: 'Document & File Utilities',
-    description: 'Convert PNG, JPG, or WEBP images into a formatted single or multi-page PDF.',
+    description: 'Convert PNG, JPG, or WEBP images into formatted single or multi-page PDFs.',
     iconName: 'FileType',
-    status: 'completed',
-    notes: 'Instant image to PDF rendering with page layout controls.',
-    features: ['Supports JPG/PNG/WEBP', 'Margin & page settings', 'Instant download'],
+    status: 'upgraded',
+    notes: 'Studio layout with drag-and-drop reordering, A-Z sort, page orientation, page sizes, interactive margin drag slider, corner roundness controller, and per-image custom overrides.',
+    features: ['Drag-and-Drop Reorder & A-Z Sort', 'Orientation & Page Size Controls', 'Margins & Corner Roundness Slider', 'Per-Image Custom Settings & 1-Click PDF'],
     updatedAt: new Date().toISOString(),
-    seoKeywords: ['image to pdf', 'jpg to pdf converter', 'photo to pdf'],
+    seoKeywords: ['image to pdf', 'jpg to pdf converter', 'photo to pdf', 'rounded image pdf'],
   },
   {
     id: 'json-formatter',
@@ -317,7 +317,7 @@ export const INITIAL_TOOLS: ToolItem[] = [
   },
   {
     id: 'bill-splitter',
-    title: 'Portion-Based Bill Splitter',
+    title: 'Bill Splitter Portion-Based',
     category: 'Everyday Office/Personal Helpers',
     description: 'Split group bills fairly with itemized member-to-item mapping and tip amount with % badge tag.',
     iconName: 'Users',
@@ -444,7 +444,7 @@ interface CurrentContextType {
 
 const CurrentContext = createContext<CurrentContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'toolip_tools_status_v3';
+const STORAGE_KEY = 'toolip_tools_status_v4';
 
 export const CurrentContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tools, setTools] = useState<ToolItem[]>(INITIAL_TOOLS);

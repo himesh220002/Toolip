@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useCurrentContext } from '@/context/CurrentContext';
 import { Search, Crosshair, Shield, Hexagon } from 'lucide-react';
 
@@ -19,7 +20,7 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center justify-between h-[64px] sm:h-[68px] gap-4">
 
             {/* Left: Brand */}
-            <div className="flex items-center gap-3 shrink-0">
+            <Link href="/" className="flex items-center gap-3 shrink-0 hover:opacity-90 transition-opacity">
               <div className="relative h-9 w-9 sm:h-10 sm:w-10 clip-chamfer bg-gradient-to-br from-halo-cyan to-halo-electric p-[1.5px] shadow-halo shrink-0">
                 <div className="h-full w-full clip-chamfer bg-gunmetal-700 flex items-center justify-center">
                   <Crosshair className="h-5 w-5 text-halo-cyan" />
@@ -36,7 +37,7 @@ export const Navbar: React.FC = () => {
                   31 TOOLS • READY TO USE
                 </div>
               </div>
-            </div>
+            </Link>
 
             {/* Center: Search */}
             <div className="flex-1 max-w-[560px] hidden md:flex items-center">
