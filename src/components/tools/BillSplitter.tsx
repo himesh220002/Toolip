@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, DollarSign, Copy, Check, Plus, Trash2, Tag, Layers, RotateCcw } from 'lucide-react';
+import { Users, DollarSign, Copy, Check, Plus, Trash2, Tag, Layers, RotateCcw, Share2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface MemberItem {
@@ -9,6 +9,13 @@ interface MemberItem {
   name: string; // e.g. "Pizza"
   price: number; // e.g. 600
   sharedBy: string[]; // member IDs e.g. ["A", "B"]
+}
+
+interface ConsumedItemDetail {
+  name: string;
+  itemPrice: number; // Full item price e.g. 600
+  sharePrice: number; // Individual share price e.g. 200
+  splitCount: number; // Number of people sharing
 }
 
 const DEFAULT_MEMBERS = ['Alice', 'Bob', 'Charlie', 'David'];
@@ -34,6 +41,7 @@ export const BillSplitter: React.FC = () => {
   const [newItemName, setNewItemName] = useState<string>('');
   const [newItemPrice, setNewItemPrice] = useState<number>(200);
   const [copied, setCopied] = useState<boolean>(false);
+  const [copiedMember, setCopiedMember] = useState<string | null>(null);
 
   const handleResetAll = () => {
     resetSplitMode();
@@ -56,11 +64,11 @@ export const BillSplitter: React.FC = () => {
 
     const memberTotals: Record<
       string,
-      { itemSubtotal: number; tipShare: number; finalTotal: number; itemsList: string[] }
+      { itemSubtotal: number; tipShare: number; finalTotal: number; itemsDetails: ConsumedItemDetail[] }
     > = {};
 
     members.forEach((m) => {
-      memberTotals[m] = { itemSubtotal: 0, tipShare: 0, finalTotal: 0, itemsList: [] };
+      memberTotals[m] = { itemSubtotal: 0, tipShare: 0, finalTotal: 0, itemsDetails: [] };
     });
 
     items.forEach((item) => {
@@ -69,8 +77,12 @@ export const BillSplitter: React.FC = () => {
         item.sharedBy.forEach((m) => {
           if (memberTotals[m]) {
             memberTotals[m].itemSubtotal += sharePrice;
-            const sharedCountStr = item.sharedBy.length > 1 ? ` [split x${item.sharedBy.length}]` : '';
-            memberTotals[m].itemsList.push(`${item.name} (₹${sharePrice.toFixed(2)}${sharedCountStr})`);
+            memberTotals[m].itemsDetails.push({
+              name: item.name,
+              itemPrice: item.price,
+              sharePrice: sharePrice,
+              splitCount: item.sharedBy.length,
+            });
           }
         });
       }
@@ -134,11 +146,32 @@ export const BillSplitter: React.FC = () => {
   const copyItemizedSummary = () => {
     let summary = `========================================\nITEMIZED BILL PORTION SPLIT SUMMARY\n========================================\nSubtotal: ₹${itemizedRes.rawSubtotal.toFixed(2)}\nTip Amount: ₹${tipAmountInput} (${equalTipPct}%)\nGrand Total: ₹${itemizedRes.grandTotal.toFixed(2)}\n\nMEMBER INDIVIDUAL SHARES:\n`;
     Object.entries(itemizedRes.memberTotals).forEach(([m, data]) => {
-      summary += `\n👤 ${m}\nTotal Share: ₹${data.finalTotal.toFixed(2)}\nSubtotal: ₹${data.itemSubtotal.toFixed(2)} | Tip: ₹${data.tipShare.toFixed(2)}\nItems: ${data.itemsList.length > 0 ? data.itemsList.join(', ') : 'None'}\n`;
+      summary += `\n👤 ${m}\nTotal Share: ₹${data.finalTotal.toFixed(2)}\nSubtotal: ₹${data.itemSubtotal.toFixed(2)} | Tip: ₹${data.tipShare.toFixed(2)}\n`;
+      if (data.itemsDetails.length > 0) {
+        summary += `Items:\n` + data.itemsDetails.map((it) => `  - ${it.name} (Item Price: ₹${it.itemPrice.toFixed(2)} | Your Share: ₹${it.sharePrice.toFixed(2)}${it.splitCount > 1 ? ` [split x${it.splitCount}]` : ''})`).join('\n') + `\n`;
+      }
     });
     navigator.clipboard.writeText(summary);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Copy ONLY individual person's private share summary with both Item Price & Share Price
+  const copyIndividualShare = (
+    m: string,
+    data: { itemSubtotal: number; tipShare: number; finalTotal: number; itemsDetails: ConsumedItemDetail[] }
+  ) => {
+    let text = `Hi ${m},\nHere is your bill share:\n----------------------------------\nTotal Amount Due: ₹${data.finalTotal.toFixed(2)}\n• Item Subtotal: ₹${data.itemSubtotal.toFixed(2)}\n• Tip Share: ₹${data.tipShare.toFixed(2)}\n`;
+    if (data.itemsDetails.length > 0) {
+      text += `\nConsumed Items:\n` + data.itemsDetails.map((it) => {
+        const splitStr = it.splitCount > 1 ? ` [split x${it.splitCount}]` : '';
+        return `• ${it.name}\n  - Item Price: ₹${it.itemPrice.toFixed(2)}\n  - Your Share: ₹${it.sharePrice.toFixed(2)}${splitStr}`;
+      }).join('\n');
+    }
+    text += `\n----------------------------------\nSent via Toolip Bill Splitter`;
+    navigator.clipboard.writeText(text);
+    setCopiedMember(m);
+    setTimeout(() => setCopiedMember(null), 2000);
   };
 
   return (
@@ -148,15 +181,17 @@ export const BillSplitter: React.FC = () => {
         <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl max-w-sm flex-1 sm:flex-none">
           <button
             onClick={() => setSplitMode('itemized')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-semibold transition-all ${splitMode === 'itemized' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-              }`}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              splitMode === 'itemized' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
           >
             Portion-Based Itemized Split
           </button>
           <button
             onClick={() => setSplitMode('equal')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-semibold transition-all ${splitMode === 'equal' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-              }`}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              splitMode === 'equal' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
           >
             Equal Split
           </button>
@@ -177,7 +212,7 @@ export const BillSplitter: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 bg-gray-900 border border-gray-800 rounded-xl">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-300">Total Bill Subtotal (₹):</label>
+              <label className="text-sm font-semibold text-gray-300">Total Bill Subtotal (₹):</label>
               <input
                 type="number"
                 value={totalBill}
@@ -187,7 +222,7 @@ export const BillSplitter: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-300">Number of People:</label>
+              <label className="text-sm font-semibold text-gray-300">Number of People:</label>
               <input
                 type="number"
                 min={1}
@@ -199,7 +234,7 @@ export const BillSplitter: React.FC = () => {
 
             <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-gray-300">Tip Amount Paid (₹):</label>
+                <label className="text-sm font-semibold text-gray-300">Tip Amount Paid (₹):</label>
                 <span className="text-[10px] text-emerald-400 font-mono font-bold">{equalTipPct}% Tip</span>
               </div>
               <input
@@ -293,7 +328,7 @@ export const BillSplitter: React.FC = () => {
               </div>
 
               <div className="space-y-2 pt-2 border-t border-gray-800/80">
-                <label className="text-[11px] font-semibold text-gray-400">Total Tip Paid (₹):</label>
+                <label className="text-sm font-semibold text-gray-300">Total Tip Paid (₹):</label>
                 <input
                   type="number"
                   min={0}
@@ -316,26 +351,27 @@ export const BillSplitter: React.FC = () => {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="p-3 bg-gradient-to-b from-gray-50 to-purple-100 border border-gray-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+                  className="p-3 bg-gradient-to-r from-slate-900 to-purple-900 border border-gray-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="font-semibold text-lg text-gray-800">{item.name}</span>
-                    <span className="font-mono text-emerald-600 font-extrabold">₹{item.price}</span>
+                    <span className="font-semibold text-lg text-gray-100">{item.name}</span>
+                    <span className="font-mono text-emerald-400 font-extrabold">₹{item.price}</span>
                   </div>
 
                   {/* Member sharing pills */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[12px] text-gray-500">Shared by:</span>
+                    <span className="text-[12px] text-gray-300">Shared by:</span>
                     {members.map((m) => {
                       const isShared = item.sharedBy.includes(m);
                       return (
                         <button
                           key={m}
                           onClick={() => toggleItemMember(item.id, m)}
-                          className={`px-2 py-1 rounded text-[14px] font-semibold border transition-all ${isShared
-                            ? 'bg-sky-900 text-blue-50 border-green-500'
-                            : 'bg-gray-800 border-gray-700 text-gray-500 line-through'
-                            }`}
+                          className={`px-2 py-1 rounded text-[14px] font-semibold border transition-all ${
+                            isShared
+                              ? 'bg-sky-900 text-blue-50 border-green-500'
+                              : 'bg-gray-800 border-gray-700 text-gray-500 line-through'
+                          }`}
                         >
                           {m}
                         </button>
@@ -360,7 +396,7 @@ export const BillSplitter: React.FC = () => {
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 placeholder="Item name (e.g. Dessert)..."
-                className="flex-1 min-w-[140px] px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-gray-200 focus:outline-none"
+                className="flex-1 min-w-[140px] px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-sm text-gray-200 focus:outline-none"
               />
               <input
                 type="number"
@@ -388,47 +424,82 @@ export const BillSplitter: React.FC = () => {
                 className="flex items-center space-x-1.5 px-3 py-1 bg-sky-950 border border-sky-800 rounded-lg text-sky-300 hover:text-white text-xs font-bold transition-all"
               >
                 {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copied ? 'Copied!' : 'Copy Summary'}</span>
+                <span>{copied ? 'Copied Full Group Summary!' : 'Copy Full Summary'}</span>
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {Object.entries(itemizedRes.memberTotals).map(([m, data]) => (
-                <div key={m} className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-3 shadow-lg hover:border-gray-700 transition-all">
-                  <div className="flex justify-between items-center border-b border-gray-800/80 pb-2">
-                    <span className="font-bold text-white text-base">{m}</span>
-                    <span className="font-mono font-extrabold text-emerald-400 text-xl">
-                      ₹{data.finalTotal.toFixed(2)}
-                    </span>
-                  </div>
+                <div key={m} className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-3 shadow-lg hover:border-gray-700 transition-all flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center border-b border-gray-800/80 pb-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-white text-base">{m}</span>
+                        <button
+                          onClick={() => copyIndividualShare(m, data)}
+                          title={`Copy ${m}'s private share text`}
+                          className="p-1 rounded-md bg-gray-900 hover:bg-sky-950 border border-gray-800 hover:border-sky-700 text-sky-400 hover:text-sky-200 transition-colors"
+                        >
+                          {copiedMember === m ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
 
-                  <div className="text-xs text-gray-400 space-y-1 font-mono">
-                    <div className="flex justify-between text-[11px]">
-                      <span>Item Subtotal:</span>
-                      <span className="text-gray-200">₹{data.itemSubtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px]">
-                      <span>Tip Share:</span>
-                      <span className="text-emerald-400">₹{data.tipShare.toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  {/* Column-Wise Stacked Items Breakdown List */}
-                  {data.itemsList.length > 0 && (
-                    <div className="space-y-1.5 border-t border-gray-800/80 pt-2.5">
-                      <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
-                        Consumed Items:
+                      <span className="font-mono font-extrabold text-emerald-400 text-xl">
+                        ₹{data.finalTotal.toFixed(2)}
                       </span>
-                      <ul className="space-y-1">
-                        {data.itemsList.map((itemStr, idx) => (
-                          <li key={idx} className="flex items-start space-x-1.5 text-xs text-sky-300 font-sans leading-tight">
-                            <span className="text-emerald-400 font-bold text-xs leading-none">•</span>
-                            <span>{itemStr}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
-                  )}
+
+                    <div className="text-xs text-gray-400 space-y-1 font-mono">
+                      <div className="flex justify-between text-[11px]">
+                        <span>Item Subtotal:</span>
+                        <span className="text-gray-200">₹{data.itemSubtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span>Tip Share:</span>
+                        <span className="text-emerald-400">₹{data.tipShare.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Column-Wise Stacked Items Breakdown List */}
+                    {data.itemsDetails.length > 0 && (
+                      <div className="space-y-1.5 border-t border-gray-800/80 pt-2.5">
+                        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                          Consumed Items:
+                        </span>
+                        <ul className="space-y-2">
+                          {data.itemsDetails.map((it, idx) => (
+                            <li key={idx} className="p-2 bg-gray-900/90 border border-gray-800 rounded-lg space-y-1 text-xs">
+                              <div className="flex justify-between items-center font-semibold">
+                                <span className="text-sky-300">{it.name}</span>
+                                <span className="text-emerald-400 font-mono font-bold">₹{it.sharePrice.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-[10px] font-mono text-gray-400 pt-0.5 border-t border-gray-800/60">
+                                <span>Item Price: <strong className="text-gray-200">₹{it.itemPrice.toFixed(2)}</strong></span>
+                                <span className="text-purple-300">{it.splitCount > 1 ? `split x${it.splitCount}` : 'solo'}</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Individual Private Share Copy Button */}
+                  <button
+                    onClick={() => copyIndividualShare(m, data)}
+                    className="w-full flex items-center justify-center space-x-1.5 py-1.5 px-3 rounded-lg bg-gray-900 hover:bg-sky-950 border border-gray-800 hover:border-sky-700/60 text-sky-300 hover:text-white font-mono text-[11px] font-semibold transition-all mt-3"
+                  >
+                    {copiedMember === m ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                    <span>{copiedMember === m ? `Copied ${m}'s Bill!` : `Copy Only ${m}'s Share`}</span>
+                  </button>
                 </div>
               ))}
             </div>

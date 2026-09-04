@@ -1,7 +1,20 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Code2, Eye, Download, Copy, Check, Orbit, Sparkles, Layers, RefreshCw, RotateCcw } from 'lucide-react';
+import {
+  Code2,
+  Eye,
+  Download,
+  Copy,
+  Check,
+  Orbit,
+  Sparkles,
+  Layers,
+  RotateCcw,
+  Image as ImageIcon,
+  Wrench,
+  Grid
+} from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const PRESET_SVGS: Record<string, string> = {
@@ -28,14 +41,21 @@ const PRESET_SVGS: Record<string, string> = {
   <circle cx="100" cy="100" r="40" fill="#f43f5e" />
   <rect x="85" y="85" width="30" height="30" fill="#ffffff" rx="6" />
 </svg>`,
+  Spinner: `<svg width="240" height="240" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="80" fill="none" stroke="#1e293b" stroke-width="16" />
+  <path d="M 100 20 A 80 80 0 0 1 180 100" fill="none" stroke="#00e5ff" stroke-width="16" stroke-linecap="round" />
+  <circle cx="100" cy="100" r="30" fill="#ec4899" />
+</svg>`
 };
 
 export const SvgCodeEditor: React.FC = () => {
-  const [svgCode, setSvgCode, resetSvgCode] = useLocalStorage<string>('toolip_svg_code', PRESET_SVGS['Badge']);
+  const [svgCode, setSvgCode, resetSvgCode] = useLocalStorage<string>('toolip_svg_code_v2', PRESET_SVGS['Badge']);
   const [hoveredShapeIdx, setHoveredShapeIdx] = useState<number | null>(null);
   const [codeGlowLineIdx, setCodeGlowLineIdx] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [cursorLine, setCursorLine] = useState<number>(0);
+  const [canvasBg, setCanvasBg] = useState<'dark' | 'light' | 'checker'>('dark');
+  const [noticeMsg, setNoticeMsg] = useState<string>('');
 
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -110,6 +130,17 @@ export const SvgCodeEditor: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // SVG Minifier / Cleanup
+  const minifySvg = () => {
+    let clean = svgCode
+      .replace(/<!--[\s\S]*?-->/g, '') // remove comments
+      .replace(/>\s+</g, '><') // remove whitespace between tags
+      .trim();
+    setSvgCode(clean);
+    setNoticeMsg('✓ SVG markup minified and cleaned!');
+    setTimeout(() => setNoticeMsg(''), 3000);
+  };
+
   const downloadSvg = () => {
     const blob = new Blob([svgCode], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -117,12 +148,40 @@ export const SvgCodeEditor: React.FC = () => {
     a.href = url;
     a.download = `vector_art_${Date.now()}.svg`;
     a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Convert SVG to PNG Image and Download
+  const downloadPng = () => {
+    try {
+      const blob = new Blob([svgCode], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width || 500;
+        canvas.height = img.height || 500;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const pngUrl = canvas.toDataURL('image/png');
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = `vector_render_${Date.now()}.png`;
+          a.click();
+        }
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    } catch (err) {
+      alert('Error rendering PNG export.');
+    }
   };
 
   return (
     <div className="space-y-6">
       {/* Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between p-3 bg-gray-900 border border-gray-800 rounded-xl gap-3">
+      <div className="flex flex-wrap items-center justify-between p-3.5 bg-gray-900 border border-gray-800 rounded-xl gap-3">
         <div className="flex items-center space-x-2 text-xs">
           <span className="text-gray-400 font-semibold">Load Template:</span>
           {Object.keys(PRESET_SVGS).map((preset) => (
@@ -140,15 +199,27 @@ export const SvgCodeEditor: React.FC = () => {
           ))}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Minify SVG */}
+          <button
+            onClick={minifySvg}
+            title="Minify SVG markup and strip comments"
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-indigo-400 hover:text-indigo-300 text-xs font-semibold"
+          >
+            <Wrench className="h-3.5 w-3.5" />
+            <span>Minify SVG</span>
+          </button>
+
+          {/* Copy SVG Code */}
           <button
             onClick={copyCode}
             className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sky-400 text-xs font-semibold"
           >
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            <span>{copied ? 'Copied!' : 'Copy SVG Code'}</span>
+            <span>{copied ? 'Copied!' : 'Copy SVG'}</span>
           </button>
 
+          {/* Reset Button */}
           <button
             onClick={resetSvgCode}
             title="Reset SVG code back to default badge template"
@@ -158,9 +229,19 @@ export const SvgCodeEditor: React.FC = () => {
             <span>Reset</span>
           </button>
 
+          {/* Download PNG */}
+          <button
+            onClick={downloadPng}
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md"
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+            <span>Export PNG</span>
+          </button>
+
+          {/* Download SVG */}
           <button
             onClick={downloadSvg}
-            className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Download .SVG</span>
@@ -168,12 +249,20 @@ export const SvgCodeEditor: React.FC = () => {
         </div>
       </div>
 
+      {/* Notice Banner */}
+      {noticeMsg && (
+        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center space-x-2">
+          <Check className="h-4 w-4" />
+          <span>{noticeMsg}</span>
+        </div>
+      )}
+
       {/* Bi-Directional Indicator Strip */}
       <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-xs text-sky-300 flex items-center justify-between">
         <span className="flex items-center space-x-2">
           <Orbit className="h-4 w-4 text-sky-400 animate-spin transition-all duration-600" />
           <span>
-            <strong>Repeatable Bi-Directional Glow:</strong> Click any shape in Preview to glow Code line • Hover/Touch code line or cursor to glow Preview shape!
+            <strong>Bi-Directional Vector Glow:</strong> Click any shape in Preview to glow Code line • Hover code line to highlight Preview shape!
           </span>
         </span>
         {(codeGlowLineIdx !== null || hoveredShapeIdx !== null) && (
@@ -234,12 +323,28 @@ export const SvgCodeEditor: React.FC = () => {
         <div className="space-y-1">
           <div className="flex justify-between items-center text-xs text-gray-400 font-semibold">
             <span>Real-Time Visual Preview Canvas:</span>
-            <span className="text-[10px] font-mono text-sky-400">Click shape to trigger repeatable glow</span>
+            <div className="flex items-center space-x-1 text-[10px]">
+              <span className="text-gray-500">Bg:</span>
+              <button
+                onClick={() => setCanvasBg('dark')}
+                className={`px-1.5 py-0.5 rounded ${canvasBg === 'dark' ? 'bg-sky-500 text-white font-bold' : 'bg-gray-800 text-gray-400'}`}
+              >
+                Dark
+              </button>
+              <button
+                onClick={() => setCanvasBg('light')}
+                className={`px-1.5 py-0.5 rounded ${canvasBg === 'light' ? 'bg-sky-500 text-white font-bold' : 'bg-gray-800 text-gray-400'}`}
+              >
+                Light
+              </button>
+            </div>
           </div>
 
           <div
             ref={previewContainerRef}
-            className="w-full h-96 p-6 bg-gray-950 border border-gray-800 rounded-xl flex items-center justify-center overflow-hidden relative shadow-inner"
+            className={`w-full h-96 p-6 border border-gray-800 rounded-xl flex items-center justify-center overflow-hidden relative shadow-inner transition-colors ${
+              canvasBg === 'light' ? 'bg-white' : 'bg-gray-950'
+            }`}
             dangerouslySetInnerHTML={{ __html: svgCode }}
           />
         </div>
