@@ -323,6 +323,9 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
           <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#0A1628] via-[#0F1E36] to-[#0F1E3A] border border-halo-electric/30 p-3 flex flex-col justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
             <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">TEXT → SPEECH</span><span className="px-1.5 py-0.5 bg-halo-electric/10 text-halo-cyan font-mono text-[8px] font-bold border border-halo-electric/20 clip-chamfer-sm">.WAV</span></div>
+            <div className="flex flex-col gap-2 justify-between relative z-10">
+              <p className='text-md'>Type Text With Special Characters Can Be Converted To Natural Sounding Speech In Few Seconds</p>
+            </div>
             <div className="p-2 bg-black/60 border border-halo-electric/20 clip-chamfer-sm flex items-center justify-between relative z-10"><div className="flex items-center gap-2"><div className="h-7 w-7 clip-chamfer-sm bg-halo-electric/15 border border-halo-electric/20 flex items-center justify-center text-halo-cyan"><Volume2 className="h-3.5 w-3.5" /></div><div className="font-mono text-[9px]"><div className="font-bold text-white">NATURAL AI</div><div className="text-white/40">Rate 1.0x</div></div></div><span className="px-1.5 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[8px] font-bold border border-emerald-400/20 clip-chamfer-sm">WAV</span></div>
             <div className="font-mono text-[8px] text-white/30 text-center relative z-10">MULTI-VOICE • PITCH CONTROL</div>
           </div>
@@ -343,7 +346,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
           <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#0A1A28] via-[#0F2336] to-[#0F1425] border border-halo-cyan/30 p-3 flex flex-col justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
             <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">UNIT • GEOMETRY</span><span className="px-1.5 py-0.5 bg-halo-cyan/10 text-halo-cyan font-mono text-[8px] font-bold border border-halo-cyan/20 clip-chamfer-sm">MACH & BITS</span></div>
-            <div className="flex items-center justify-around relative z-10"><div className="p-1.5 bg-black/60 clip-chamfer-sm border border-halo-cyan/20 text-center font-mono"><div className="text-[8px] text-white/40">SPEED</div><div className="text-halo-cyan font-bold text-xs">Mach 2.5</div></div><span className="text-emerald-400 font-bold">→</span><div className="p-1.5 bg-black/60 clip-chamfer-sm border border-vice-violet/20 text-center font-mono"><div className="text-[8px] text-white/40">3D</div><div className="text-violet-300 font-bold text-xs">Sphere</div></div></div>
+            <div className="flex items-center justify-around relative z-10"><div className="p-1.5 bg-black/60 clip-chamfer-sm border border-halo-cyan/20 text-center font-mono"><div className="text-[8px] text-white/40">SPEED</div><div className="text-halo-cyan font-bold text-xs">Mach 2.5</div></div><span className="text-emerald-400 font-bold">→</span><div className="p-1.5 bg-black/60 clip-chamfer-sm border border-vice-violet/20 text-center font-mono"><div className="text-[8px] text-white/40">Speed</div><div className="text-violet-300 font-bold text-xs">1666 knots</div></div></div>
             <div className="font-mono text-[8px] text-white/30 text-center relative z-10">14 SHAPES • BIT CONVERTER</div>
           </div>
         );
@@ -414,8 +417,8 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
             <div className="absolute inset-0 halo-scanlines opacity-15" />
             <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">VOICE • CAPTURE</span><span className="px-1.5 py-0.5 bg-vice-pink/10 text-vice-pink font-mono text-[8px] font-bold border border-vice-pink/20 clip-chamfer-sm">● MIC</span></div>
             <div className="space-y-2 relative z-10">
-              <div className="h-7 w-full bg-black/60 clip-chamfer-sm border border-vice-pink/20 p-1 flex items-center gap-1 overflow-hidden">
-                {[40, 70, 30, 90, 60, 100, 45, 80, 55, 95, 35, 75, 50, 85].map((h, i) => (<div key={i} className="flex-1 bg-gradient-to-t from-halo-cyan via-vice-violet to-vice-pink" style={{ height: `${h}%` }} />))}
+              <div className="h-20 w-full bg-black/60 clip-chamfer-sm border border-vice-pink/20 p-1 flex items-center gap-1 overflow-hidden">
+                {[80, 70, 90, 80, 60, 40, 45, 80, 55, 95, 35, 75, 50, 85, 45, 80, 55, 95, 35, 75, 50, 85, 90, 80, 60, 40, 45, 80, 55, 95, 35].map((h, i) => (<div key={i} className="flex-1 bg-gradient-to-t from-halo-cyan via-vice-violet to-vice-pink" style={{ height: `${h}%` }} />))}
               </div>
               <div className="p-1.5 bg-black/60 border border-white/5 clip-chamfer-sm font-mono text-[8px] text-white/50 line-clamp-2">"Transcribe mic speech into precise text notes..."</div>
             </div>

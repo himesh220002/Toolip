@@ -206,7 +206,7 @@ export const HtmlToPdf: React.FC = () => {
             value={htmlCode}
             onChange={(e) => setHtmlCode(e.target.value)}
             placeholder="Type or paste your raw HTML markup here..."
-            className="w-full h-[500px] p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-sky-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none shadow-inner leading-relaxed"
+            className="w-full h-[100vh] p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-sky-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none shadow-inner leading-relaxed"
           />
         </div>
 
@@ -224,7 +224,7 @@ export const HtmlToPdf: React.FC = () => {
             </div>
 
             {/* Render Frame */}
-            <div className="w-full h-[450px] bg-white rounded-2xl border border-slate-700 shadow-2xl overflow-auto p-2">
+            <div className="w-full h-[100vh] bg-white rounded-2xl border border-slate-700 shadow-2xl overflow-auto p-2">
               <iframe
                 title="HTML Render Preview"
                 srcDoc={htmlCode}

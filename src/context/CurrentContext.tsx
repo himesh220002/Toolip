@@ -106,6 +106,18 @@ export const INITIAL_TOOLS: ToolItem[] = [
     seoKeywords: ['note to pdf', 'notes pdf creator', 'text to pdf document'],
   },
   {
+    id: 'html-to-pdf',
+    title: 'HTML Code to PDF Converter',
+    category: 'Document & File Utilities',
+    description: 'Convert raw HTML code or uploaded .HTML files into clean, beautifully styled PDF documents.',
+    iconName: 'FileCode',
+    status: 'completed',
+    notes: 'Live HTML code editor, template presets, and clean isolated PDF printing engine.',
+    features: ['Live HTML Code Editor', '.HTML File Upload', 'Clean 1-Click PDF Export'],
+    updatedAt: new Date().toISOString(),
+    seoKeywords: ['html to pdf converter', 'convert html to pdf online', 'html code to pdf'],
+  },
+  {
     id: 'table-to-csv',
     title: 'Table to CSV Converter',
     category: 'Document & File Utilities',
@@ -411,18 +423,7 @@ export const INITIAL_TOOLS: ToolItem[] = [
     updatedAt: new Date().toISOString(),
     seoKeywords: ['tip calculator', 'calculate tip online', 'bill tip splitter'],
   },
-  {
-    id: 'html-to-pdf',
-    title: 'HTML Code to PDF Converter',
-    category: 'Document & File Utilities',
-    description: 'Convert raw HTML code or uploaded .HTML files into clean, beautifully styled PDF documents.',
-    iconName: 'FileCode',
-    status: 'completed',
-    notes: 'Live HTML code editor, template presets, and clean isolated PDF printing engine.',
-    features: ['Live HTML Code Editor', '.HTML File Upload', 'Clean 1-Click PDF Export'],
-    updatedAt: new Date().toISOString(),
-    seoKeywords: ['html to pdf converter', 'convert html to pdf online', 'html code to pdf'],
-  },
+
 ];
 
 interface CurrentContextType {

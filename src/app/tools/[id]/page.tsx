@@ -94,6 +94,7 @@ export default function ToolDetailPage() {
       case 'markdown-html': return <MarkdownToHtml />;
       case 'file-converter': return <FileConverter />;
       case 'note-to-pdf': return <NoteToPdf />;
+      case 'html-to-pdf': return <HtmlToPdf />;
       case 'table-to-csv': return <TableToCsv />;
       case 'svg-code-editor': return <SvgCodeEditor />;
       case 'passport-photo-maker': return <PassportPhotoMaker />;
@@ -119,7 +120,6 @@ export default function ToolDetailPage() {
       case 'form-filler': return <FormFiller />;
       case 'sleep-calculator': return <SleepCalculator />;
       case 'tip-calculator': return <TipCalculator />;
-      case 'html-to-pdf': return <HtmlToPdf />;
       case 'loan-calculator':
       case 'loan-emi-calculator': return <LoanCalculator />;
       default: return <div className="p-8 text-center font-mono text-sm text-white/40">Component loading — please wait.</div>;
