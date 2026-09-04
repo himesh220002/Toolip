@@ -155,7 +155,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
     switch (tool.id) {
       case 'passport-photo-maker':
         return (
-          <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#1A0A1F] via-[#141B2E] to-[#0F1A2E] border border-vice-pink/30 p-3 flex items-center justify-between overflow-hidden relative">
+          <div className="w-full h-[200px] clip-chamfer-sm bg-gradient-to-br from-[#1A0A1F] via-[#141B2E] to-[#0F1A2E] border border-vice-pink/30 p-3 flex items-center justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-25" />
             <div className="h-full aspect-[35/45] clip-chamfer-sm bg-[#0B0F19] border-2 border-dashed border-vice-pink/40 p-2 flex flex-col items-center justify-center space-y-1.5 relative">
               <div className="h-12 w-12 clip-chamfer-sm bg-vice-pink/10 border border-vice-pink/30 flex items-center justify-center text-vice-pink">
@@ -181,7 +181,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
 
       case 'pdf-merger':
         return (
-          <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#0A1628] via-[#101E36] to-[#0F1425] border border-halo-cyan/30 p-3 flex flex-col justify-between overflow-hidden relative">
+          <div className="w-full h-[200px] clip-chamfer-sm bg-gradient-to-br from-[#0A1628] via-[#101E36] to-[#0F1425] border border-halo-cyan/30 p-3 flex flex-col justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-20" />
             <div className="flex items-center justify-between border-b border-white/5 pb-1.5 relative z-10">
               <span className="font-tech font-bold text-[11px] tracking-[0.12em] text-white">PDF MERGER • SPLITTER</span>
@@ -272,7 +272,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
               <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-300 font-mono text-[8px] font-bold border border-amber-500/20 clip-chamfer-sm">LIVE</span>
             </div>
             <div className="grid grid-cols-2 gap-2 font-mono text-[10px] relative z-10">
-              <div className="p-2 bg-black/60 border border-amber-500/20 clip-chamfer-sm text-amber-300 leading-tight"># Title<br/>- Item<br/>**Bold**</div>
+              <div className="p-2 bg-black/60 border border-amber-500/20 clip-chamfer-sm text-amber-300 leading-tight"># Title<br />- Item<br />**Bold**</div>
               <div className="p-2 bg-white clip-chamfer-sm text-gunmetal-900 leading-tight text-[9px]"><div className="font-bold text-vice-violet">Title</div><div>• Item</div><div className="font-bold">Bold</div></div>
             </div>
             <div className="flex justify-between font-mono text-[8px] font-bold text-amber-300/60 relative z-10"><span>.HTML</span><span className="text-emerald-400">PDF EXPORT</span></div>
@@ -415,7 +415,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
             <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">VOICE • CAPTURE</span><span className="px-1.5 py-0.5 bg-vice-pink/10 text-vice-pink font-mono text-[8px] font-bold border border-vice-pink/20 clip-chamfer-sm">● MIC</span></div>
             <div className="space-y-2 relative z-10">
               <div className="h-7 w-full bg-black/60 clip-chamfer-sm border border-vice-pink/20 p-1 flex items-center gap-1 overflow-hidden">
-                {[40,70,30,90,60,100,45,80,55,95,35,75,50,85].map((h,i)=>(<div key={i} className="flex-1 bg-gradient-to-t from-halo-cyan via-vice-violet to-vice-pink" style={{height:`${h}%`}} />))}
+                {[40, 70, 30, 90, 60, 100, 45, 80, 55, 95, 35, 75, 50, 85].map((h, i) => (<div key={i} className="flex-1 bg-gradient-to-t from-halo-cyan via-vice-violet to-vice-pink" style={{ height: `${h}%` }} />))}
               </div>
               <div className="p-1.5 bg-black/60 border border-white/5 clip-chamfer-sm font-mono text-[8px] text-white/50 line-clamp-2">"Transcribe mic speech into precise text notes..."</div>
             </div>
@@ -438,7 +438,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
           <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-emerald-400/30 p-3 flex flex-col justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
             <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">LOAN • EMI</span><span className="px-1.5 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[8px] font-bold border border-emerald-400/20 clip-chamfer-sm">DONUT SVG</span></div>
-            <div className="flex items-center justify-between p-2 bg-black/60 border border-emerald-400/20 clip-chamfer-sm relative z-10"><div><div className="font-mono text-[8px] text-white/40">MONTHLY EMI</div><div className="text-emerald-400 font-mono font-bold">$1,245</div><div className="font-mono text-[8px] text-white/30">Principal vs Interest</div></div><div className="relative h-10 w-10 flex items-center justify-center"><svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36"><path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1E2A4A" strokeWidth="4"/><path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" strokeWidth="4" strokeDasharray="70, 100"/></svg><span className="absolute font-mono text-[7px] font-bold text-white">70%</span></div></div>
+            <div className="flex items-center justify-between p-2 bg-black/60 border border-emerald-400/20 clip-chamfer-sm relative z-10"><div><div className="font-mono text-[8px] text-white/40">MONTHLY EMI</div><div className="text-emerald-400 font-mono font-bold">$1,245</div><div className="font-mono text-[8px] text-white/30">Principal vs Interest</div></div><div className="relative h-10 w-10 flex items-center justify-center"><svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36"><path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1E2A4A" strokeWidth="4" /><path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" strokeWidth="4" strokeDasharray="70, 100" /></svg><span className="absolute font-mono text-[7px] font-bold text-white">70%</span></div></div>
             <div className="font-mono text-[8px] text-emerald-300/50 text-center relative z-10">AMORTIZATION TABLE</div>
           </div>
         );
@@ -459,7 +459,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
             <div className="absolute inset-0 halo-scanlines opacity-10" />
             <div className="flex items-center justify-between relative z-10">
               <div className="h-10 w-10 clip-chamfer-sm bg-white/[0.04] border border-white/10 flex items-center justify-center text-white/60">{icon}</div>
-              <span className="px-2 py-0.5 bg-white/5 text-white/40 font-mono text-[8px] font-bold border border-white/5 clip-chamfer-sm tracking-[0.14em]">{tool.category.toUpperCase().slice(0,12)}</span>
+              <span className="px-2 py-0.5 bg-white/5 text-white/40 font-mono text-[8px] font-bold border border-white/5 clip-chamfer-sm tracking-[0.14em]">{tool.category.toUpperCase().slice(0, 12)}</span>
             </div>
             <div className="relative z-10"><div className="font-tech font-bold text-white text-sm leading-tight">{tool.title}</div><div className="font-mono text-[10px] text-white/40 line-clamp-1">{tool.description}</div></div>
             <div className="flex justify-between items-center font-mono text-[9px] font-bold text-halo-cyan border-t border-white/5 pt-2 relative z-10"><span>→ OPEN</span><ArrowUpRight className="h-3 w-3" /></div>
@@ -472,7 +472,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
     <Link
       href={`/tools/${tool.id}`}
       onClick={handleClick}
-      className={`group relative clip-chamfer p-[1.5px] bg-gradient-to-br ${rarity.gradient} ${rarity.glow} hover:shadow-halo-strong transition-all duration-300 hover:-translate-y-1.5 hover:scale-[1.01] flex flex-col overflow-hidden`}
+      className={`group relative clip-chamfer p-[0.5px] bg-gradient-to-br ${rarity.gradient}/10 ${rarity.glow}/10 hover:shadow-halo-strong transition-all duration-300 hover:-translate-y-1.5 hover:scale-[1.01] flex flex-col overflow-hidden`}
     >
       {/* Inner armor shell */}
       <div className="relative clip-chamfer bg-gradient-to-br from-gunmetal-700 via-gunmetal-800 to-gunmetal-900 flex flex-col overflow-hidden">
@@ -550,7 +550,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
         </div>
 
         {/* Bottom accent */}
-        <div className={`h-[3px] w-full bg-gradient-to-r ${rarity.gradient} opacity-90`} />
+        <div className={`h-[3px] w-full bg-gradient-to-r ${rarity.gradient} opacity-10`} />
       </div>
     </Link>
   );

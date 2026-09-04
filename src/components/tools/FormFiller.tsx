@@ -5,8 +5,8 @@ import { User, Copy, Check, Save } from 'lucide-react';
 
 export const FormFiller: React.FC = () => {
   const [profile, setProfile] = useState({
-    fullName: 'Himesh Kumar',
-    email: 'himesh@example.com',
+    fullName: 'Himesh Satyam',
+    email: 'satyamhimesh@gmail.com',
     phone: '+91 98765 43210',
     address: '123 Tech Park Avenue, Suite 400',
     city: 'Bengaluru',

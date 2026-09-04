@@ -35,7 +35,7 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col justify-between relative overflow-hidden bg-gunmetal text-white selection:bg-vice-pink selection:text-white">
+    <div className="min-h-screen flex flex-col justify-between relative overflow-hidden bg-gunmetal/85 text-white selection:bg-vice-pink selection:text-white">
       {/* Ambient */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-vice-pink/8 rounded-full blur-[130px]" />
@@ -106,7 +106,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-b from-[#1A0A1E] via-[#2A0E3A] to-[#FF2E97]/15" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#FF7A00]/20 via-transparent to-transparent" />
                     <div className="absolute top-5 right-5 h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-gradient-to-br from-vice-neon via-vice-orange to-vice-pink opacity-90" />
-                    <div className="absolute bottom-10 left-0 right-0 h-12 opacity-25" style={{backgroundImage:'linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize:'22px 22px', transform:'perspective(200px) rotateX(62deg)', transformOrigin:'bottom'}} />
+                    <div className="absolute bottom-10 left-0 right-0 h-12 opacity-25" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '22px 22px', transform: 'perspective(200px) rotateX(62deg)', transformOrigin: 'bottom' }} />
 
                     <div className="relative p-5 sm:p-6">
                       <div className="inline-flex items-center gap-2 px-2 py-1 bg-black/50 border border-white/10 clip-chamfer-sm">
@@ -129,10 +129,10 @@ export default function Home() {
 
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { id:'passport-photo-maker', label:'PASSPORT', icon: Camera, sub:'< 80 KB' },
-                      { id:'svg-code-editor', label:'SVG EDITOR', icon: Code2, sub:'GLOW LINK' },
-                      { id:'invoice-generator', label:'INVOICE', icon: Receipt, sub:'1-PAGE PDF' },
-                    ].map((f)=>(
+                      { id: 'passport-photo-maker', label: 'PASSPORT', icon: Camera, sub: '< 80 KB' },
+                      { id: 'svg-code-editor', label: 'SVG EDITOR', icon: Code2, sub: 'GLOW LINK' },
+                      { id: 'invoice-generator', label: 'INVOICE', icon: Receipt, sub: '1-PAGE PDF' },
+                    ].map((f) => (
                       <Link key={f.id} href={`/tools/${f.id}`} className="group relative clip-chamfer-sm bg-gunmetal-800 border border-white/10 hover:border-halo-cyan/30 p-2.5 flex flex-col gap-2 transition-colors">
                         <div className="h-7 w-7 clip-chamfer-sm bg-white/[0.04] border border-white/10 flex items-center justify-center text-white/50 group-hover:text-halo-cyan transition-colors">
                           <f.icon className="h-3.5 w-3.5" />
@@ -158,7 +158,7 @@ export default function Home() {
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-tech font-bold text-sm tracking-[0.10em] text-white flex items-center gap-2">
                 <span className="h-7 w-7 clip-chamfer bg-halo-cyan/10 border border-halo-cyan/20 flex items-center justify-center text-halo-cyan"><Layers className="h-4 w-4" /></span>
-                ALL TOOLS <span className="font-mono text-xs font-black text-halo-cyan bg-halo-cyan/10 border border-halo-cyan/20 px-1.5 py-0.5 clip-chamfer-sm">{String(filteredTools.length).padStart(2,'0')}</span>
+                ALL TOOLS <span className="font-mono text-xs font-black text-halo-cyan bg-halo-cyan/10 border border-halo-cyan/20 px-1.5 py-0.5 clip-chamfer-sm">{String(filteredTools.length).padStart(2, '0')}</span>
               </h2>
               <span className="hidden sm:flex font-mono text-[8px] tracking-[0.14em] font-bold text-white/20 items-center gap-1.5"><Box className="h-3 w-3" /> GRID VIEW</span>
             </div>
@@ -169,7 +169,7 @@ export default function Home() {
                 <button onClick={() => setSearchQuery('')} className="px-4 py-2 bg-halo-cyan text-gunmetal-900 clip-chamfer-sm font-mono text-xs font-black">CLEAR SEARCH</button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-10">
                 {filteredTools.map((tool) => (
                   <ToolCard key={tool.id} tool={tool} />
                 ))}

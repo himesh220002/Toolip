@@ -9,37 +9,32 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="relative w-full mt-16 select-none">
-      {/* Top angled Halo edge - central plateau */}
-      <div className="relative h-4 w-full bg-[#1A1A1A] overflow-hidden hidden sm:block">
+    <footer className="relative w-full mt-20 select-none">
+      {/* Upward Expanding Trapezoid Header Tab Structure */}
+      <div className="relative w-full">
         <div
-          className="absolute inset-0 bg-[#1A1A1A]"
+          className="w-full bg-[#181818] relative"
           style={{
-            clipPath: 'polygon(0 100%, 0 16px, 33% 16px, 35% 0, 65% 0, 67% 16px, 100% 16px, 100% 100%, 0 100%)',
+            clipPath: 'polygon(0 26px, calc(50% - 150px) 26px, calc(50% - 110px) 0px, calc(50% + 110px) 0px, calc(50% + 150px) 26px, 100% 26px, 100% 100%, 0 100%)',
+            paddingTop: '2px',
           }}
-        />
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(255,255,255,0.06), transparent 40%)',
-            clipPath: 'polygon(0 100%, 0 16px, 33% 16px, 35% 0, 65% 0, 67% 16px, 100% 16px, 100% 100%, 0 100%)',
-          }}
-        />
-      </div>
-
-      {/* Main footer body - Halo structure, Toolip identity */}
-      <div className="bg-[#1A1A1A] border-t border-white/[0.04]">
-        <div className="max-w-[1420px] mx-auto px-4 sm:px-6 lg:px-8">
-          {/* BACK TO TOP */}
+        >
+          {/* BACK TO TOP Button centered inside the upward tab */}
           <button
             onClick={scrollToTop}
-            className="w-full flex flex-col items-center gap-1.5 py-5 sm:py-6 group"
+            className="w-full flex flex-col items-center justify-center gap-1 pt-1 pb-4 group transition-all cursor-pointer"
           >
-            <span className="text-halo-cyan text-[10px] leading-none group-hover:text-white transition-colors">▲</span>
-            <span className="font-mono text-[10px] tracking-[0.22em] font-bold text-halo-cyan group-hover:text-white transition-colors">
+            <span className="text-halo-cyan text-[9px] leading-none group-hover:text-white transition-transform group-hover:-translate-y-0.5">▲</span>
+            <span className="font-mono text-[10px] tracking-[0.24em] font-bold text-halo-cyan group-hover:text-white transition-colors">
               BACK TO TOP
             </span>
           </button>
+        </div>
+      </div>
+
+      {/* Main footer body */}
+      <div className="bg-[#181818]">
+        <div className="max-w-[1420px] mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Dotted divider 1 */}
           <div className="flex justify-center">

@@ -127,7 +127,7 @@ export default function ToolDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gunmetal text-gray-100 flex flex-col selection:bg-vice-pink selection:text-white">
+    <div className="min-h-screen bg-gunmetal/85 text-gray-100 flex flex-col selection:bg-vice-pink selection:text-white">
       {/* Accent hairline */}
       <div className="h-[3px] w-full bg-gradient-to-r from-halo-cyan via-vice-pink to-vice-orange" />
 

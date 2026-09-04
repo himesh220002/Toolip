@@ -53,7 +53,7 @@ export const INITIAL_TOOLS: ToolItem[] = [
     iconName: 'FileType',
     status: 'completed',
     notes: 'Instant image to PDF rendering with page layout controls.',
-    features: ['Supports JPG/PNG/WEBP', 'Margin & page orientation settings', 'Instant download'],
+    features: ['Supports JPG/PNG/WEBP', 'Margin & page settings', 'Instant download'],
     updatedAt: new Date().toISOString(),
     seoKeywords: ['image to pdf', 'jpg to pdf converter', 'photo to pdf'],
   },
@@ -120,7 +120,7 @@ export const INITIAL_TOOLS: ToolItem[] = [
 
   {
     id: 'svg-code-editor',
-    title: 'SVG Code Editor & Interactive Preview',
+    title: 'SVG Code Editor',
     category: 'Document & File Utilities',
     description: 'Edit SVG code with real-time preview and bi-directional element glow highlighting between code and preview shapes.',
     iconName: 'Code2',
