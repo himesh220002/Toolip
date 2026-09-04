@@ -19,7 +19,9 @@ import {
   Flame,
   ChevronDown,
   ChevronUp,
+  RotateCcw,
 } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface SleepBlock {
   id: string;
@@ -28,25 +30,34 @@ interface SleepBlock {
   endHour: number;   // 0 to 24 (float)
 }
 
+const DEFAULT_SLEEP_BLOCKS: SleepBlock[] = [
+  { id: '1', name: 'Night Sleep', startHour: 23, endHour: 6.5 }, // 11:00 PM to 6:30 AM (7.5h)
+  { id: '2', name: 'Afternoon Nap', startHour: 13.5, endHour: 14.25 }, // 1:30 PM to 2:15 PM (0.75h)
+];
+
 export const SleepCalculator: React.FC = () => {
   // Mode: Calculator vs 24-Hour Studio
   const [activeTab, setActiveTab] = useState<'studio' | 'quick'>('studio');
 
-  // Quick mode state
-  const [calcMode, setCalcMode] = useState<'wake' | 'bed'>('wake');
-  const [targetTime, setTargetTime] = useState<string>('07:00');
+  // Quick mode state with local storage persistence
+  const [calcMode, setCalcMode, resetCalcMode] = useLocalStorage<'wake' | 'bed'>('toolip_sleep_calcmode', 'wake');
+  const [targetTime, setTargetTime, resetTargetTime] = useLocalStorage<string>('toolip_sleep_targettime', '07:00');
 
-  // 24-Hour Sleep Blocks state (Supports multiple sleep sections e.g. Night sleep + Afternoon nap)
-  const [sleepBlocks, setSleepBlocks] = useState<SleepBlock[]>([
-    { id: '1', name: 'Night Sleep', startHour: 23, endHour: 6.5 }, // 11:00 PM to 6:30 AM (7.5h)
-    { id: '2', name: 'Afternoon Nap', startHour: 13.5, endHour: 14.25 }, // 1:30 PM to 2:15 PM (0.75h)
-  ]);
+  // 24-Hour Sleep Blocks state with local storage persistence
+  const [sleepBlocks, setSleepBlocks, resetSleepBlocks] = useLocalStorage<SleepBlock[]>('toolip_sleep_blocks', DEFAULT_SLEEP_BLOCKS);
 
   // Chronic Duration Toggle (Continuous up to weeks or months?)
-  const [isChronic, setIsChronic] = useState<boolean>(false);
+  const [isChronic, setIsChronic, resetIsChronic] = useLocalStorage<boolean>('toolip_sleep_chronic', false);
 
   // Clickable Line Legend Dropdown state (Line 1, Line 2, Line 3)
   const [openLegendLine, setOpenLegendLine] = useState<string | null>(null);
+
+  const resetSleepCalculator = () => {
+    resetCalcMode();
+    resetTargetTime();
+    resetSleepBlocks();
+    resetIsChronic();
+  };
 
   const toggleLegendLine = (lineId: string) => {
     setOpenLegendLine((prev) => (prev === lineId ? null : lineId));
@@ -297,24 +308,35 @@ export const SleepCalculator: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-1.5 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+            <button
+              onClick={() => setActiveTab('studio')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'studio'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-400 hover:text-white'
+                }`}
+            >
+              24-Hr Sleep Studio
+            </button>
+            <button
+              onClick={() => setActiveTab('quick')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'quick'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-400 hover:text-white'
+                }`}
+            >
+              90m Cycle Calculator
+            </button>
+          </div>
+
           <button
-            onClick={() => setActiveTab('studio')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'studio'
-              ? 'bg-purple-600 text-white shadow-md'
-              : 'text-gray-400 hover:text-white'
-              }`}
+            onClick={resetSleepCalculator}
+            title="Reset sleep schedule back to defaults"
+            className="flex items-center space-x-1 px-3 py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-gray-400 hover:text-rose-400 rounded-2xl text-xs font-bold transition-all"
           >
-            24-Hr Sleep Studio
-          </button>
-          <button
-            onClick={() => setActiveTab('quick')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'quick'
-              ? 'bg-purple-600 text-white shadow-md'
-              : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            90m Cycle Calculator
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Reset</span>
           </button>
         </div>
       </div>

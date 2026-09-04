@@ -1,13 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calculator, DollarSign, PieChart, Table, FileSpreadsheet } from 'lucide-react';
+import { Calculator, DollarSign, PieChart, Table, FileSpreadsheet, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const EmiCalculator: React.FC = () => {
-  const [amount, setAmount] = useState<number>(500000);
-  const [interestRate, setInterestRate] = useState<number>(8.5);
-  const [tenureYears, setTenureYears] = useState<number>(5);
+  const [amount, setAmount, resetAmount] = useLocalStorage<number>('toolip_emi_amount', 500000);
+  const [interestRate, setInterestRate, resetInterestRate] = useLocalStorage<number>('toolip_emi_rate', 8.5);
+  const [tenureYears, setTenureYears, resetTenureYears] = useLocalStorage<number>('toolip_emi_tenure', 5);
   const [showAmortization, setShowAmortization] = useState<boolean>(false);
+
+  const resetEmiCalculator = () => {
+    resetAmount();
+    resetInterestRate();
+    resetTenureYears();
+  };
 
   const calculateEmi = () => {
     const P = amount;
@@ -58,6 +65,17 @@ export const EmiCalculator: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Reset Control Bar */}
+      <div className="flex justify-end">
+        <button
+          onClick={resetEmiCalculator}
+          title="Reset EMI calculator back to default values"
+          className="flex items-center space-x-1 px-3 py-1.5 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-rose-400 rounded-lg text-xs font-semibold transition-all"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span>Reset Values</span>
+        </button>
+      </div>
       {/* Input Sliders & Number Fields */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-gray-900 border border-gray-800 rounded-xl">
         <div className="space-y-2">

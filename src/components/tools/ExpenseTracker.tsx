@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DollarSign, Plus, Trash2, PieChart, Tag } from 'lucide-react';
+import { DollarSign, Plus, Trash2, PieChart, Tag, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface ExpenseItem {
   id: string;
@@ -10,12 +11,14 @@ interface ExpenseItem {
   category: 'Food' | 'Transport' | 'Office' | 'Utilities' | 'Entertainment';
 }
 
+const DEFAULT_EXPENSES: ExpenseItem[] = [
+  { id: '1', title: 'Office Lunch', amount: 350, category: 'Food' },
+  { id: '2', title: 'Cab Ride', amount: 200, category: 'Transport' },
+  { id: '3', title: 'Software Subscription', amount: 1200, category: 'Office' },
+];
+
 export const ExpenseTracker: React.FC = () => {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([
-    { id: '1', title: 'Office Lunch', amount: 350, category: 'Food' },
-    { id: '2', title: 'Cab Ride', amount: 200, category: 'Transport' },
-    { id: '3', title: 'Software Subscription', amount: 1200, category: 'Office' },
-  ]);
+  const [expenses, setExpenses, resetExpenses] = useLocalStorage<ExpenseItem[]>('toolip_expense_items', DEFAULT_EXPENSES);
 
   const [titleInput, setTitleInput] = useState<string>('');
   const [amountInput, setAmountInput] = useState<number>(100);
@@ -50,6 +53,17 @@ export const ExpenseTracker: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Reset Header */}
+      <div className="flex justify-end">
+        <button
+          onClick={resetExpenses}
+          title="Reset back to sample expenses"
+          className="flex items-center space-x-1 px-3 py-1.5 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-rose-400 rounded-lg text-xs font-semibold transition-all"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span>Reset Expenses</span>
+        </button>
+      </div>
       {/* Input Row */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 bg-gray-900 border border-gray-800 rounded-xl items-end">
         <div className="space-y-1 sm:col-span-1">

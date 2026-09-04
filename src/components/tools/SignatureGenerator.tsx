@@ -15,26 +15,39 @@ import {
   Link as LinkIcon,
   Palette,
   Sliders,
+  RotateCcw,
 } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const SignatureGenerator: React.FC = () => {
-  const [fullName, setFullName] = useState<string>('Alex Johnson');
-  const [role, setRole] = useState<string>('Senior Software Engineer');
-  const [company, setCompany] = useState<string>('Toolip Inc.');
-  const [email, setEmail] = useState<string>('alex@toolip.app');
-  const [phone, setPhone] = useState<string>('+1 (555) 234-5678');
-  const [website, setWebsite] = useState<string>('https://toolip.app');
+  const [fullName, setFullName, resetFullName] = useLocalStorage<string>('toolip_sig_name', 'Alex Johnson');
+  const [role, setRole, resetRole] = useLocalStorage<string>('toolip_sig_role', 'Senior Software Engineer');
+  const [company, setCompany, resetCompany] = useLocalStorage<string>('toolip_sig_company', 'Toolip Inc.');
+  const [email, setEmail, resetEmail] = useLocalStorage<string>('toolip_sig_email', 'alex@toolip.app');
+  const [phone, setPhone, resetPhone] = useLocalStorage<string>('toolip_sig_phone', '+1 (555) 234-5678');
+  const [website, setWebsite, resetWebsite] = useLocalStorage<string>('toolip_sig_website', 'https://toolip.app');
   
   // Photo Link Filler & Avatar State
-  const [avatarUrl, setAvatarUrl] = useState<string>(
+  const [avatarUrl, setAvatarUrl, resetAvatarUrl] = useLocalStorage<string>(
+    'toolip_sig_avatar',
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
   );
   const [avatarShape, setAvatarShape] = useState<'circle' | 'rounded' | 'square'>('circle');
   const [avatarSize, setAvatarSize] = useState<number>(75); // 40px to 100px
   const [showBorder, setShowBorder] = useState<boolean>(true);
   
-  const [themeColor, setThemeColor] = useState<string>('#4f46e5');
+  const [themeColor, setThemeColor] = useLocalStorage<string>('toolip_sig_theme', '#4f46e5');
   const [copied, setCopied] = useState<boolean>(false);
+
+  const resetAllSignature = () => {
+    resetFullName();
+    resetRole();
+    resetCompany();
+    resetEmail();
+    resetPhone();
+    resetWebsite();
+    resetAvatarUrl();
+  };
 
   // Sample Photo Link Presets
   const SAMPLE_PHOTO_LINKS = [
@@ -112,13 +125,24 @@ export const SignatureGenerator: React.FC = () => {
           <span>Professional Email Signature Studio</span>
         </div>
 
-        <button
-          onClick={copySignatureHtml}
-          className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-400 hover:from-indigo-400 hover:to-sky-300 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/25 transition-all hover:scale-105"
-        >
-          {copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
-          <span>{copied ? 'Copied HTML Signature!' : 'Copy HTML Signature Code'}</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={resetAllSignature}
+            title="Reset signature fields back to default"
+            className="flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-400 hover:text-rose-400 font-semibold text-xs border border-slate-700/60 transition-all"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset</span>
+          </button>
+
+          <button
+            onClick={copySignatureHtml}
+            className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-400 hover:from-indigo-400 hover:to-sky-300 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/25 transition-all hover:scale-105"
+          >
+            {copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
+            <span>{copied ? 'Copied HTML Signature!' : 'Copy HTML Signature Code'}</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -13,15 +13,23 @@ import {
   TrendingUp,
   FileSpreadsheet,
   Copy,
+  RotateCcw,
 } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const LoanCalculator: React.FC = () => {
-  // Input State
-  const [loanAmount, setLoanAmount] = useState<number>(500000); // ₹5,00,000 default
-  const [interestRate, setInterestRate] = useState<number>(8.5); // 8.5% p.a.
-  const [tenureYears, setTenureYears] = useState<number>(5); // 5 Years
+  // Input State with Local Storage Persistence
+  const [loanAmount, setLoanAmount, resetLoanAmount] = useLocalStorage<number>('toolip_loan_amount', 500000);
+  const [interestRate, setInterestRate, resetInterestRate] = useLocalStorage<number>('toolip_loan_rate', 8.5);
+  const [tenureYears, setTenureYears, resetTenureYears] = useLocalStorage<number>('toolip_loan_tenure', 5);
   const [tenureUnit, setTenureUnit] = useState<'years' | 'months'>('years');
   const [copied, setCopied] = useState<boolean>(false);
+
+  const resetLoanCalculator = () => {
+    resetLoanAmount();
+    resetInterestRate();
+    resetTenureYears();
+  };
 
   // EMI Math Calculation
   const calculationResults = useMemo(() => {
@@ -140,9 +148,20 @@ CALCULATED BREAKDOWN:
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left Column 1: Input Controls & Sliders */}
         <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-5 backdrop-blur-xl lg:col-span-1 shadow-2xl">
-          <div className="flex items-center space-x-2 text-xs font-extrabold text-emerald-400 uppercase tracking-widest">
-            <Calculator className="h-4 w-4" />
-            <span>Loan Parameters</span>
+          <div className="flex justify-between items-center text-xs font-extrabold text-emerald-400 uppercase tracking-widest border-b border-slate-800 pb-2">
+            <span className="flex items-center space-x-2">
+              <Calculator className="h-4 w-4" />
+              <span>Loan Parameters</span>
+            </span>
+
+            <button
+              onClick={resetLoanCalculator}
+              title="Reset parameters back to defaults"
+              className="flex items-center space-x-1 px-2.5 py-1 bg-slate-950 border border-slate-800 hover:border-slate-700 text-gray-400 hover:text-rose-400 rounded-lg text-[10px] transition-all"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Reset</span>
+            </button>
           </div>
 
           {/* 1. Loan Amount */}

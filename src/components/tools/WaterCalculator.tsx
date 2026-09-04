@@ -1,12 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Droplets, Flame, Sun, Sparkles, CheckCircle2, Info, GlassWater, Dumbbell } from 'lucide-react';
+import { Droplets, Flame, Sun, Sparkles, CheckCircle2, Info, GlassWater, Dumbbell, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const WaterCalculator: React.FC = () => {
-  const [weightKg, setWeightKg] = useState<number>(70);
-  const [activityMins, setActivityMins] = useState<number>(30); // 30 mins exercise
-  const [climate, setClimate] = useState<'normal' | 'hot'>('normal');
+  const [weightKg, setWeightKg, resetWeightKg] = useLocalStorage<number>('toolip_water_weight', 70);
+  const [activityMins, setActivityMins, resetActivityMins] = useLocalStorage<number>('toolip_water_activity', 30);
+  const [climate, setClimate, resetClimate] = useLocalStorage<'normal' | 'hot'>('toolip_water_climate', 'normal');
+
+  const resetWaterCalculator = () => {
+    resetWeightKg();
+    resetActivityMins();
+    resetClimate();
+  };
 
   // Calculates daily water intake
   const calculateWaterGoal = () => {
@@ -47,9 +54,20 @@ export const WaterCalculator: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 text-xs font-mono font-bold text-cyan-300 bg-cyan-950/60 px-3 py-1.5 rounded-2xl border border-cyan-800/50">
-          <GlassWater className="h-4 w-4 text-cyan-400" />
-          <span>250ml Standard Glass Standard</span>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 text-xs font-mono font-bold text-cyan-300 bg-cyan-950/60 px-3 py-1.5 rounded-2xl border border-cyan-800/50">
+            <GlassWater className="h-4 w-4 text-cyan-400" />
+            <span>250ml Glass Standard</span>
+          </div>
+
+          <button
+            onClick={resetWaterCalculator}
+            title="Reset water intake target back to defaults"
+            className="flex items-center space-x-1 px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 text-gray-400 hover:text-rose-400 rounded-2xl text-xs font-bold transition-all"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset</span>
+          </button>
         </div>
       </div>
 

@@ -1,51 +1,78 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Printer, User, Briefcase, GraduationCap, Award, Globe, Mail, Phone, MapPin, Linkedin, Github, Code, Sparkles, Languages, Upload, Copy, Check, FileText, ArrowRight, Zap } from 'lucide-react';
+import { Printer, User, Briefcase, GraduationCap, Award, Globe, Mail, Phone, MapPin, Linkedin, Github, Code, Sparkles, Languages, Upload, Copy, Check, FileText, ArrowRight, Zap, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const ResumeFormatter: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'info' | 'summary' | 'exp' | 'edu' | 'skills' | 'parser'>('parser');
 
-  // Resume Data State (All 11 Requested Sections)
-  const [name, setName] = useState<string>('Alex Johnson');
-  const [title, setTitle] = useState<string>('Senior Full Stack Software Engineer');
-  const [email, setEmail] = useState<string>('alex.johnson@example.com');
-  const [phone, setPhone] = useState<string>('+1 (555) 345-6789');
-  const [location, setLocation] = useState<string>('San Francisco, CA');
-  const [linkedin, setLinkedin] = useState<string>('linkedin.com/in/alexjohnson');
-  const [github, setGithub] = useState<string>('github.com/alexjohnson');
+  // Resume Data State with Local Storage Persistence
+  const [name, setName, resetName] = useLocalStorage<string>('toolip_resume_name', 'Alex Johnson');
+  const [title, setTitle, resetTitle] = useLocalStorage<string>('toolip_resume_title', 'Senior Full Stack Software Engineer');
+  const [email, setEmail, resetEmail] = useLocalStorage<string>('toolip_resume_email', 'alex.johnson@example.com');
+  const [phone, setPhone, resetPhone] = useLocalStorage<string>('toolip_resume_phone', '+1 (555) 345-6789');
+  const [location, setLocation, resetLocation] = useLocalStorage<string>('toolip_resume_location', 'San Francisco, CA');
+  const [linkedin, setLinkedin, resetLinkedin] = useLocalStorage<string>('toolip_resume_linkedin', 'linkedin.com/in/alexjohnson');
+  const [github, setGithub, resetGithub] = useLocalStorage<string>('toolip_resume_github', 'github.com/alexjohnson');
 
-  const [summary, setSummary] = useState<string>(
+  const [summary, setSummary, resetSummary] = useLocalStorage<string>(
+    'toolip_resume_summary',
     'Results-driven Software Engineer with 6+ years of experience specializing in Next.js, Express.js, TypeScript, and high-performance Web Applications. Proven track record of scaling consumer web platforms and optimizing web performance.'
   );
 
-  const [experience, setExperience] = useState<string>(
+  const [experience, setExperience, resetExperience] = useLocalStorage<string>(
+    'toolip_resume_exp',
     'Senior Full Stack Developer — TechCorp Inc. (2022 – Present)\n• Spearheaded Next.js frontend architecture serving 1M+ active monthly users.\n• Architected Express.js microservices reducing backend latency by 35%.\n• Managed a cross-functional team of 6 engineers.\n\nSoftware Engineer — WebSolutions Co. (2019 – 2022)\n• Built responsive web tools and RESTful API integrations.\n• Automated CI/CD build pipelines reducing deployment times.'
   );
 
-  const [education, setEducation] = useState<string>(
+  const [education, setEducation, resetEducation] = useLocalStorage<string>(
+    'toolip_resume_edu',
     'B.S. in Computer Science — University of Technology (2015 – 2019)\nGraduated with First Class Honors (GPA: 3.8 / 4.0)'
   );
 
-  const [projects, setProjects] = useState<string>(
+  const [projects, setProjects, resetProjects] = useLocalStorage<string>(
+    'toolip_resume_projects',
     'Toolip Everyday Utilities Platform (2026)\n• Developed an everyday utilities web app with 29 client-side tools.\n• Integrated Web Audio API frequency visualizer & pdf-lib converters.'
   );
 
-  const [techSkills, setTechSkills] = useState<string>(
+  const [techSkills, setTechSkills, resetTechSkills] = useLocalStorage<string>(
+    'toolip_resume_techskills',
     'React, Next.js, TypeScript, JavaScript (ES6+), Express.js, Node.js, Tailwind CSS, PostgreSQL, Docker, Git'
   );
 
-  const [softSkills, setSoftSkills] = useState<string>(
+  const [softSkills, setSoftSkills, resetSoftSkills] = useLocalStorage<string>(
+    'toolip_resume_softskills',
     'Technical Leadership, Problem Solving, Agile / Scrum, Code Review, System Design'
   );
 
-  const [achievements, setAchievements] = useState<string>(
+  const [achievements, setAchievements, resetAchievements] = useLocalStorage<string>(
+    'toolip_resume_achievements',
     '• 1st Place Winner — Global Hackathon 2024\n• Certified AWS Solutions Architect\n• Published 2 Technical Articles on Web Performance'
   );
 
-  const [languages, setLanguages] = useState<string>(
+  const [languages, setLanguages, resetLanguages] = useLocalStorage<string>(
+    'toolip_resume_languages',
     'English (Native / Professional), Spanish (Fluent), Hindi (Conversational)'
   );
+
+  const resetAllResume = () => {
+    resetName();
+    resetTitle();
+    resetEmail();
+    resetPhone();
+    resetLocation();
+    resetLinkedin();
+    resetGithub();
+    resetSummary();
+    resetExperience();
+    resetEducation();
+    resetProjects();
+    resetTechSkills();
+    resetSoftSkills();
+    resetAchievements();
+    resetLanguages();
+  };
 
   // Quick Picker Side Panel State
   const [rawInputText, setRawInputText] = useState<string>('');
@@ -226,6 +253,15 @@ export const ResumeFormatter: React.FC = () => {
           }`}
         >
           4. Skills & Extras
+        </button>
+
+        <button
+          onClick={resetAllResume}
+          title="Reset resume back to sample profile"
+          className="px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap text-gray-400 hover:text-rose-400 hover:bg-gray-800 flex items-center space-x-1 shrink-0"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span>Reset</span>
         </button>
       </div>
 

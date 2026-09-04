@@ -35,7 +35,7 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col justify-between relative overflow-hidden bg-gunmetal/85 text-white selection:bg-vice-pink selection:text-white">
+    <div className="min-h-screen flex flex-col justify-between relative bg-gunmetal/85 text-white selection:bg-vice-pink selection:text-white">
       {/* Ambient */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-vice-pink/8 rounded-full blur-[130px]" />

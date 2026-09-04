@@ -11,10 +11,11 @@ import {
   Download,
   Sparkles,
   RefreshCw,
+  RotateCcw,
 } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
-export const MarkdownToHtml: React.FC = () => {
-  const DEFAULT_MARKDOWN = `# Toolip Professional Markdown & PDF Converter
+const DEFAULT_MARKDOWN = `# Toolip Professional Markdown & PDF Converter
 
 ### Everyday Utility Features:
 - **PDF Merger & Splitter**: Combine and re-order PDF pages instantly.
@@ -33,7 +34,8 @@ console.log("Built with Next.js, Tailwind CSS & Clean PDF Engine");
 | 1-Click PDF Export | Document Utilities | Active |
 `;
 
-  const [markdown, setMarkdown] = useState<string>(DEFAULT_MARKDOWN);
+export const MarkdownToHtml: React.FC = () => {
+  const [markdown, setMarkdown, resetMarkdown] = useLocalStorage<string>('toolip_md_input', DEFAULT_MARKDOWN);
   const [htmlOutput, setHtmlOutput] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'html' | 'rendered'>('rendered');
@@ -160,6 +162,15 @@ console.log("Built with Next.js, Tailwind CSS & Clean PDF Engine");
           >
             <Download className="h-3.5 w-3.5 text-sky-400" />
             <span>Download .HTML</span>
+          </button>
+
+          <button
+            onClick={resetMarkdown}
+            title="Reset markdown back to default template"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-400 hover:text-rose-400 font-semibold border border-slate-700/60 transition-all"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset</span>
           </button>
 
           <button

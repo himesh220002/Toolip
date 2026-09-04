@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlignLeft, Clock, Zap, RefreshCw, Trophy } from 'lucide-react';
+import { AlignLeft, Clock, Zap, RefreshCw, Trophy, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+
+const DEFAULT_WORDCOUNTER_TEXT = 'Toolip is an everyday utility platform designed for office workers, developers, writers, and students. Easily process documents, compress photos, generate QR codes, and run financial calculations.';
 
 const TYPING_PROMPTS = [
   'The quick brown fox jumps over the lazy dog. Fast typing skills help writers and office workers save hours of work every day.',
@@ -11,10 +14,8 @@ const TYPING_PROMPTS = [
 export const WordCounter: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'counter' | 'typing'>('counter');
 
-  // Text Counter State
-  const [text, setText] = useState<string>(
-    'Toolip is an everyday utility platform designed for office workers, developers, writers, and students. Easily process documents, compress photos, generate QR codes, and run financial calculations.'
-  );
+  // Text Counter State with Local Storage Persistence
+  const [text, setText, resetText] = useLocalStorage<string>('toolip_wordcounter_text', DEFAULT_WORDCOUNTER_TEXT);
 
   // Typing Test State
   const [promptIdx, setPromptIdx] = useState<number>(0);
@@ -87,23 +88,36 @@ export const WordCounter: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Tab Switcher */}
-      <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl max-w-xs">
-        <button
-          onClick={() => setActiveTab('counter')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            activeTab === 'counter' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          Word Counter
-        </button>
-        <button
-          onClick={() => setActiveTab('typing')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            activeTab === 'typing' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          Typing Speed Test
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl max-w-xs flex-1 sm:flex-none">
+          <button
+            onClick={() => setActiveTab('counter')}
+            className={`flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'counter' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Word Counter
+          </button>
+          <button
+            onClick={() => setActiveTab('typing')}
+            className={`flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'typing' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Typing Speed Test
+          </button>
+        </div>
+
+        {activeTab === 'counter' && (
+          <button
+            onClick={resetText}
+            title="Reset text back to sample paragraph"
+            className="flex items-center space-x-1 px-3 py-2 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-rose-400 rounded-xl text-xs font-semibold transition-all"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset Text</span>
+          </button>
+        )}
       </div>
 
       {activeTab === 'counter' ? (

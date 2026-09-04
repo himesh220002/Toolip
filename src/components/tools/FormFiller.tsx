@@ -1,20 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Copy, Check, Save } from 'lucide-react';
+import { User, Copy, Check, Save, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+
+const DEFAULT_PROFILE = {
+  fullName: 'Himesh Satyam',
+  email: 'satyamhimesh@gmail.com',
+  phone: '+91 98765 43210',
+  address: '123 Tech Park Avenue, Suite 400',
+  city: 'Bengaluru',
+  zip: '560001',
+  company: 'Toolip Corp',
+  title: 'Product Engineer',
+};
 
 export const FormFiller: React.FC = () => {
-  const [profile, setProfile] = useState({
-    fullName: 'Himesh Satyam',
-    email: 'satyamhimesh@gmail.com',
-    phone: '+91 98765 43210',
-    address: '123 Tech Park Avenue, Suite 400',
-    city: 'Bengaluru',
-    zip: '560001',
-    company: 'Toolip Corp',
-    title: 'Product Engineer',
-  });
-
+  const [profile, setProfile, resetProfile] = useLocalStorage('toolip_form_profile', DEFAULT_PROFILE);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const copyField = (key: keyof typeof profile, val: string) => {
@@ -38,13 +40,24 @@ export const FormFiller: React.FC = () => {
           <span className="text-xs font-semibold text-white">Form Auto-Fill Profile Store</span>
         </div>
 
-        <button
-          onClick={copyAllProfile}
-          className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-semibold text-xs shadow-md transition-colors"
-        >
-          {copiedKey === 'all' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          <span>{copiedKey === 'all' ? 'Copied Full Profile!' : 'Copy Entire Profile'}</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={resetProfile}
+            title="Reset profile to default sample data"
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-rose-400 font-semibold text-xs transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset</span>
+          </button>
+
+          <button
+            onClick={copyAllProfile}
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-semibold text-xs shadow-md transition-colors"
+          >
+            {copiedKey === 'all' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>{copiedKey === 'all' ? 'Copied Full Profile!' : 'Copy Entire Profile'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Field Grid */}

@@ -1,24 +1,37 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calendar, Clock, Copy, Check, Download, Video, ExternalLink, MapPin, Sparkles, Key, Lock, Unlock } from 'lucide-react';
+import { Calendar, Clock, Copy, Check, Download, Video, ExternalLink, MapPin, Sparkles, Key, Lock, Unlock, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const MeetingScheduler: React.FC = () => {
-  const [title, setTitle] = useState<string>('Toolip Project Sync Meeting');
-  const [description, setDescription] = useState<string>(
+  const [title, setTitle, resetTitle] = useLocalStorage<string>('toolip_meet_title', 'Toolip Project Sync Meeting');
+  const [description, setDescription, resetDescription] = useLocalStorage<string>(
+    'toolip_meet_desc',
     'Discuss upcoming tool enhancements and review completed context tags.'
   );
-  const [date, setDate] = useState<string>('2026-09-10');
-  const [startTime, setStartTime] = useState<string>('14:00');
-  const [endTime, setEndTime] = useState<string>('15:00');
-  const [location, setLocation] = useState<string>('Conference Room A');
-  const [videoLink, setVideoLink] = useState<string>('https://meet.google.com/abc-defg-hij');
+  const [date, setDate, resetDate] = useLocalStorage<string>('toolip_meet_date', '2026-09-10');
+  const [startTime, setStartTime, resetStartTime] = useLocalStorage<string>('toolip_meet_startTime', '14:00');
+  const [endTime, setEndTime, resetEndTime] = useLocalStorage<string>('toolip_meet_endTime', '15:00');
+  const [location, setLocation, resetLocation] = useLocalStorage<string>('toolip_meet_location', 'Conference Room A');
+  const [videoLink, setVideoLink, resetVideoLink] = useLocalStorage<string>('toolip_meet_videoLink', 'https://meet.google.com/abc-defg-hij');
 
   // Passcode Security Toggle State
-  const [hasPassword, setHasPassword] = useState<boolean>(true);
-  const [meetingPassword, setMeetingPassword] = useState<string>('123456');
+  const [hasPassword, setHasPassword] = useLocalStorage<boolean>('toolip_meet_hasPass', true);
+  const [meetingPassword, setMeetingPassword, resetMeetingPassword] = useLocalStorage<string>('toolip_meet_pass', '123456');
 
   const [copiedInvite, setCopiedInvite] = useState<boolean>(false);
+
+  const resetAllMeeting = () => {
+    resetTitle();
+    resetDescription();
+    resetDate();
+    resetStartTime();
+    resetEndTime();
+    resetLocation();
+    resetVideoLink();
+    resetMeetingPassword();
+  };
 
   // Format Date for display (e.g. Thursday, Sep 10, 2026)
   const getFormattedDateStr = () => {
@@ -140,9 +153,20 @@ Generated via Toolip Meeting Scheduler`;
     <div className="space-y-6">
       {/* Platform Quick Launcher Buttons */}
       <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl space-y-3">
-        <div className="flex items-center space-x-2 text-xs">
-          <Video className="h-4 w-4 text-sky-400" />
-          <span className="text-gray-300 font-semibold">Launch Video Meeting Platform:</span>
+        <div className="flex justify-between items-center text-xs">
+          <span className="flex items-center space-x-2 text-gray-300 font-semibold">
+            <Video className="h-4 w-4 text-sky-400" />
+            <span>Launch Video Meeting Platform:</span>
+          </span>
+
+          <button
+            onClick={resetAllMeeting}
+            title="Reset meeting details to defaults"
+            className="flex items-center space-x-1 px-2.5 py-1 bg-gray-950 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-rose-400 rounded-lg text-[11px] font-semibold transition-all"
+          >
+            <RotateCcw className="h-3 w-3" />
+            <span>Reset</span>
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

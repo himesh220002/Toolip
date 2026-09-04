@@ -323,8 +323,8 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
           <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#0A1628] via-[#0F1E36] to-[#0F1E3A] border border-halo-electric/30 p-3 flex flex-col justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
             <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">TEXT → SPEECH</span><span className="px-1.5 py-0.5 bg-halo-electric/10 text-halo-cyan font-mono text-[8px] font-bold border border-halo-electric/20 clip-chamfer-sm">.WAV</span></div>
-            <div className="flex flex-col gap-2 justify-between relative z-10">
-              <p className='text-md'>Type Text With Special Characters Can Be Converted To Natural Sounding Speech In Few Seconds</p>
+            <div className="flex flex-col gap-2 mx-2 justify-between relative z-10">
+              <p className='text-sm'>Type Text With Special Characters Can Be Converted To Natural Sounding Speech In Few Seconds</p>
             </div>
             <div className="p-2 bg-black/60 border border-halo-electric/20 clip-chamfer-sm flex items-center justify-between relative z-10"><div className="flex items-center gap-2"><div className="h-7 w-7 clip-chamfer-sm bg-halo-electric/15 border border-halo-electric/20 flex items-center justify-center text-halo-cyan"><Volume2 className="h-3.5 w-3.5" /></div><div className="font-mono text-[9px]"><div className="font-bold text-white">NATURAL AI</div><div className="text-white/40">Rate 1.0x</div></div></div><span className="px-1.5 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[8px] font-bold border border-emerald-400/20 clip-chamfer-sm">WAV</span></div>
             <div className="font-mono text-[8px] text-white/30 text-center relative z-10">MULTI-VOICE • PITCH CONTROL</div>
@@ -446,13 +446,156 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
           </div>
         );
 
-      case 'resume-formatter':
+      case 'invoice-generator':
         return (
           <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-emerald-400/30 p-3 flex flex-col justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
-            <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">RESUME • STUDIO</span><span className="px-1.5 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[8px] font-bold border border-emerald-400/20 clip-chamfer-sm">PDF EXPORT</span></div>
-            <div className="p-2 bg-white clip-chamfer-sm text-gunmetal-900 space-y-1 relative z-10"><div className="font-bold text-vice-violet text-xs">EXECUTIVE CV</div><div className="font-mono text-[9px] text-black/40">Experience • Education • Skills</div><div className="flex gap-1 font-mono text-[7px]"><span className="px-1 bg-gunmetal-900 text-white clip-chamfer-sm">React</span><span className="px-1 bg-gunmetal-900 text-white clip-chamfer-sm">Next.js</span><span className="px-1 bg-gunmetal-900 text-white clip-chamfer-sm">TS</span></div></div>
-            <div className="font-mono text-[8px] text-white/30 text-center relative z-10">AUTO-PARSER • QUICK PICKER</div>
+
+            {/* Header */}
+            <div className="flex justify-between items-center relative z-10 mb-1">
+              <span className="font-tech font-bold text-white text-xs">INVOICE • GENERATOR</span>
+              <span className="px-1.5 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[8px] font-bold border border-emerald-400/20 clip-chamfer-sm">
+                PREVIEW
+              </span>
+            </div>
+
+            {/* Invoice Body */}
+            <div className="flex-1 bg-white clip-chamfer-sm text-gunmetal-900 p-2 space-y-1 relative z-10 text-[9px] font-mono">
+              <div className="flex justify-between font-bold text-vice-violet">
+                <span>Acme Technologies Inc.</span>
+                <span>#INV-2026-001</span>
+              </div>
+
+              <div className="text-black/70">
+                <span className="font-bold">Client:</span> Apex Global Solutions
+              </div>
+
+              {/* Items */}
+              <div className="flex justify-between">
+                <span>Next.js Web App</span>
+                <span>₹12,000</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Express.js API</span>
+                <span>₹18,000</span>
+              </div>
+
+              {/* Totals */}
+              <div className="border-t border-black/20 pt-1 mt-1">
+                <div className="flex justify-between"><span>Subtotal:</span><span>₹30,000</span></div>
+                <div className="flex justify-between"><span>Tax (18%):</span><span>₹5,400</span></div>
+                <div className="flex justify-between font-bold text-emerald-600">
+                  <span>Total:</span><span>₹35,400</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="font-mono text-[8px] text-white/30 text-center relative z-10 mt-1">
+              AUTO-GENERATED • PDF READY
+            </div>
+          </div>
+        );
+
+
+
+
+      case 'meeting-scheduler':
+        return (
+          <div className="w-full h-auto clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-emerald-400/30 p-4 flex flex-col gap-3 overflow-hidden relative">
+            <div className="absolute inset-0 halo-scanlines opacity-15" />
+
+            {/* Header */}
+            <div className="flex justify-between items-center relative z-10">
+              <span className="font-tech font-bold text-white text-sm">MEETING • SCHEDULER</span>
+              <span className="px-2 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-400/20 clip-chamfer-sm">
+                ACTIVE
+              </span>
+            </div>
+
+            {/* Meeting Details */}
+            <div className="p-3 bg-cyan-900/40 clip-chamfer-sm text-gunmetal-900 space-y-2 relative z-10">
+              <div className="font-bold text-vice-violet text-sm">Toolip Project Sync Meeting</div>
+              <div className="font-mono text-[10px] text-white">Conference Room A • Passcode: 123456</div>
+
+              {/* Tags */}
+              <div className="flex gap-2 font-mono text-[9px] flex-wrap">
+                <span className="px-2 py-0.5 bg-gunmetal-900 text-white clip-chamfer-sm">10/09/2026</span>
+                <span className="px-2 py-0.5 bg-gunmetal-900 text-white clip-chamfer-sm">14:00 – 15:00 IST</span>
+                <span className="px-2 py-0.5 bg-gunmetal-900 text-white clip-chamfer-sm">Google Meet</span>
+              </div>
+
+              {/* Agenda */}
+              <div className="font-mono text-[9px] text-white">
+                Agenda: Discuss upcoming tool enhancements and review completed context tags.
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="font-mono text-[9px] text-white/40 text-center relative z-10">
+              AUTO-SYNC • QUICK INVITE • VIDEO LINK
+            </div>
+          </div>
+        );
+
+      case 'water-calculator':
+        return (
+          <div className="w-full h-auto clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-cyan-400/30 p-4 flex flex-row justify-between items-center overflow-hidden relative">
+            <div className="absolute inset-0 halo-scanlines opacity-15" />
+
+            {/* Left Side: Text */}
+            <div className="flex flex-col gap-2 relative z-10 text-white">
+              <span className="font-tech font-bold text-sm">WATER • INTAKE</span>
+              <span className="font-mono text-[10px] text-cyan-300">Daily Target: 2.80 L</span>
+              <span className="font-mono text-[10px] text-cyan-300">Glass Count: 11</span>
+              <span className="font-mono text-[10px] text-cyan-300">Base Weight Fluid: 2.45 L</span>
+            </div>
+
+            {/* Right Side: Bottle */}
+            <div className="relative w-12 h-32 border-2 border-cyan-400 clip-chamfer-sm bg-black/30">
+              {/* Fill Level */}
+              <div className="absolute bottom-0 w-full bg-cyan-400" style={{ height: "70%" }} />
+              <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[9px] font-mono text-white/70">
+                70%
+              </span>
+            </div>
+          </div>
+        );
+
+
+
+
+
+      case 'resume-formatter':
+        return (
+          <div className="w-full h-auto clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-emerald-400/30 p-4 flex flex-col gap-3 overflow-hidden relative">
+            <div className="absolute inset-0 halo-scanlines opacity-15" />
+
+            {/* Header */}
+            <div className="flex justify-between items-center relative z-10">
+              <span className="font-tech font-bold text-white text-sm">RESUME • STUDIO</span>
+              <span className="px-2 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-400/20 clip-chamfer-sm">
+                PDF EXPORT
+              </span>
+            </div>
+
+            {/* Resume Body */}
+            <div className="p-3 bg-white clip-chamfer-sm text-gunmetal-900 space-y-2 relative z-10">
+              <div className="font-bold text-vice-violet text-sm">EXECUTIVE CV</div>
+              <div className="font-mono text-[10px] text-black/50">Experience • Education • Skills</div>
+
+              {/* Skills */}
+              <div className="flex gap-2 font-mono text-[9px] flex-wrap">
+                <span className="px-2 py-0.5 bg-gunmetal-900 text-white clip-chamfer-sm">React</span>
+                <span className="px-2 py-0.5 bg-gunmetal-900 text-white clip-chamfer-sm">Next.js</span>
+                <span className="px-2 py-0.5 bg-gunmetal-900 text-white clip-chamfer-sm">TypeScript</span>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="font-mono text-[9px] text-white/40 text-center relative z-10">
+              AUTO-PARSER • QUICK PICKER
+            </div>
           </div>
         );
 
@@ -520,7 +663,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
                 {icon}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-tech font-bold text-[16px] leading-tight tracking-[0.02em] text-white group-hover:text-halo-cyan transition-colors line-clamp-2">
+                <h3 className="font-tech font-bold text-[18px] leading-tight tracking-[0.02em] text-white group-hover:text-halo-cyan transition-colors line-clamp-2">
                   {tool.title}
                 </h3>
                 <p className="font-mono text-[12.5px] leading-[1.5] text-white/65 line-clamp-2 mt-1.5">
@@ -534,7 +677,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
           </div>
 
           {/* Feature pills — larger, clearer */}
-          {tool.features && (
+          {/* {tool.features && (
             <div className="flex flex-wrap gap-1.5 pt-3 border-t border-white/[0.06]">
               {tool.features.slice(0, 2).map((feat, idx) => (
                 <span
@@ -549,7 +692,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
                 <Hexagon className="h-3 w-3" /> OPEN
               </span>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Bottom accent */}

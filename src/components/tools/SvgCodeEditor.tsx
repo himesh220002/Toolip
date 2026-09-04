@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Code2, Eye, Download, Copy, Check, Orbit, Sparkles, Layers, RefreshCw } from 'lucide-react';
+import { Code2, Eye, Download, Copy, Check, Orbit, Sparkles, Layers, RefreshCw, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const PRESET_SVGS: Record<string, string> = {
   Badge: `<svg width="240" height="240" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -30,7 +31,7 @@ const PRESET_SVGS: Record<string, string> = {
 };
 
 export const SvgCodeEditor: React.FC = () => {
-  const [svgCode, setSvgCode] = useState<string>(PRESET_SVGS['Badge']);
+  const [svgCode, setSvgCode, resetSvgCode] = useLocalStorage<string>('toolip_svg_code', PRESET_SVGS['Badge']);
   const [hoveredShapeIdx, setHoveredShapeIdx] = useState<number | null>(null);
   const [codeGlowLineIdx, setCodeGlowLineIdx] = useState<number | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
@@ -146,6 +147,15 @@ export const SvgCodeEditor: React.FC = () => {
           >
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             <span>{copied ? 'Copied!' : 'Copy SVG Code'}</span>
+          </button>
+
+          <button
+            onClick={resetSvgCode}
+            title="Reset SVG code back to default badge template"
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-rose-400 text-xs font-semibold"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset</span>
           </button>
 
           <button

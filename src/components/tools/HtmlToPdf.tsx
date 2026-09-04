@@ -13,10 +13,11 @@ import {
   Upload,
   FileType,
   RefreshCw,
+  RotateCcw,
 } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
-export const HtmlToPdf: React.FC = () => {
-  const DEFAULT_HTML = `<!DOCTYPE html>
+const DEFAULT_HTML = `<!DOCTYPE html>
 <html>
 <head>
   <style>
@@ -67,7 +68,8 @@ export const HtmlToPdf: React.FC = () => {
 </body>
 </html>`;
 
-  const [htmlCode, setHtmlCode] = useState<string>(DEFAULT_HTML);
+export const HtmlToPdf: React.FC = () => {
+  const [htmlCode, setHtmlCode, resetHtmlCode] = useLocalStorage<string>('toolip_html_code', DEFAULT_HTML);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [copied, setCopied] = useState<boolean>(false);
   const [themeStyle, setThemeStyle] = useState<'default' | 'modern' | 'minimalist'>('default');
@@ -171,6 +173,15 @@ export const HtmlToPdf: React.FC = () => {
           >
             <Download className="h-3.5 w-3.5 text-sky-400" />
             <span>Save .HTML File</span>
+          </button>
+
+          <button
+            onClick={resetHtmlCode}
+            title="Reset HTML template back to default"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-400 hover:text-rose-400 font-semibold border border-slate-700/60 transition-all"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset</span>
           </button>
 
           {/* Primary Action Button: PDF Export */}

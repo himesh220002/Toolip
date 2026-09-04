@@ -126,11 +126,11 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono text-[11px] text-white/45 text-center">
-            <a href="/progress" className="hover:text-halo-cyan transition-colors">Progress</a>
+            <Link href="/progress" className="hover:text-halo-cyan transition-colors">Progress</Link>
             <span className="opacity-20">•</span>
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
-            <a href="#" className="hover:text-white transition-colors">GitHub</a>
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
             <span className="opacity-20">•</span>
             <span className="text-white/25">Toolip 2026</span>
           </div>

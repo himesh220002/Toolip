@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, DollarSign, Copy, Check, Plus, Trash2, Tag, Layers } from 'lucide-react';
+import { Users, DollarSign, Copy, Check, Plus, Trash2, Tag, Layers, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface MemberItem {
   id: string;
@@ -10,26 +11,38 @@ interface MemberItem {
   sharedBy: string[]; // member IDs e.g. ["A", "B"]
 }
 
+const DEFAULT_MEMBERS = ['Alice', 'Bob', 'Charlie', 'David'];
+const DEFAULT_ITEMS: MemberItem[] = [
+  { id: '1', name: 'Large Pizza', price: 600, sharedBy: ['Alice', 'Bob', 'Charlie'] },
+  { id: '2', name: 'Coffee', price: 150, sharedBy: ['Alice'] },
+  { id: '3', name: 'Appetizer Platter', price: 400, sharedBy: ['Alice', 'Charlie', 'David'] },
+];
+
 export const BillSplitter: React.FC = () => {
-  const [splitMode, setSplitMode] = useState<'equal' | 'itemized'>('itemized');
+  const [splitMode, setSplitMode, resetSplitMode] = useLocalStorage<'equal' | 'itemized'>('toolip_bs_splitMode', 'itemized');
 
   // Equal mode state
-  const [totalBill, setTotalBill] = useState<number>(2400);
-  const [peopleCount, setPeopleCount] = useState<number>(4);
-  const [tipAmountInput, setTipAmountInput] = useState<number>(240);
+  const [totalBill, setTotalBill, resetTotalBill] = useLocalStorage<number>('toolip_bs_totalBill', 2400);
+  const [peopleCount, setPeopleCount, resetPeopleCount] = useLocalStorage<number>('toolip_bs_peopleCount', 4);
+  const [tipAmountInput, setTipAmountInput, resetTipAmountInput] = useLocalStorage<number>('toolip_bs_tipAmountInput', 240);
 
   // Itemized mode state
-  const [members, setMembers] = useState<string[]>(['Alice', 'Bob', 'Charlie', 'David']);
+  const [members, setMembers, resetMembers] = useLocalStorage<string[]>('toolip_bs_members', DEFAULT_MEMBERS);
   const [newMemberName, setNewMemberName] = useState<string>('');
-  const [items, setItems] = useState<MemberItem[]>([
-    { id: '1', name: 'Large Pizza', price: 600, sharedBy: ['Alice', 'Bob', 'Charlie'] },
-    { id: '2', name: 'Coffee', price: 150, sharedBy: ['Alice'] },
-    { id: '3', name: 'Appetizer Platter', price: 400, sharedBy: ['Alice', 'Charlie', 'David'] },
-  ]);
+  const [items, setItems, resetItems] = useLocalStorage<MemberItem[]>('toolip_bs_items', DEFAULT_ITEMS);
 
   const [newItemName, setNewItemName] = useState<string>('');
   const [newItemPrice, setNewItemPrice] = useState<number>(200);
   const [copied, setCopied] = useState<boolean>(false);
+
+  const handleResetAll = () => {
+    resetSplitMode();
+    resetTotalBill();
+    resetPeopleCount();
+    resetTipAmountInput();
+    resetMembers();
+    resetItems();
+  };
 
   // Equal mode calculations
   const equalTipPct = totalBill > 0 ? ((tipAmountInput / totalBill) * 100).toFixed(1) : '0';
@@ -130,49 +143,39 @@ export const BillSplitter: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Mode Switcher */}
-      <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl max-w-sm">
-        <button
-          onClick={() => setSplitMode('itemized')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${splitMode === 'itemized' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-            }`}
-        >
-          Portion-Based Itemized Split
-        </button>
-        <button
-          onClick={() => setSplitMode('equal')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${splitMode === 'equal' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-            }`}
-        >
-          Equal Split
-        </button>
-      </div>
-
-      {/* Tip Amount Input & Auto Percentage Badge */}
-      <div className="flex flex-wrap items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-xl gap-4">
-        <div className="flex items-center space-x-3">
-          <label className="text-xs font-semibold text-gray-300">Tip Amount Paid (₹):</label>
-          <input
-            type="number"
-            min={0}
-            value={tipAmountInput}
-            onChange={(e) => setTipAmountInput(Number(e.target.value))}
-            className="w-32 px-3 py-1.5 bg-gray-950 border border-gray-800 rounded-lg text-sm font-mono text-emerald-400 focus:outline-none"
-          />
+      {/* Control Header: Mode Switcher & Reset Button */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl max-w-sm flex-1 sm:flex-none">
+          <button
+            onClick={() => setSplitMode('itemized')}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-semibold transition-all ${splitMode === 'itemized' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+              }`}
+          >
+            Portion-Based Itemized Split
+          </button>
+          <button
+            onClick={() => setSplitMode('equal')}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-semibold transition-all ${splitMode === 'equal' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+              }`}
+          >
+            Equal Split
+          </button>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <span className="text-xs text-gray-400">Calculated Tip Percentage:</span>
-          <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold">
-            Tag: {equalTipPct}% Tip
-          </span>
-        </div>
+        <button
+          onClick={handleResetAll}
+          title="Reset back to default values"
+          className="flex items-center space-x-1.5 px-3 py-2 bg-gray-900 border border-gray-800 hover:border-gray-700 hover:bg-gray-800 rounded-xl text-gray-400 hover:text-rose-400 text-xs font-semibold transition-all"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span>Reset Data</span>
+        </button>
       </div>
 
       {splitMode === 'equal' ? (
         /* Equal Split View */
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-gray-900 border border-gray-800 rounded-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 bg-gray-900 border border-gray-800 rounded-xl">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-300">Total Bill Subtotal (₹):</label>
               <input
@@ -191,6 +194,20 @@ export const BillSplitter: React.FC = () => {
                 value={peopleCount}
                 onChange={(e) => setPeopleCount(Math.max(1, Number(e.target.value)))}
                 className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-sm text-gray-200 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold text-gray-300">Tip Amount Paid (₹):</label>
+                <span className="text-[10px] text-emerald-400 font-mono font-bold">{equalTipPct}% Tip</span>
+              </div>
+              <input
+                type="number"
+                min={0}
+                value={tipAmountInput}
+                onChange={(e) => setTipAmountInput(Number(e.target.value))}
+                className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-sm font-mono text-emerald-400 focus:outline-none"
               />
             </div>
           </div>
@@ -215,51 +232,83 @@ export const BillSplitter: React.FC = () => {
       ) : (
         /* Portion-Based Itemized Split View */
         <div className="space-y-6">
-          {/* Members List */}
-          <div className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-3">
-            <div className="flex justify-between items-center text-xs font-semibold text-gray-300">
-              <span>Group Members ({members.length}):</span>
-            </div>
+          {/* Top Row: Group Members Card & Tip Amount Paid Card Side-by-Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 1. Group Members Card */}
+            <div className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-4 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-xs font-semibold text-gray-300 border-b border-gray-800 pb-2">
+                  <span>Group Members ({members.length}):</span>
+                </div>
 
-            <div className="flex flex-wrap gap-2">
-              {members.map((m) => (
-                <span
-                  key={m}
-                  className="px-3 py-1 rounded-lg bg-gray-900 border border-gray-800 text-xs text-gray-200 flex items-center space-x-1.5"
-                >
-                  <span>{m}</span>
-                  {members.length > 1 && (
-                    <button
-                      onClick={() => removeMember(m)}
-                      className="text-rose-400 hover:text-rose-300 ml-1"
+                <div className="flex flex-wrap gap-2">
+                  {members.map((m) => (
+                    <span
+                      key={m}
+                      className="px-3 py-1 rounded-lg bg-gray-900 border border-gray-800 text-md text-gray-200 flex items-center space-x-1.5"
                     >
-                      ×
-                    </button>
-                  )}
-                </span>
-              ))}
+                      <span>{m}</span>
+                      {members.length > 1 && (
+                        <button
+                          onClick={() => removeMember(m)}
+                          className="text-rose-400 hover:text-rose-300 ml-1 font-bold"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2 pt-2 border-t border-gray-800/80">
+                <input
+                  type="text"
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  placeholder="Add member name (e.g. David)..."
+                  className="flex-1 px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-gray-200 focus:outline-none"
+                />
+                <button
+                  onClick={addMember}
+                  className="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold shrink-0"
+                >
+                  Add Member
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2 pt-1">
-              <input
-                type="text"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-                placeholder="Add member name (e.g. David)..."
-                className="px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-gray-200 focus:outline-none"
-              />
-              <button
-                onClick={addMember}
-                className="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold"
-              >
-                Add Member
-              </button>
+            {/* 2. Tip Amount Paid Card */}
+            <div className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-4 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-xs font-semibold text-gray-300 border-b border-gray-800 pb-2">
+                  <span>Tip Amount Paid:</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-mono font-bold">
+                    {equalTipPct}% Tip Share
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Tip is calculated proportionally across all consumed items and divided among members.
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-gray-800/80">
+                <label className="text-[11px] font-semibold text-gray-400">Total Tip Paid (₹):</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={tipAmountInput}
+                  onChange={(e) => setTipAmountInput(Number(e.target.value))}
+                  placeholder="Enter tip amount paid..."
+                  className="w-full px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm font-mono text-emerald-400 focus:outline-none"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Items & Mapping Table */}
+          {/* Full Width Row: 3. Purchased Items & Portion Mapping Table Card */}
           <div className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-4">
-            <div className="flex justify-between items-center text-xs font-semibold text-gray-300">
+            <div className="flex justify-between items-center text-xs font-semibold text-gray-300 border-b border-gray-800 pb-2">
               <span>Purchased Items & Portion Mapping:</span>
             </div>
 
@@ -267,24 +316,24 @@ export const BillSplitter: React.FC = () => {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="p-3 bg-gray-900 border border-gray-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+                  className="p-3 bg-gradient-to-b from-gray-50 to-purple-100 border border-gray-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="font-semibold text-white">{item.name}</span>
-                    <span className="font-mono text-emerald-400">₹{item.price}</span>
+                    <span className="font-semibold text-lg text-gray-800">{item.name}</span>
+                    <span className="font-mono text-emerald-600 font-extrabold">₹{item.price}</span>
                   </div>
 
                   {/* Member sharing pills */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-gray-500">Shared by:</span>
+                    <span className="text-[12px] text-gray-500">Shared by:</span>
                     {members.map((m) => {
                       const isShared = item.sharedBy.includes(m);
                       return (
                         <button
                           key={m}
                           onClick={() => toggleItemMember(item.id, m)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${isShared
-                            ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                          className={`px-2 py-1 rounded text-[14px] font-semibold border transition-all ${isShared
+                            ? 'bg-sky-900 text-blue-50 border-green-500'
                             : 'bg-gray-800 border-gray-700 text-gray-500 line-through'
                             }`}
                         >
@@ -304,25 +353,25 @@ export const BillSplitter: React.FC = () => {
               ))}
             </div>
 
-            {/* Add New Item */}
+            {/* Add New Item Input */}
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-800">
               <input
                 type="text"
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 placeholder="Item name (e.g. Dessert)..."
-                className="px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-gray-200 focus:outline-none"
+                className="flex-1 min-w-[140px] px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-gray-200 focus:outline-none"
               />
               <input
                 type="number"
                 value={newItemPrice}
                 onChange={(e) => setNewItemPrice(Number(e.target.value))}
                 placeholder="Price (₹)"
-                className="w-24 px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-gray-200 focus:outline-none"
+                className="w-24 px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-gray-200 focus:outline-none font-mono"
               />
               <button
                 onClick={addItem}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1"
+                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1 shrink-0"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Add Item</span>
@@ -331,35 +380,55 @@ export const BillSplitter: React.FC = () => {
           </div>
 
           {/* Individual Breakdown Result Cards */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-xs font-semibold text-gray-300">
+          <div className="space-y-4 pt-2">
+            <div className="flex flex-wrap justify-between items-center text-sm font-semibold text-gray-300 gap-2 border-b border-gray-800 pb-3">
               <span>Portion-Based Final Shares (Subtotal ₹{itemizedRes.rawSubtotal} + Tip ₹{tipAmountInput} = ₹{itemizedRes.grandTotal}):</span>
               <button
                 onClick={copyItemizedSummary}
-                className="flex items-center space-x-1 text-sky-400 hover:underline text-xs"
+                className="flex items-center space-x-1.5 px-3 py-1 bg-sky-950 border border-sky-800 rounded-lg text-sky-300 hover:text-white text-xs font-bold transition-all"
               >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                 <span>{copied ? 'Copied!' : 'Copy Summary'}</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {Object.entries(itemizedRes.memberTotals).map(([m, data]) => (
-                <div key={m} className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-white text-sm">{m}</span>
-                    <span className="font-mono font-extrabold text-emerald-400 text-lg">
+                <div key={m} className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-3 shadow-lg hover:border-gray-700 transition-all">
+                  <div className="flex justify-between items-center border-b border-gray-800/80 pb-2">
+                    <span className="font-bold text-white text-base">{m}</span>
+                    <span className="font-mono font-extrabold text-emerald-400 text-xl">
                       ₹{data.finalTotal.toFixed(2)}
                     </span>
                   </div>
-                  <div className="text-[14px] text-gray-400 space-y-1 border-t border-gray-800/60 pt-2 font-mono">
-                    <div>Subtotal: ₹{data.itemSubtotal.toFixed(2)} | Tip: ₹{data.tipShare.toFixed(2)}</div>
-                    {data.itemsList.length > 0 && (
-                      <div className="text-[14px] text-sky-300 font-sans leading-tight">
-                        <span className="font-semibold text-gray-500">Items:</span> {data.itemsList.join(', ')}
-                      </div>
-                    )}
+
+                  <div className="text-xs text-gray-400 space-y-1 font-mono">
+                    <div className="flex justify-between text-[11px]">
+                      <span>Item Subtotal:</span>
+                      <span className="text-gray-200">₹{data.itemSubtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span>Tip Share:</span>
+                      <span className="text-emerald-400">₹{data.tipShare.toFixed(2)}</span>
+                    </div>
                   </div>
+
+                  {/* Column-Wise Stacked Items Breakdown List */}
+                  {data.itemsList.length > 0 && (
+                    <div className="space-y-1.5 border-t border-gray-800/80 pt-2.5">
+                      <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                        Consumed Items:
+                      </span>
+                      <ul className="space-y-1">
+                        {data.itemsList.map((itemStr, idx) => (
+                          <li key={idx} className="flex items-start space-x-1.5 text-xs text-sky-300 font-sans leading-tight">
+                            <span className="text-emerald-400 font-bold text-xs leading-none">•</span>
+                            <span>{itemStr}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

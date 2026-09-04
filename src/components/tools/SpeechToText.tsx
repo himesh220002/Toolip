@@ -17,17 +17,19 @@ import {
   Music,
   Settings,
   Package,
+  RotateCcw,
 } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const SpeechToText: React.FC = () => {
-  const [transcriptTitle, setTranscriptTitle] = useState<string>('Voice Dictation Notes');
+  const [transcriptTitle, setTranscriptTitle, resetTranscriptTitle] = useLocalStorage<string>('toolip_speech_title', 'Voice Dictation Notes');
   const [selectedLang, setSelectedLang] = useState<string>('en-US');
   
   // Microphone Device Selector State
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
 
-  const [finalTranscript, setFinalTranscript] = useState<string>('');
+  const [finalTranscript, setFinalTranscript, resetFinalTranscript] = useLocalStorage<string>('toolip_speech_final', '');
   const [interimTranscript, setInterimTranscript] = useState<string>('');
   
   const [isListening, setIsListening] = useState<boolean>(false);
@@ -594,13 +596,14 @@ LANGUAGE DETECTED: ${selectedLang}
 
           <button
             onClick={() => {
-              setFinalTranscript('');
+              resetFinalTranscript();
+              resetTranscriptTitle();
               setInterimTranscript('');
             }}
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-gray-300 hover:text-white text-xs font-bold border border-slate-700 transition-all shadow-md"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>🔄 Reset / Clear Transcript Text</span>
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset / Clear Transcript Text</span>
           </button>
         </div>
 

@@ -9,7 +9,7 @@ export const Navbar: React.FC = () => {
   const { searchQuery, setSearchQuery } = useCurrentContext();
 
   return (
-    <header className="sticky top-0 z-40 w-full">
+    <header className="sticky top-0 z-50 w-full">
       {/* Top hazard accent line - keep as subtle brand accent */}
       <div className="h-[2px] w-full bg-gradient-to-r from-halo-cyan via-vice-pink to-vice-orange opacity-80" />
 

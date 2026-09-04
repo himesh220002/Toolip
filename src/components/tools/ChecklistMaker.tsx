@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckSquare, Square, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { CheckSquare, Square, Plus, Trash2, CheckCircle2, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface TaskItem {
   id: string;
@@ -9,13 +10,14 @@ interface TaskItem {
   completed: boolean;
 }
 
-export const ChecklistMaker: React.FC = () => {
-  const [tasks, setTasks] = useState<TaskItem[]>([
-    { id: '1', text: 'Review Next.js project setup', completed: true },
-    { id: '2', text: 'Verify Express API health endpoint', completed: true },
-    { id: '3', text: 'Check portion-based itemized bill splitter', completed: false },
-  ]);
+const DEFAULT_TASKS: TaskItem[] = [
+  { id: '1', text: 'Review Next.js project setup', completed: true },
+  { id: '2', text: 'Verify Express API health endpoint', completed: true },
+  { id: '3', text: 'Check portion-based itemized bill splitter', completed: false },
+];
 
+export const ChecklistMaker: React.FC = () => {
+  const [tasks, setTasks, resetTasks] = useLocalStorage<TaskItem[]>('toolip_checklist_tasks', DEFAULT_TASKS);
   const [newText, setNewText] = useState<string>('');
 
   const addTask = () => {
@@ -38,11 +40,21 @@ export const ChecklistMaker: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Progress Bar */}
+      {/* Progress Bar & Header */}
       <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl space-y-2">
-        <div className="flex justify-between text-xs font-semibold">
+        <div className="flex items-center justify-between text-xs font-semibold">
           <span className="text-sky-400">Project Progress: {completedCount} / {tasks.length} Done</span>
-          <span className="font-mono text-emerald-400">{progressPct}%</span>
+          <div className="flex items-center space-x-3">
+            <span className="font-mono text-emerald-400">{progressPct}%</span>
+            <button
+              onClick={resetTasks}
+              title="Reset checklist to default tasks"
+              className="flex items-center space-x-1 px-2.5 py-1 bg-gray-950 border border-gray-800 hover:border-gray-700 hover:bg-gray-800 text-gray-400 hover:text-rose-400 rounded-lg text-[11px] transition-all"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Reset</span>
+            </button>
+          </div>
         </div>
         <div className="h-2.5 w-full bg-gray-800 rounded-full overflow-hidden">
           <div style={{ width: `${progressPct}%` }} className="bg-emerald-500 h-full transition-all" />

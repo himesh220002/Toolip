@@ -1,12 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { GraduationCap, Award } from 'lucide-react';
+import { GraduationCap, Award, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const CgpaConverter: React.FC = () => {
-  const [cgpa, setCgpa] = useState<number>(8.5);
-  const [scale, setScale] = useState<'cbse' | '10pt' | 'custom'>('cbse');
-  const [customMultiplier, setCustomMultiplier] = useState<number>(9.5);
+  const [cgpa, setCgpa, resetCgpa] = useLocalStorage<number>('toolip_cgpa_value', 8.5);
+  const [scale, setScale, resetScale] = useLocalStorage<'cbse' | '10pt' | 'custom'>('toolip_cgpa_scale', 'cbse');
+  const [customMultiplier, setCustomMultiplier, resetCustomMultiplier] = useLocalStorage<number>('toolip_cgpa_mult', 9.5);
+
+  const resetCgpaConverter = () => {
+    resetCgpa();
+    resetScale();
+    resetCustomMultiplier();
+  };
 
   const calculatePercentage = () => {
     let multiplier = 9.5;
@@ -33,31 +40,42 @@ export const CgpaConverter: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Scale Selector */}
-      <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl">
+      {/* Scale Selector & Reset */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex p-1 bg-gray-900 border border-gray-800 rounded-xl flex-1 sm:flex-none">
+          <button
+            onClick={() => setScale('cbse')}
+            className={`flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              scale === 'cbse' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            CBSE Formula (x 9.5)
+          </button>
+          <button
+            onClick={() => setScale('10pt')}
+            className={`flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              scale === '10pt' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Direct 10-Point Scale (x 10)
+          </button>
+          <button
+            onClick={() => setScale('custom')}
+            className={`flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              scale === 'custom' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Custom Multiplier
+          </button>
+        </div>
+
         <button
-          onClick={() => setScale('cbse')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            scale === 'cbse' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-          }`}
+          onClick={resetCgpaConverter}
+          title="Reset CGPA converter back to defaults"
+          className="flex items-center space-x-1 px-3 py-2 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-rose-400 rounded-xl text-xs font-semibold transition-all"
         >
-          CBSE Formula (x 9.5)
-        </button>
-        <button
-          onClick={() => setScale('10pt')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            scale === '10pt' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          Direct 10-Point Scale (x 10)
-        </button>
-        <button
-          onClick={() => setScale('custom')}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-            scale === 'custom' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          Custom Multiplier
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span>Reset</span>
         </button>
       </div>
 

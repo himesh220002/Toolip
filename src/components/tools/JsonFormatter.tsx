@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Code2, Copy, Check, AlertCircle, RefreshCcw, Sparkles } from 'lucide-react';
+import { Code2, Copy, Check, AlertCircle, RefreshCcw, Sparkles, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+
+const DEFAULT_JSON = '{"name": "Toolip", "type": "Everyday Utility Platform", "tools": 19, "active": true}';
 
 export const JsonFormatter: React.FC = () => {
-  const [inputJson, setInputJson] = useState<string>(
-    '{"name": "Toolip", "type": "Everyday Utility Platform", "tools": 19, "active": true}'
-  );
+  const [inputJson, setInputJson, resetInputJson] = useLocalStorage<string>('toolip_json_input', DEFAULT_JSON);
   const [outputJson, setOutputJson] = useState<string>('');
   const [indentSpace, setIndentSpace] = useState<number>(2);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -78,6 +79,15 @@ export const JsonFormatter: React.FC = () => {
             className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-medium transition-colors"
           >
             Minify JSON
+          </button>
+
+          <button
+            onClick={resetInputJson}
+            title="Reset JSON input back to default sample"
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-rose-400 text-xs font-medium transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset</span>
           </button>
 
           <div className="flex items-center space-x-1 text-xs text-gray-400 pl-2">

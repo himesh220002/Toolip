@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Printer, Upload, Download, Save, FolderOpen, Check, Building2, Globe, FileText, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Printer, Upload, Download, Save, FolderOpen, Check, Building2, Globe, FileText, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface InvoiceItem {
   id: string;
@@ -10,28 +11,44 @@ interface InvoiceItem {
   unitPrice: number;
 }
 
-export const InvoiceGenerator: React.FC = () => {
-  // Company Branding & Details
-  const [companyName, setCompanyName] = useState<string>('Acme Technologies Inc.');
-  const [companyDomain, setCompanyDomain] = useState<string>('www.acmetech.com');
-  const [companyAddress, setCompanyAddress] = useState<string>('100 Innovation Way, Suite 400, San Francisco, CA');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+const DEFAULT_ITEMS: InvoiceItem[] = [
+  { id: '1', description: 'Next.js Web Application Design', quantity: 1, unitPrice: 12000 },
+  { id: '2', description: 'Express.js API Integration & Express Server', quantity: 1, unitPrice: 18000 },
+];
 
-  // Invoice Meta & Client Details
-  const [invoiceNumber, setInvoiceNumber] = useState<string>('INV-2026-001');
-  const [invoiceDate, setInvoiceDate] = useState<string>('2026-09-10');
-  const [dueDate, setDueDate] = useState<string>('2026-09-24');
-  const [clientName, setClientName] = useState<string>('Apex Global Solutions');
-  const [clientAddress, setClientAddress] = useState<string>('500 Enterprise Blvd, New York, NY');
-  const [taxRate, setTaxRate] = useState<number>(18);
+export const InvoiceGenerator: React.FC = () => {
+  // Company Branding & Details with Local Persistence
+  const [companyName, setCompanyName, resetCompanyName] = useLocalStorage<string>('toolip_inv_companyName', 'Acme Technologies Inc.');
+  const [companyDomain, setCompanyDomain, resetCompanyDomain] = useLocalStorage<string>('toolip_inv_companyDomain', 'www.acmetech.com');
+  const [companyAddress, setCompanyAddress, resetCompanyAddress] = useLocalStorage<string>('toolip_inv_companyAddress', '100 Innovation Way, Suite 400, San Francisco, CA');
+  const [logoUrl, setLogoUrl, resetLogoUrl] = useLocalStorage<string | null>('toolip_inv_logoUrl', null);
+
+  // Invoice Meta & Client Details with Local Persistence
+  const [invoiceNumber, setInvoiceNumber, resetInvoiceNumber] = useLocalStorage<string>('toolip_inv_invoiceNumber', 'INV-2026-001');
+  const [invoiceDate, setInvoiceDate, resetInvoiceDate] = useLocalStorage<string>('toolip_inv_invoiceDate', '2026-09-10');
+  const [dueDate, setDueDate, resetDueDate] = useLocalStorage<string>('toolip_inv_dueDate', '2026-09-24');
+  const [clientName, setClientName, resetClientName] = useLocalStorage<string>('toolip_inv_clientName', 'Apex Global Solutions');
+  const [clientAddress, setClientAddress, resetClientAddress] = useLocalStorage<string>('toolip_inv_clientAddress', '500 Enterprise Blvd, New York, NY');
+  const [taxRate, setTaxRate, resetTaxRate] = useLocalStorage<number>('toolip_inv_taxRate', 18);
 
   const [copied, setCopied] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
-  const [items, setItems] = useState<InvoiceItem[]>([
-    { id: '1', description: 'Next.js Web Application Design', quantity: 1, unitPrice: 12000 },
-    { id: '2', description: 'Express.js API Integration & Express Server', quantity: 1, unitPrice: 18000 },
-  ]);
+  const [items, setItems, resetItems] = useLocalStorage<InvoiceItem[]>('toolip_inv_items', DEFAULT_ITEMS);
+
+  const resetAllInvoice = () => {
+    resetCompanyName();
+    resetCompanyDomain();
+    resetCompanyAddress();
+    resetLogoUrl();
+    resetInvoiceNumber();
+    resetInvoiceDate();
+    resetDueDate();
+    resetClientName();
+    resetClientAddress();
+    resetTaxRate();
+    resetItems();
+  };
 
   // Load saved default template from localStorage on mount
   useEffect(() => {
@@ -248,7 +265,7 @@ export const InvoiceGenerator: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between p-3.5 bg-gray-900 border border-gray-800 rounded-xl gap-3 text-xs print:hidden">
         <div className="flex items-center space-x-2 font-semibold text-gray-300">
           <Save className="h-4 w-4 text-sky-400" />
-          <span>Invoice Template Persistence:</span>
+          <span className='text-xl'>Invoice Template Persistence:</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -273,6 +290,15 @@ export const InvoiceGenerator: React.FC = () => {
             <span>Import Template (.json)</span>
             <input type="file" accept=".json" onChange={importTemplateJson} className="hidden" />
           </label>
+
+          <button
+            onClick={resetAllInvoice}
+            title="Reset invoice back to default values"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-rose-400 font-medium"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset Data</span>
+          </button>
         </div>
       </div>
 
@@ -291,7 +317,7 @@ export const InvoiceGenerator: React.FC = () => {
               type="text"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-gray-900 border border-gray-800 rounded text-white focus:outline-none"
+              className="w-full px-2.5 py-1.5 text-lg bg-gray-900 border border-gray-800 rounded  text-white focus:outline-none"
             />
           </div>
 
@@ -301,7 +327,7 @@ export const InvoiceGenerator: React.FC = () => {
               type="text"
               value={companyDomain}
               onChange={(e) => setCompanyDomain(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-gray-900 border border-gray-800 rounded text-sky-300 font-mono focus:outline-none"
+              className="w-full px-2.5 py-1.5 text-md bg-gray-900 border border-gray-800 rounded text-sky-300 font-mono focus:outline-none"
             />
           </div>
 
@@ -311,7 +337,7 @@ export const InvoiceGenerator: React.FC = () => {
               type="text"
               value={companyAddress}
               onChange={(e) => setCompanyAddress(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-gray-900 border border-gray-800 rounded text-white focus:outline-none"
+              className="w-full px-2.5 py-1.5 text-md bg-gray-900 border border-gray-800 rounded text-white focus:outline-none"
             />
           </div>
 
@@ -365,7 +391,7 @@ export const InvoiceGenerator: React.FC = () => {
               type="text"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-gray-900 border border-gray-800 rounded text-white focus:outline-none"
+              className="w-full px-2.5 py-1.5 text-lg bg-gray-900 border border-gray-800 rounded text-white focus:outline-none"
             />
           </div>
 
@@ -375,7 +401,7 @@ export const InvoiceGenerator: React.FC = () => {
               type="text"
               value={clientAddress}
               onChange={(e) => setClientAddress(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-gray-900 border border-gray-800 rounded text-white focus:outline-none"
+              className="w-full px-2.5 py-1.5 text-md bg-gray-900 border border-gray-800 rounded text-white focus:outline-none"
             />
           </div>
         </div>

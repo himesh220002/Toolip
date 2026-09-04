@@ -170,17 +170,12 @@ export const wrapTextToSubLines = (text: string, maxChars: number): string[] => 
   return subLines;
 };
 
-export const NoteToPdf: React.FC = () => {
-  const [isMounted, setIsMounted] = useState<boolean>(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
-  const [noteTitle, setNoteTitle] = useState<string>('Executive Project Summary');
-  const [noteSubtitle, setNoteSubtitle] = useState<string>('Toolip Utility Platform Architecture & Roadmap');
-  const [authorName, setAuthorName] = useState<string>('Author & Team');
-  const [noteBody, setNoteBody] = useState<string>(
-    `1. Executive Overview:
+const DEFAULT_TITLE = 'Executive Project Summary';
+const DEFAULT_SUBTITLE = 'Toolip Utility Platform Architecture & Roadmap';
+const DEFAULT_AUTHOR = 'Author & Team';
+const DEFAULT_BODY = `1. Executive Overview:
 Toolip features 32+ standalone client-side utility tools designed for high performance, zero data latency, and privacy compliance.
 
 2. Core Technical Architecture:
@@ -195,8 +190,25 @@ Toolip features 32+ standalone client-side utility tools designed for high perfo
 
 4. Ultra-Thin Sleek Footer Stamps:
 • Every page features a minimal, ultra-thin 1-line footer stamp displaying platform attribution and dynamic page numbers.
-• Footer stamps are positioned at the absolute bottom of each page.`
-  );
+• Footer stamps are positioned at the absolute bottom of each page.`;
+
+export const NoteToPdf: React.FC = () => {
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const [noteTitle, setNoteTitle, resetNoteTitle] = useLocalStorage<string>('toolip_notepdf_title', DEFAULT_TITLE);
+  const [noteSubtitle, setNoteSubtitle, resetNoteSubtitle] = useLocalStorage<string>('toolip_notepdf_subtitle', DEFAULT_SUBTITLE);
+  const [authorName, setAuthorName, resetAuthorName] = useLocalStorage<string>('toolip_notepdf_author', DEFAULT_AUTHOR);
+  const [noteBody, setNoteBody, resetNoteBody] = useLocalStorage<string>('toolip_notepdf_body', DEFAULT_BODY);
+
+  const resetAllNoteData = () => {
+    resetNoteTitle();
+    resetNoteSubtitle();
+    resetAuthorName();
+    resetNoteBody();
+  };
 
   // Styling & Theme State
   const [theme, setTheme] = useState<'corporate' | 'emerald' | 'minimal' | 'midnight' | 'sunset'>('sunset');
@@ -1139,6 +1151,15 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
                 >
                   <Wand2 className="h-3 w-3" />
                   <span>Auto Format</span>
+                </button>
+
+                <button
+                  onClick={resetAllNoteData}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/50 text-[10px] font-extrabold flex items-center space-x-1 transition-all"
+                  title="Reset note text to initial template"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Reset Note</span>
                 </button>
 
                 <span className="font-mono text-[10px] text-gray-400">
