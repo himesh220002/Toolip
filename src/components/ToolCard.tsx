@@ -232,7 +232,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
     switch (tool.id) {
       case 'passport-photo-maker':
         return (
-          <div className="w-full h-[200px] clip-chamfer-sm bg-gradient-to-br from-[#1A0A1F] via-[#141B2E] to-[#0F1A2E] border border-vice-pink/30 p-3 flex items-center justify-between overflow-hidden relative">
+          <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#1A0A1F] via-[#141B2E] to-[#0F1A2E] border border-vice-pink/30 p-3 flex items-center justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-25" />
             <div className="h-full aspect-[35/45] clip-chamfer-sm bg-[#0B0F19] border-2 border-dashed border-vice-pink/40 p-2 flex flex-col items-center justify-center space-y-1.5 relative">
               <div className="h-12 w-12 clip-chamfer-sm bg-vice-pink/10 border border-vice-pink/30 flex items-center justify-center text-vice-pink">
@@ -258,7 +258,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
 
       case 'pdf-merger':
         return (
-          <div className="w-full h-[200px] clip-chamfer-sm bg-gradient-to-br from-[#0A1628] via-[#101E36] to-[#0F1425] border border-halo-cyan/30 p-3 flex flex-col justify-between overflow-hidden relative">
+          <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#0A1628] via-[#101E36] to-[#0F1425] border border-halo-cyan/30 p-3 flex flex-col justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-20" />
             <div className="flex items-center justify-between border-b border-white/5 pb-1.5 relative z-10">
               <span className="font-tech font-bold text-[11px] tracking-[0.12em] text-white">PDF MERGER • SPLITTER</span>
@@ -649,7 +649,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
 
       case 'meeting-scheduler':
         return (
-          <div className="w-full h-auto clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-emerald-400/30 p-4 flex flex-col gap-3 overflow-hidden relative">
+          <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-emerald-400/30 p-4 flex flex-col gap-3 overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
 
             {/* Header */}
@@ -674,7 +674,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
 
               {/* Agenda */}
               <div className="font-mono text-[9px] text-white">
-                Agenda: Discuss upcoming tool enhancements and review completed context tags.
+                Agenda: Discuss upcoming tool enhancements.
               </div>
             </div>
 
@@ -687,7 +687,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
 
       case 'water-calculator':
         return (
-          <div className="w-full h-auto clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-cyan-400/30 p-4 flex flex-row justify-between items-center overflow-hidden relative">
+          <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-cyan-400/30 p-4 flex flex-row justify-between items-center overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
 
             {/* Left Side: Text */}
@@ -715,7 +715,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
 
       case 'resume-formatter':
         return (
-          <div className="w-full h-auto clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-emerald-400/30 p-4 flex flex-col gap-3 overflow-hidden relative">
+          <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#081A16] via-[#0F2420] to-[#0F1425] border border-emerald-400/30 p-4 flex flex-col gap-3 overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
 
             {/* Header */}
