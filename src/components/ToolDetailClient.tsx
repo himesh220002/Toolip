@@ -150,7 +150,7 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
       case 'form-filler': return <FormFiller />;
       case 'sleep-calculator': return <SleepCalculator />;
       case 'tip-calculator':
-      case 'mind-map-editor': return <MindMapEditor />;
+      case 'mind-map-editor': return <MindMapEditor isExpanded={isWorkspaceExpanded} />;
       case 'loan-calculator':
       case 'loan-emi-calculator': return <LoanCalculator />;
       default: return <div className="p-8 text-center font-mono text-sm text-white/40">Component loading — please wait.</div>;
@@ -274,35 +274,49 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
         }>
           <div className={`relative bg-[#0A0F1F] overflow-hidden flex flex-col ${isWorkspaceExpanded ? 'h-full w-full rounded-none flex-1 min-h-0' : 'clip-chamfer'}`}>
             {/* Terminal header */}
-            <div className="flex items-center justify-between px-3 sm:px-4 py-1 bg-gunmetal-900 border-b border-white/10 shrink-0 min-h-[34px]">
-              <div className="flex items-center gap-2">
-                <div className="h-5 w-5 clip-chamfer-sm bg-halo-cyan/15 border border-halo-cyan/30 flex items-center justify-center text-halo-cyan">
-                  <Zap className="h-3 w-3" />
+            <div className={`flex items-center justify-between bg-gunmetal-900 border-b border-white/10 shrink-0 transition-all ${
+              isWorkspaceExpanded ? 'px-3 sm:px-4 py-1.5 min-h-[36px]' : 'px-4 sm:px-6 py-3.5'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`clip-chamfer-sm bg-halo-cyan/15 border border-halo-cyan/30 flex items-center justify-center text-halo-cyan transition-all ${
+                  isWorkspaceExpanded ? 'h-6 w-6' : 'h-8 w-8'
+                }`}>
+                  <Zap className={isWorkspaceExpanded ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="font-tech font-bold text-xs tracking-[0.10em] text-white">TOOL WORKSPACE</div>
-                  <div className="hidden md:block font-mono text-[9px] tracking-[0.10em] font-bold text-white/40">// ACTIVE • CLIENT-SIDE • ZERO TELEMETRY</div>
+                <div>
+                  <div className={`font-tech font-bold tracking-[0.12em] text-white ${
+                    isWorkspaceExpanded ? 'text-xs' : 'text-sm'
+                  }`}>
+                    {isWorkspaceExpanded ? 'TOOL WORKSPACE // ACTIVE' : 'TOOL WORKSPACE // ACTIVE'}
+                  </div>
+                  <div className={`font-mono tracking-[0.12em] font-bold text-white/40 ${
+                    isWorkspaceExpanded ? 'text-[9px] hidden sm:block' : 'text-[10px]'
+                  }`}>
+                    CLIENT-SIDE • ZERO TELEMETRY • INSTANT
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 font-mono text-[9px] tracking-[0.12em] font-bold text-white/30">
-                <div className="hidden sm:flex items-center gap-1.5">
+              <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.14em] font-bold text-white/30">
+                <div className="hidden sm:flex items-center gap-2">
                   <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_6px_#10b981]" /> ONLINE
                 </div>
 
                 <button
                   onClick={() => setIsWorkspaceExpanded(!isWorkspaceExpanded)}
                   title={isWorkspaceExpanded ? 'Minimize Workspace (Esc)' : 'Expand Workspace to Full Screen'}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-white/[0.06] hover:bg-halo-cyan/20 border border-white/15 hover:border-halo-cyan/50 clip-chamfer-sm text-white/90 hover:text-halo-cyan transition-all cursor-pointer shadow-sm"
+                  className={`flex items-center gap-1.5 bg-white/[0.06] hover:bg-halo-cyan/20 border border-white/15 hover:border-halo-cyan/50 clip-chamfer-sm text-white/90 hover:text-halo-cyan transition-all cursor-pointer shadow-sm ${
+                    isWorkspaceExpanded ? 'px-2 py-0.5 text-[9px]' : 'px-3 py-1 text-[10px]'
+                  }`}
                 >
                   {isWorkspaceExpanded ? (
                     <>
-                      <Minimize2 className="h-3 w-3 text-vice-pink" />
-                      <span className="font-bold tracking-widest text-[9px]">MINIMIZE</span>
+                      <Minimize2 className="h-3.5 w-3.5 text-vice-pink" />
+                      <span className="font-bold tracking-widest">MINIMIZE</span>
                     </>
                   ) : (
                     <>
-                      <Maximize2 className="h-3 w-3 text-halo-cyan" />
-                      <span className="font-bold tracking-widest text-[9px]">EXPAND</span>
+                      <Maximize2 className="h-3.5 w-3.5 text-halo-cyan" />
+                      <span className="font-bold tracking-widest">EXPAND</span>
                     </>
                   )}
                 </button>

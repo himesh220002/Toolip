@@ -150,7 +150,11 @@ const NoteCardEditor: React.FC<{
   );
 };
 
-export const MindMapEditor: React.FC = () => {
+interface MindMapEditorProps {
+  isExpanded?: boolean;
+}
+
+export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false }) => {
   // Graph State
   const [nodes, setNodes] = useState<MindNode[]>([]);
   const [edges, setEdges] = useState<MindEdge[]>([]);
@@ -1207,45 +1211,60 @@ export const MindMapEditor: React.FC = () => {
       {/* Drawing Canvas Card */}
       <div className="flex flex-col w-full flex-1 h-[100vh] min-h-[90vh] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative shadow-2xl">
         {/* Top Header Bar */}
-        <div className="flex flex-wrap items-center justify-between px-6 py-3 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 z-20 gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-lg shadow-lg shadow-cyan-500/20">
-              <Sparkles className="w-5 h-5 text-white animate-pulse" />
+        <div className={`flex flex-wrap items-center justify-between bg-slate-900/90 backdrop-blur-md border-b border-slate-800 z-20 gap-2.5 transition-all ${
+          isExpanded ? 'px-3 sm:px-4 py-1.5' : 'px-6 py-3'
+        }`}>
+          <div className="flex items-center gap-2.5">
+            <div className={`bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-lg shadow-lg shadow-cyan-500/20 transition-all ${
+              isExpanded ? 'p-1.5' : 'p-2'
+            }`}>
+              <Sparkles className={`text-white animate-pulse ${isExpanded ? 'w-4 h-4' : 'w-5 h-5'}`} />
             </div>
-            <div>
-              <h2 className="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+            <div className={`flex ${isExpanded ? 'flex-row items-center gap-2' : 'flex-col'}`}>
+              <h2 className={`font-bold bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent transition-all whitespace-nowrap ${
+                isExpanded ? 'text-sm sm:text-base' : 'text-lg'
+              }`}>
                 Mind Map Editor
               </h2>
-              <p className="text-xs text-slate-400">Interactive node builder & GraphML export/import</p>
+              {isExpanded && <span className="text-slate-600 text-xs hidden sm:inline">•</span>}
+              <p className={`text-slate-400 whitespace-nowrap ${isExpanded ? 'text-[10px]' : 'text-xs'}`}>
+                Interactive node builder & GraphML export/import
+              </p>
             </div>
           </div>
 
           {/* Action Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={handleAutoArrangeGraph}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-lg shadow-lg shadow-emerald-500/20 transition"
+              className={`flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-lg shadow-lg shadow-emerald-500/20 transition ${
+                isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'
+              }`}
               title="Auto-arrange & beautify mind map structure"
             >
-              <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+              <Sparkles className={isExpanded ? 'w-3 h-3 text-slate-950' : 'w-3.5 h-3.5 text-slate-950'} />
               Auto-Arrange
             </button>
 
             <button
               onClick={handleResetToDefaultMap}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition"
+              className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition ${
+                isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+              }`}
               title="Reset mind map to default sample map"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+              <RotateCcw className={isExpanded ? 'w-3 h-3 text-cyan-400' : 'w-3.5 h-3.5 text-cyan-400'} />
               Reset Map
             </button>
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition"
+              className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition ${
+                isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+              }`}
               title="Open mindmap.graphml file"
             >
-              <Upload className="w-3.5 h-3.5 text-indigo-400" />
+              <Upload className={isExpanded ? 'w-3 h-3 text-indigo-400' : 'w-3.5 h-3.5 text-indigo-400'} />
               Open .graphml
             </button>
             <input
@@ -1258,9 +1277,11 @@ export const MindMapEditor: React.FC = () => {
 
             <button
               onClick={handleSaveGraphML}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-lg shadow-cyan-500/25 transition"
+              className={`flex items-center gap-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-lg shadow-lg shadow-cyan-500/25 transition ${
+                isExpanded ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
+              }`}
             >
-              <Download className="w-3.5 h-3.5 text-slate-950" />
+              <Download className={isExpanded ? 'w-3 h-3 text-slate-950' : 'w-3.5 h-3.5 text-slate-950'} />
               Save mindmap.graphml
             </button>
           </div>
