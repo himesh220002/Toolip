@@ -30,7 +30,15 @@ import {
   Crown,
   Network,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  StickyNote,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  List,
+  ListOrdered,
+  MoreHorizontal
 } from 'lucide-react';
 
 export interface MindNode {
@@ -47,6 +55,8 @@ export interface MindNode {
   color?: string;
   parentId?: string | null;
   details?: string;
+  note?: string;
+  notes?: string[];
 }
 
 export interface MindEdge {
@@ -100,6 +110,46 @@ const COLOR_OPTIONS = [
   { label: 'Slate', hex: '#94a3b8' }
 ];
 
+const NoteCardEditor: React.FC<{
+  nodeId: string;
+  noteIndex: number;
+  initialHtml: string;
+  onChange: (nodeId: string, index: number, html: string) => void;
+}> = ({ nodeId, noteIndex, initialHtml, onChange }) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      if (document.activeElement !== editorRef.current) {
+        editorRef.current.innerHTML = initialHtml && initialHtml.trim() !== '' ? initialHtml : '<div>Type your notes here...</div>';
+      }
+    }
+  }, [nodeId, noteIndex, initialHtml]);
+
+  return (
+    <div
+      ref={editorRef}
+      contentEditable
+      suppressContentEditableWarning
+      onFocus={(e) => {
+        if (e.currentTarget.innerHTML === '<div>Type your notes here...</div>') {
+          e.currentTarget.innerHTML = '';
+        }
+      }}
+      onInput={(e) => {
+        onChange(nodeId, noteIndex, e.currentTarget.innerHTML);
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.innerHTML.trim()) {
+          e.currentTarget.innerHTML = '<div>Type your notes here...</div>';
+        }
+        onChange(nodeId, noteIndex, e.currentTarget.innerHTML);
+      }}
+      className="w-full p-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl text-xs text-slate-800 focus:outline-none min-h-[110px] max-h-[220px] overflow-y-auto scrollable-note leading-relaxed space-y-1 [&_h1]:text-base [&_h1]:font-extrabold [&_h1]:text-slate-900 [&_h1]:my-1 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-slate-800 [&_h2]:my-1 [&_b]:font-bold [&_b]:text-slate-900 [&_i]:italic [&_u]:underline [&_s]:line-through [&_del]:line-through [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1 [&_a]:text-indigo-600 [&_a]:underline"
+    />
+  );
+};
+
 export const MindMapEditor: React.FC = () => {
   // Graph State
   const [nodes, setNodes] = useState<MindNode[]>([]);
@@ -133,6 +183,7 @@ export const MindMapEditor: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragRafRef = useRef<number | null>(null);
 
   const showNotification = (msg: string) => {
     setStatusMessage(msg);
@@ -157,6 +208,11 @@ export const MindMapEditor: React.FC = () => {
     if (!canvasEl) return;
 
     const handleNativeWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('.scrollable-note, textarea, .overflow-y-auto, [contenteditable="true"]')) {
+        return; // Allow mouse scrolling inside note card text containers!
+      }
+
       e.preventDefault();
       e.stopPropagation();
       const delta = e.deltaY < 0 ? 1.1 : 0.9;
@@ -169,9 +225,91 @@ export const MindMapEditor: React.FC = () => {
     };
   }, []);
 
-  // Node Details Helper Functions
+  // Active Note Popover & Dropdown State
+  const [activeNoteNodeId, setActiveNoteNodeId] = useState<string | null>(null);
+  const [noteSearchQuery, setNoteSearchQuery] = useState<string>('');
+  const [activeNoteMenuIndex, setActiveNoteMenuIndex] = useState<number | null>(null);
+  const [closedNoteIndices, setClosedNoteIndices] = useState<number[]>([]);
+
+  // Helper to retrieve notes array for a node
+  const getNodeNotes = (node: MindNode): string[] => {
+    if (Array.isArray(node.notes) && node.notes.length > 0) {
+      return node.notes;
+    }
+    if (node.note && node.note.trim() !== '') {
+      return [node.note];
+    }
+    return [''];
+  };
+
+  // Helper to check if node has any non-empty note content
+  const hasNodeAnyNote = (node: MindNode): boolean => {
+    if (Array.isArray(node.notes) && node.notes.length > 0) {
+      return node.notes.some((n) => n && n.replace(/<[^>]*>/g, '').trim() !== '');
+    }
+    return !!(node.note && node.note.replace(/<[^>]*>/g, '').trim() !== '');
+  };
+
+  // Node Details & Note Helper Functions
   const handleUpdateNodeDetails = (nodeId: string, detailsText: string) => {
     setNodes((prev) => prev.map((n) => (n.id === nodeId ? { ...n, details: detailsText } : n)));
+  };
+
+  const handleUpdateNodeNoteAtIndex = (nodeId: string, index: number, noteHtml: string) => {
+    setNodes((prev) =>
+      prev.map((n) => {
+        if (n.id === nodeId) {
+          const currentNotes = getNodeNotes(n);
+          const updatedNotes = [...currentNotes];
+          updatedNotes[index] = noteHtml;
+          return {
+            ...n,
+            notes: updatedNotes,
+            note: updatedNotes[0] || ''
+          };
+        }
+        return n;
+      })
+    );
+  };
+
+  const handleAddParallelNote = (nodeId: string) => {
+    setNodes((prev) =>
+      prev.map((n) => {
+        if (n.id === nodeId) {
+          const currentNotes = getNodeNotes(n);
+          const updatedNotes = [...currentNotes, ''];
+          return {
+            ...n,
+            notes: updatedNotes,
+            note: updatedNotes[0] || ''
+          };
+        }
+        return n;
+      })
+    );
+    showNotification('Added parallel note card!');
+  };
+
+  const handleDeleteNoteAtIndex = (nodeId: string, index: number) => {
+    setNodes((prev) =>
+      prev.map((n) => {
+        if (n.id === nodeId) {
+          const currentNotes = getNodeNotes(n);
+          if (currentNotes.length <= 1) {
+            return { ...n, notes: [''], note: '' };
+          }
+          const updatedNotes = currentNotes.filter((_, idx) => idx !== index);
+          return {
+            ...n,
+            notes: updatedNotes,
+            note: updatedNotes[0] || ''
+          };
+        }
+        return n;
+      })
+    );
+    showNotification('Deleted note card');
   };
 
   const generateDefaultNodeDetails = (node: MindNode): string => {
@@ -332,7 +470,9 @@ export const MindMapEditor: React.FC = () => {
         emoji: n.emoji || '',
         color: n.color || '#00f2fe',
         parentId: n.parentId || null,
-        details: n.details || ''
+        details: n.details || '',
+        note: n.note || '',
+        notes: n.notes || []
       });
 
       const labelEscaped = (n.text || '')
@@ -396,6 +536,8 @@ export const MindMapEditor: React.FC = () => {
         let color = '#00f2fe';
         let parentId: string | null = null;
         let details = '';
+        let note = '';
+        let notes: string[] = [];
 
         // Try extracting geometry from <y:RectD>
         const rectEl = nEl.querySelector('data[key="d1"] y\\:RectD, y\\:RectD, RectD');
@@ -430,6 +572,8 @@ export const MindMapEditor: React.FC = () => {
             if (dataObj.color) color = dataObj.color;
             if (dataObj.parentId !== undefined) parentId = dataObj.parentId;
             if (dataObj.details) details = dataObj.details;
+            if (dataObj.note) note = dataObj.note;
+            if (Array.isArray(dataObj.notes)) notes = dataObj.notes;
           } catch (e) {
             console.warn('Failed to parse node JSON payload', e);
           }
@@ -441,7 +585,7 @@ export const MindMapEditor: React.FC = () => {
           depth = 0;
         }
 
-        parsedNodes.push({ id, text, x, y, width, height, isRoot, depth, collapsed, emoji, color, parentId, details });
+        parsedNodes.push({ id, text, x, y, width, height, isRoot, depth, collapsed, emoji, color, parentId, details, note, notes });
       });
 
       edgeEls.forEach((eEl, idx) => {
@@ -569,15 +713,19 @@ export const MindMapEditor: React.FC = () => {
       });
   }, []);
 
-  // Sync state to localStorage whenever nodes or edges update
+  // Sync state to localStorage whenever nodes or edges update (Debounced 400ms to eliminate drag lag)
   useEffect(() => {
     if (!isInitialized) return;
-    try {
-      localStorage.setItem(STORAGE_KEY_NODES, JSON.stringify(nodes));
-      localStorage.setItem(STORAGE_KEY_EDGES, JSON.stringify(edges));
-    } catch (e) {
-      console.warn('Failed to save mindmap state to localStorage', e);
-    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY_NODES, JSON.stringify(nodes));
+        localStorage.setItem(STORAGE_KEY_EDGES, JSON.stringify(edges));
+      } catch (e) {
+        console.warn('Failed to save mindmap state to localStorage', e);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
   }, [nodes, edges, isInitialized]);
 
   // Reset to Default Sample Map & Clear Storage
@@ -590,6 +738,122 @@ export const MindMapEditor: React.FC = () => {
     }
     loadDefaultSampleMap();
     showNotification('Reset mind map to default sample map!');
+  };
+
+  // Auto-Arrange & Beautify Mind Map Layout
+  const handleAutoArrangeGraph = () => {
+    if (nodes.length === 0) return;
+
+    // Identify root nodes (nodes marked isRoot, nodes with no parentId, or nodes whose parentId doesn't exist)
+    const rootNodes = nodes.filter(
+      (n) => n.isRoot || !n.parentId || !nodes.some((other) => other.id === n.parentId)
+    );
+
+    if (rootNodes.length === 0 && nodes.length > 0) {
+      rootNodes.push(nodes[0]);
+    }
+
+    const updatedNodes = [...nodes];
+
+    // Helper to get direct children
+    const getChildren = (parentId: string) =>
+      updatedNodes.filter((n) => n.parentId === parentId && n.id !== parentId);
+
+    // Recursive helper to calculate total subtree height needed
+    const getSubtreeHeight = (nodeId: string): number => {
+      const children = getChildren(nodeId);
+      if (children.length === 0) return 76; // Base height per node
+      let h = 0;
+      children.forEach((c) => {
+        h += getSubtreeHeight(c.id);
+      });
+      return Math.max(76, h);
+    };
+
+    // Recursive subtree placer
+    const layoutSubtree = (nodeId: string, startX: number, startY: number, depth: number, dir: 'left' | 'right') => {
+      const idx = updatedNodes.findIndex((n) => n.id === nodeId);
+      if (idx !== -1) {
+        updatedNodes[idx] = {
+          ...updatedNodes[idx],
+          x: startX,
+          y: startY,
+          depth: depth,
+          isRoot: false
+        };
+      }
+
+      const children = getChildren(nodeId);
+      if (children.length === 0) return;
+
+      const totalHeight = children.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
+      let currentY = startY - totalHeight / 2 + 38;
+
+      children.forEach((child) => {
+        const cHeight = getSubtreeHeight(child.id);
+        const cY = currentY + cHeight / 2 - 38;
+        const nextX = dir === 'right' ? startX + 240 : startX - 240;
+        layoutSubtree(child.id, nextX, cY, depth + 1, dir);
+        currentY += cHeight;
+      });
+    };
+
+    let currentRootY = 0;
+
+    rootNodes.forEach((root) => {
+      const rootIdx = updatedNodes.findIndex((n) => n.id === root.id);
+      if (rootIdx !== -1) {
+        updatedNodes[rootIdx] = {
+          ...updatedNodes[rootIdx],
+          x: 0,
+          y: currentRootY,
+          depth: 0,
+          isRoot: true
+        };
+      }
+
+      const children = getChildren(root.id);
+      if (children.length > 0) {
+        const rightChildren = children.filter((_, idx) => idx % 2 === 0);
+        const leftChildren = children.filter((_, idx) => idx % 2 === 1);
+
+        // Right Wing Layout
+        const totalRightHeight = rightChildren.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
+        let startRightY = currentRootY - totalRightHeight / 2 + 38;
+
+        rightChildren.forEach((child) => {
+          const childHeight = getSubtreeHeight(child.id);
+          const childY = startRightY + childHeight / 2 - 38;
+          layoutSubtree(child.id, 280, childY, 1, 'right');
+          startRightY += childHeight;
+        });
+
+        // Left Wing Layout
+        const totalLeftHeight = leftChildren.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
+        let startLeftY = currentRootY - totalLeftHeight / 2 + 38;
+
+        leftChildren.forEach((child) => {
+          const childHeight = getSubtreeHeight(child.id);
+          const childY = startLeftY + childHeight / 2 - 38;
+          layoutSubtree(child.id, -280, childY, 1, 'left');
+          startLeftY += childHeight;
+        });
+      }
+
+      const treeHeight = Math.max(
+        getChildren(root.id).reduce((sum, c) => sum + getSubtreeHeight(c.id), 0),
+        360
+      );
+      currentRootY += treeHeight + 220;
+    });
+
+    setNodes(updatedNodes);
+
+    // Recenter canvas camera
+    setPan({ x: 450, y: 280 });
+    setZoom(0.95);
+
+    showNotification('✨ Auto-arranged mind map into clean, beautiful structure!');
   };
 
   // Save mindmap.graphml locally & sync to root folder
@@ -666,19 +930,39 @@ export const MindMapEditor: React.FC = () => {
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    const coords = getCanvasCoords(e.clientX, e.clientY);
-    setMouseCanvasPos(coords);
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+
+    // Only update mouse position state if connector mode is active (drawing line preview)
+    if (connectorModeSourceId) {
+      const coords = getCanvasCoords(clientX, clientY);
+      setMouseCanvasPos(coords);
+    }
 
     if (isPanning) {
-      setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+      setPan({ x: clientX - panStart.x, y: clientY - panStart.y });
     } else if (draggedNodeId) {
-      setNodes((prev) =>
-        prev.map((n) => (n.id === draggedNodeId ? { ...n, x: coords.x - dragOffset.x, y: coords.y - dragOffset.y } : n))
-      );
+      if (dragRafRef.current) {
+        cancelAnimationFrame(dragRafRef.current);
+      }
+
+      dragRafRef.current = requestAnimationFrame(() => {
+        const coords = getCanvasCoords(clientX, clientY);
+        const targetX = Math.round(coords.x - dragOffset.x);
+        const targetY = Math.round(coords.y - dragOffset.y);
+
+        setNodes((prev) =>
+          prev.map((n) => (n.id === draggedNodeId ? { ...n, x: targetX, y: targetY } : n))
+        );
+      });
     }
   };
 
   const handleCanvasMouseUp = () => {
+    if (dragRafRef.current) {
+      cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = null;
+    }
     setIsPanning(false);
     setDraggedNodeId(null);
   };
@@ -691,8 +975,9 @@ export const MindMapEditor: React.FC = () => {
     setZoom(newZoom);
   };
 
-  // Handle Canvas Click to show Empty Context Menu
-  const handleCanvasClick = (e: React.MouseEvent) => {
+  // Handle Canvas Right Click to show Empty Context Menu
+  const handleCanvasContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (e.target === containerRef.current || (e.target as HTMLElement).tagName === 'svg' || (e.target as HTMLElement).id === 'grid-pattern') {
       const coords = getCanvasCoords(e.clientX, e.clientY);
       const rect = containerRef.current?.getBoundingClientRect();
@@ -918,9 +1203,9 @@ export const MindMapEditor: React.FC = () => {
   const visibleEdges = edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
 
   return (
-    <div className="flex flex-col w-full text-white select-none gap-6">
+    <div className="flex flex-col w-full text-white select-none gap-6 flex-1 min-h-0">
       {/* Drawing Canvas Card */}
-      <div className="flex flex-col w-full h-[90vh] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative shadow-2xl">
+      <div className="flex flex-col w-full flex-1 h-[100vh] min-h-[90vh] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative shadow-2xl">
         {/* Top Header Bar */}
         <div className="flex flex-wrap items-center justify-between px-6 py-3 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 z-20 gap-3">
           <div className="flex items-center gap-3">
@@ -937,6 +1222,15 @@ export const MindMapEditor: React.FC = () => {
 
           {/* Action Controls */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleAutoArrangeGraph}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-lg shadow-lg shadow-emerald-500/20 transition"
+              title="Auto-arrange & beautify mind map structure"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+              Auto-Arrange
+            </button>
+
             <button
               onClick={handleResetToDefaultMap}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition"
@@ -979,7 +1273,7 @@ export const MindMapEditor: React.FC = () => {
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
-          onClick={handleCanvasClick}
+          onContextMenu={handleCanvasContextMenu}
           onWheel={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1173,10 +1467,13 @@ export const MindMapEditor: React.FC = () => {
               const hasChildren = childCount > 0;
               const textLen = node.text ? node.text.length : 4;
 
-              // Dynamic width calculation so full text name is always visible without truncation
-              const calcWidth = Math.max(
-                node.width,
-                isRoot ? Math.max(220, textLen * 14 + 75) : Math.max(160, textLen * 12 + 65)
+              // Dynamic width calculation capped at 300px max
+              const calcWidth = Math.min(
+                300,
+                Math.max(
+                  node.width,
+                  isRoot ? Math.max(220, textLen * 14 + 75) : Math.max(160, textLen * 12 + 65)
+                )
               );
               const calcHeight = hasChildren ? Math.max(node.height, 68) : Math.max(node.height, 52);
 
@@ -1185,16 +1482,18 @@ export const MindMapEditor: React.FC = () => {
                   key={node.id}
                   onMouseDown={(e) => handleNodeMouseDown(e, node)}
                   onDoubleClick={(e) => handleNodeDoubleClick(e, node)}
-                  className={`absolute pointer-events-auto flex flex-col justify-between px-4 py-2.5 rounded-2xl transition-all shadow-xl group cursor-move w-fit whitespace-nowrap ${isRoot
-                    ? 'bg-slate-900 border-2 text-white font-extrabold'
-                    : node.depth === 1
-                      ? 'bg-slate-900/95 border text-slate-100 font-bold'
-                      : 'bg-slate-900/90 border text-slate-200 font-semibold'
+                  className={`absolute pointer-events-auto flex flex-col justify-between px-4 py-2.5 rounded-2xl ${draggedNodeId === node.id ? 'transition-none' : 'transition-colors transition-shadow'
+                    } shadow-xl group cursor-move ${isRoot
+                      ? 'bg-slate-900 border-2 text-white font-extrabold'
+                      : node.depth === 1
+                        ? 'bg-slate-900/95 border text-slate-100 font-bold'
+                        : 'bg-slate-900/90 border text-slate-200 font-semibold'
                     } ${isSelected ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950 scale-105 z-30' : 'hover:border-cyan-400/50 z-20'}`}
                   style={{
                     left: `${node.x}px`,
                     top: `${node.y}px`,
                     minWidth: `${isRoot ? 180 : 120}px`,
+                    maxWidth: '300px',
                     width: 'max-content',
                     minHeight: `${calcHeight}px`,
                     borderColor: isSelected ? '#00f2fe' : node.color || (isRoot ? '#00f2fe' : '#475569'),
@@ -1202,9 +1501,30 @@ export const MindMapEditor: React.FC = () => {
                   }}
                 >
                   {!hasChildren ? (
-                    /* Single Row Layout for Child / Leaf Nodes (Full length name next to icon) */
-                    <div className="flex items-center gap-2.5 w-full h-full">
+                    /* Single Row Layout for Child / Leaf Nodes (Truncate with ... after 300px max) */
+                    <div className="flex items-center gap-2 w-full h-full min-w-0">
                       {node.emoji && <span className="text-2xl select-none leading-none shrink-0">{node.emoji}</span>}
+                      {(hasNodeAnyNote(node) || activeNoteNodeId === node.id) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (activeNoteNodeId === node.id) {
+                              setActiveNoteNodeId(null);
+                              setClosedNoteIndices([]);
+                            } else {
+                              setActiveNoteNodeId(node.id);
+                              setClosedNoteIndices([]);
+                            }
+                          }}
+                          className={`p-1 rounded-md transition border shrink-0 ${activeNoteNodeId === node.id
+                            ? 'bg-amber-500/40 border-amber-400 text-amber-200'
+                            : 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                            }`}
+                          title="Open All / Close All Notes"
+                        >
+                          <StickyNote className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {editingNodeId === node.id ? (
                         <input
                           type="text"
@@ -1213,11 +1533,14 @@ export const MindMapEditor: React.FC = () => {
                           onBlur={saveEditingText}
                           onKeyDown={(e) => e.key === 'Enter' && saveEditingText()}
                           autoFocus
-                          className="bg-slate-950 text-white text-base font-bold px-2 py-1 rounded-lg border border-cyan-400 outline-none w-full"
+                          className="bg-slate-950 text-white text-base font-bold px-2 py-1 rounded-lg border border-cyan-400 outline-none w-full max-w-[230px]"
                         />
                       ) : (
-                        <span className={`whitespace-nowrap font-bold ${node.depth === 1 ? 'text-base text-slate-100' : 'text-sm text-slate-200'
-                          }`}>
+                        <span
+                          title={node.text}
+                          className={`truncate max-w-[230px] font-bold ${node.depth === 1 ? 'text-base text-slate-100' : 'text-sm text-slate-200'
+                            }`}
+                        >
                           {node.text}
                         </span>
                       )}
@@ -1227,11 +1550,32 @@ export const MindMapEditor: React.FC = () => {
                     <>
                       {/* Top Row: Icon Left & Eye Child Count Badge Right */}
                       <div className="flex items-center justify-between w-full gap-2">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {node.emoji ? (
                             <span className="text-2xl select-none leading-none">{node.emoji}</span>
                           ) : (
                             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400/40" />
+                          )}
+                          {(hasNodeAnyNote(node) || activeNoteNodeId === node.id) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (activeNoteNodeId === node.id) {
+                                  setActiveNoteNodeId(null);
+                                  setClosedNoteIndices([]);
+                                } else {
+                                  setActiveNoteNodeId(node.id);
+                                  setClosedNoteIndices([]);
+                                }
+                              }}
+                              className={`p-1 rounded-md transition border shrink-0 ${activeNoteNodeId === node.id
+                                ? 'bg-amber-500/40 border-amber-400 text-amber-200'
+                                : 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                                }`}
+                              title="Open All / Close All Notes"
+                            >
+                              <StickyNote className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
 
@@ -1241,7 +1585,7 @@ export const MindMapEditor: React.FC = () => {
                               e.stopPropagation();
                               handleToggleCollapsibility(node.id);
                             }}
-                            className="flex items-center gap-1 bg-gradient-to-r from-amber-500/30 to-orange-500/30 hover:from-amber-500/50 hover:to-orange-500/50 text-amber-300 border border-amber-500/50 px-2 py-0.5 rounded-full text-xs font-mono font-bold animate-pulse shadow-lg cursor-pointer whitespace-nowrap"
+                            className="flex items-center gap-1 bg-gradient-to-r from-amber-500/30 to-orange-500/30 hover:from-amber-500/50 hover:to-orange-500/50 text-amber-300 border border-amber-500/50 px-2 py-0.5 rounded-full text-xs font-mono font-bold animate-pulse shadow-lg cursor-pointer whitespace-nowrap shrink-0"
                             title={`Click to expand ${childCount} hidden sub-branches`}
                           >
                             <EyeOff className="w-3.5 h-3.5 text-amber-400" />
@@ -1253,7 +1597,7 @@ export const MindMapEditor: React.FC = () => {
                               e.stopPropagation();
                               handleToggleCollapsibility(node.id);
                             }}
-                            className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-cyan-300 border border-slate-700 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold transition cursor-pointer whitespace-nowrap"
+                            className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-cyan-300 border border-slate-700 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold transition cursor-pointer whitespace-nowrap shrink-0"
                             title={`Click to collapse ${childCount} sub-branches`}
                           >
                             <Eye className="w-3 h-3 text-cyan-400" />
@@ -1262,8 +1606,8 @@ export const MindMapEditor: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Bottom Row: Full Node Label Text */}
-                      <div className="w-full mt-1">
+                      {/* Bottom Row: Node Label Text (Truncate with ... after max width) */}
+                      <div className="w-full mt-1 min-w-0">
                         {editingNodeId === node.id ? (
                           <input
                             type="text"
@@ -1272,15 +1616,18 @@ export const MindMapEditor: React.FC = () => {
                             onBlur={saveEditingText}
                             onKeyDown={(e) => e.key === 'Enter' && saveEditingText()}
                             autoFocus
-                            className="bg-slate-950 text-white text-base font-bold px-2 py-1 rounded-lg border border-cyan-400 outline-none w-full"
+                            className="bg-slate-950 text-white text-base font-bold px-2 py-1 rounded-lg border border-cyan-400 outline-none w-full max-w-[260px]"
                           />
                         ) : (
-                          <div className={`leading-tight ${isRoot
-                            ? 'text-lg font-extrabold text-cyan-300 tracking-wide'
-                            : node.depth === 1
-                              ? 'text-base font-bold text-slate-100'
-                              : 'text-sm font-semibold text-slate-200'
-                            }`}>
+                          <div
+                            title={node.text}
+                            className={`truncate max-w-[260px] leading-tight ${isRoot
+                              ? 'text-lg font-extrabold text-cyan-300 tracking-wide'
+                              : node.depth === 1
+                                ? 'text-base font-bold text-slate-100'
+                                : 'text-sm font-semibold text-slate-200'
+                              }`}
+                          >
                             {node.text}
                           </div>
                         )}
@@ -1290,6 +1637,330 @@ export const MindMapEditor: React.FC = () => {
                 </div>
               );
             })}
+
+            {/* Active Floating Multi-Note Grid Container (Centered Horizontally Relative to Node) */}
+            {(() => {
+              const activeNoteNode = visibleNodes.find((n) => n.id === activeNoteNodeId);
+              if (!activeNoteNode) return null;
+
+              const fullNoteList = getNodeNotes(activeNoteNode);
+
+              // Get list of unclosed note indices
+              const visibleNoteIndices = fullNoteList
+                .map((_, idx) => idx)
+                .filter((idx) => !closedNoteIndices.includes(idx));
+
+              if (visibleNoteIndices.length === 0) return null;
+
+              const N_vis = visibleNoteIndices.length;
+
+              let cols = 1;
+              if (N_vis === 1) cols = 1;
+              else if (N_vis <= 4) cols = 2; // 2x1 for N=2, 2x2 for N=3,4
+              else cols = 3;                 // 3x2 for N=5,6, 3x3 for N=7..9
+
+              const cardWidth = 340;
+              const cardGap = 16;
+              const totalGridCols = Math.min(N_vis, cols);
+              const totalGridWidth = totalGridCols * cardWidth + (totalGridCols - 1) * cardGap;
+
+              const nodeCenterX = activeNoteNode.x + (activeNoteNode.width || 160) / 2;
+              const gridLeft = nodeCenterX - totalGridWidth / 2;
+              const gridTop = activeNoteNode.y + (activeNoteNode.height || 60) + 16;
+
+              const executeFormat = (cmd: string, val: string | undefined = undefined) => {
+                document.execCommand(cmd, false, val);
+              };
+
+              return (
+                <div
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  onWheel={(e) => e.stopPropagation()}
+                  className="absolute z-50 pointer-events-auto transition-all animate-fadeIn"
+                  style={{
+                    left: `${gridLeft}px`,
+                    top: `${gridTop}px`
+                  }}
+                >
+                  <div
+                    className="grid gap-4"
+                    style={{
+                      gridTemplateColumns: `repeat(${totalGridCols}, minmax(0, 340px))`
+                    }}
+                  >
+                    {visibleNoteIndices.map((noteIdx) => {
+                      const noteContent = fullNoteList[noteIdx];
+                      return (
+                        <div
+                          key={noteIdx}
+                          className="w-[340px] bg-white rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.3)] border border-slate-200 text-slate-800 flex flex-col justify-between relative"
+                        >
+                          {/* Header: Notes Title & Action Controls */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="text-sm font-semibold text-slate-800 tracking-tight">
+                                Notes {fullNoteList.length > 1 && <span className="text-xs text-slate-400 font-normal">({noteIdx + 1}/{fullNoteList.length})</span>}
+                              </h3>
+                            </div>
+                            <div className="flex items-center gap-1 text-slate-400">
+                              {/* Triple Dot Dropdown Menu */}
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    setActiveNoteMenuIndex(activeNoteMenuIndex === noteIdx ? null : noteIdx);
+                                  }}
+                                  className="p-1 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                                  title="Note options"
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </button>
+
+                                {activeNoteMenuIndex === noteIdx && (
+                                  <div className="absolute right-0 top-7 z-50 bg-slate-900 text-slate-200 border border-slate-700 rounded-xl shadow-2xl p-1.5 w-48 text-xs font-semibold flex flex-col gap-1">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        handleAddParallelNote(activeNoteNode.id);
+                                        setActiveNoteMenuIndex(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-800 text-cyan-400 rounded-lg transition"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      Add Parallel Note
+                                    </button>
+
+                                    {closedNoteIndices.length > 0 && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          setClosedNoteIndices([]);
+                                          setActiveNoteMenuIndex(null);
+                                        }}
+                                        className="flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-800 text-emerald-400 rounded-lg transition"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        Show All Hidden Notes ({closedNoteIndices.length})
+                                      </button>
+                                    )}
+
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        const text = noteContent.replace(/<[^>]*>/g, '');
+                                        navigator.clipboard.writeText(text);
+                                        showNotification('Copied note text to clipboard!');
+                                        setActiveNoteMenuIndex(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-800 text-slate-200 rounded-lg transition"
+                                    >
+                                      <FileCode className="w-3.5 h-3.5 text-indigo-400" />
+                                      Copy Note Text
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        handleUpdateNodeNoteAtIndex(activeNoteNode.id, noteIdx, '');
+                                        setActiveNoteMenuIndex(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-800 text-amber-400 rounded-lg transition"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5" />
+                                      Clear Note Text
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        handleDeleteNoteAtIndex(activeNoteNode.id, noteIdx);
+                                        setActiveNoteMenuIndex(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-800 text-rose-400 rounded-lg transition border-t border-slate-800 mt-0.5 pt-1.5"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      Delete Note Card
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Plus Icon: Opens connected parallel note next to it in grid */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleAddParallelNote(activeNoteNode.id);
+                                }}
+                                className="p-1 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition text-indigo-600 font-bold"
+                                title="Add connected parallel note card"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+
+                              {/* Close Button (Closes Selected Note Card Only - Does NOT Delete Note) */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  const nextClosed = [...closedNoteIndices, noteIdx];
+                                  setClosedNoteIndices(nextClosed);
+                                  if (nextClosed.length >= fullNoteList.length) {
+                                    setActiveNoteNodeId(null);
+                                    setClosedNoteIndices([]);
+                                  }
+                                }}
+                                className="p-1 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                                title="Close this note card"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Search Bar */}
+                          <div className="relative mb-3">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={noteSearchQuery}
+                              onChange={(e) => setNoteSearchQuery(e.target.value)}
+                              placeholder="Search notes..."
+                              className="w-full pl-8 pr-3 py-1 bg-slate-100/70 border border-slate-200/80 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-purple-400"
+                            />
+                          </div>
+
+                          {/* Content Body */}
+                          <div className="space-y-1.5 mb-3 flex-1">
+                            <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                              {activeNoteNode.emoji && <span>{activeNoteNode.emoji}</span>}
+                              <span>{activeNoteNode.text}</span>
+                            </h4>
+
+                            {/* Rich ContentEditable Note Area (Visual Formatting, preserved cursor) */}
+                            <NoteCardEditor
+                              nodeId={activeNoteNode.id}
+                              noteIndex={noteIdx}
+                              initialHtml={noteContent}
+                              onChange={handleUpdateNodeNoteAtIndex}
+                            />
+                          </div>
+
+                          {/* Bottom Formatting Toolbar (Executes Rich Formatting on Selection or Paragraph) */}
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-slate-500 text-xs select-none">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                executeFormat('formatBlock', '<h1>');
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded font-extrabold text-[11px]"
+                              title="Heading 1"
+                            >
+                              H¹
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                executeFormat('formatBlock', '<h2>');
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded font-bold text-[11px]"
+                              title="Heading 2"
+                            >
+                              H²
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                executeFormat('bold');
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded"
+                              title="Bold"
+                            >
+                              <Bold className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                executeFormat('italic');
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded"
+                              title="Italic"
+                            >
+                              <Italic className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                executeFormat('underline');
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded"
+                              title="Underline"
+                            >
+                              <Underline className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                executeFormat('strikeThrough');
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded"
+                              title="Strikethrough"
+                            >
+                              <Strikethrough className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                executeFormat('insertUnorderedList');
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded"
+                              title="Bullet List"
+                            >
+                              <List className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                executeFormat('insertOrderedList');
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded"
+                              title="Numbered List"
+                            >
+                              <ListOrdered className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                const url = prompt('Enter link URL:');
+                                if (url) executeFormat('createLink', url);
+                              }}
+                              className="p-1 hover:text-slate-900 hover:bg-slate-100 rounded"
+                              title="Insert Link"
+                            >
+                              <Link2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Selected Node Floating Options Toolbar */}
@@ -1323,6 +1994,24 @@ export const MindMapEditor: React.FC = () => {
                   title="Choose Emoji metadata"
                 >
                   <Smile className="w-3.5 h-3.5 text-yellow-400" />
+                </button>
+
+                {/* Option: Note Popover Card Toggle */}
+                <button
+                  onClick={() => {
+                    if (activeNoteNodeId === selectedNode.id) {
+                      setActiveNoteNodeId(null);
+                      setClosedNoteIndices([]);
+                    } else {
+                      setActiveNoteNodeId(selectedNode.id);
+                      setClosedNoteIndices([]);
+                    }
+                  }}
+                  className={`p-1.5 rounded-lg text-xs flex items-center gap-1 transition ${activeNoteNodeId === selectedNode.id ? 'bg-amber-500/20 text-amber-300 font-bold' : 'hover:bg-slate-800 text-slate-300'
+                    }`}
+                  title="Open All / Close All Notes"
+                >
+                  <StickyNote className="w-3.5 h-3.5 text-amber-400" />
                 </button>
 
                 {/* Option 3 for Secondary: Arrow Color Picker */}
@@ -1543,11 +2232,30 @@ export const MindMapEditor: React.FC = () => {
                 <Plus className="w-3.5 h-3.5 text-indigo-400" />
                 Add Secondary Node
               </button>
+              <button
+                onClick={() => {
+                  handleAutoArrangeGraph();
+                  setEmptyContextMenu(null);
+                }}
+                className="flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-800 text-emerald-400 rounded-lg transition border-t border-slate-800/80 mt-0.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                Auto-Arrange Map
+              </button>
             </div>
           )}
 
           {/* Bottom Left Floating Zoom & Canvas Controls */}
           <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-1.5 rounded-xl shadow-xl">
+            <button
+              onClick={handleAutoArrangeGraph}
+              className="p-1.5 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition flex items-center gap-1 px-2 font-mono text-[11px] font-bold mr-1"
+              title="Auto-arrange & beautify mind map layout"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Arrange</span>
+            </button>
+            <div className="h-4 w-px bg-slate-800 mr-1" />
             <button
               onClick={() => setZoom((z) => Math.min(z * 1.2, 3))}
               className="p-1.5 hover:bg-slate-800 text-slate-300 rounded-lg transition"
