@@ -309,6 +309,57 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoInfo> = {
           '14 shapes: Circle, Square, Rectangle, Triangle, Pentagon, Hexagon, Octagon, Decagon, Trapezium, Cube, Cuboid, Sphere, Cylinder, and Cone.'
       }
     ]
+  },
+  'tip-calculator': {
+    id: 'tip-calculator',
+    primaryKeyword: 'mind map editor online',
+    supportingKeywords: [
+      'graphml editor',
+      'mindmap builder',
+      'interactive mind map creator',
+      'mindmap graphml viewer',
+      'yfiles graphml editor',
+      'drag and drop mind map'
+    ],
+    metaTitle: 'Free Mind Map Editor — Interactive Node Builder & GraphML Creator | Toolip',
+    metaDescription:
+      'Build, edit, drag, and structure mind maps online. Features root & secondary node option toolbars, emoji icons, arrow colors, child collapsibility, and .graphml save & open.',
+    articleContent: {
+      heading: 'The Ultimate Guide to Interactive Mind Mapping with GraphML Support',
+      paragraphs: [
+        'Mind mapping is one of the most effective visual brainstorming techniques for organizing ideas, planning project architectures, and mapping complex relationships. Traditional drawing apps lack structural graph hierarchy, while rigid tools restrict custom colors, emojis, and edge routing.',
+        'Toolip Mind Map Editor offers a professional-grade node-based graph builder right in your browser. Pan across an infinite grid, drag nodes freely, and click any node to access specialized control toolbars.',
+        'Root nodes feature child collapsibility, emoji icons, connector arrow targets, and rapid node creation. Secondary nodes add edge color customization. You can export and import standard .graphml XML files (fully compatible with yFiles and desktop graph suites) with 1 click.'
+      ],
+      useCases: [
+        'Brainstorming & Note Taking: Structure complex topics into clean hierarchical sub-branches.',
+        'Architecture & Flow Design: Connect distant sub-nodes with custom colored arrows to show dependencies.',
+        'GraphML File Preparation: Open, modify, and save .graphml diagram files seamlessly.'
+      ],
+      howToSteps: [
+        'Click on any empty canvas area to create a root or secondary node.',
+        'Click any node to open its floating options toolbar (Emoji, Edge Color, Collapse Children, Connector Arrow, Add Child).',
+        'Double-click node text to edit labels, and drag nodes to adjust the diagram layout.',
+        'Click "Save mindmap.graphml" to download your diagram or update the project graph file.'
+      ]
+    },
+    faqs: [
+      {
+        question: 'How do I add new nodes to the canvas?',
+        answer:
+          'Click any empty space on the canvas to open the creation menu, or click the "+" button on any node toolbar to spawn a connected child.'
+      },
+      {
+        question: 'Can I save and open .graphml files?',
+        answer:
+          'Yes! Click "Save mindmap.graphml" to download standard yFiles-compatible GraphML XML, or click "Open .graphml" to load any existing graph file.'
+      },
+      {
+        question: 'How does child collapsibility work?',
+        answer:
+          'Clicking the collapse icon on a parent node toggles the visibility of its entire child subtree, helping you collapse dense branches for clarity.'
+      }
+    ]
   }
 };
 

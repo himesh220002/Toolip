@@ -1,0 +1,914 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--Created by yFiles for HTML 3.1.0.2+demo4-->
+<graphml xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml.html/2.0/ygraphml.xsd " xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:mindmap="http://www.yworks.com/yFilesHTML/demos/MindMap/1.0" xmlns:yx="http://www.yworks.com/xml/yfiles-common/4.0" xmlns:y="http://www.yworks.com/xml/yfiles-common/3.0" xmlns:x="http://www.yworks.com/xml/yfiles-common/markup/3.0" xmlns:yjs="http://www.yworks.com/xml/yfiles-for-html/3.0/xaml" xmlns:sys="http://www.yworks.com/xml/yfiles-common/markup/primitives/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<key id="d0" for="node" attr.name="NodeLabels" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/NodeLabels"/>
+	<key id="d1" for="node" attr.name="NodeGeometry" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/NodeGeometry"/>
+	<key id="d2" for="all" attr.name="UserTags" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/UserTags"/>
+	<key id="d3" for="node" attr.name="NodeStyle" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/NodeStyle"/>
+	<key id="d4" for="edge" attr.name="EdgeLabels" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/EdgeLabels"/>
+	<key id="d5" for="edge" attr.name="EdgeGeometry" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/EdgeGeometry"/>
+	<key id="d6" for="edge" attr.name="EdgeStyle" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/EdgeStyle"/>
+	<key id="d7" for="port" attr.name="PortLabels" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/PortLabels"/>
+	<key id="d8" for="port" attr.name="PortLocationParameter" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/PortLocationParameter">
+		<default>
+			<x:Static Member="y:FreeNodePortLocationModel.NodeCenterAnchored"/>
+		</default>
+	</key>
+	<key id="d9" for="port" attr.name="PortStyle" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/PortStyle">
+		<default>
+			<x:Static Member="y:VoidPortStyle.Instance"/>
+		</default>
+	</key>
+	<key id="d10" attr.name="SharedData" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/SharedData"/>
+	<data key="d10">
+		<y:SharedData>
+			<mindmap:MindMapIconLabelStyle x:Key="1">
+				<mindmap:MindMapIconLabelStyle.delegatingLabelStyle>
+					<yjs:IconLabelStyle href="resources/icons/no-icon.svg" iconSize="Empty" iconPlacement="{x:Static yx:InteriorNodeLabelModel.Right}" backgroundShape="RECTANGLE">
+						<yjs:IconLabelStyle.wrappedStyle>
+							<yjs:LabelStyle textSize="16">
+								<yjs:LabelStyle.font>
+									<yjs:Font fontSize="16" lineSpacing="0.2"/>
+								</yjs:LabelStyle.font>
+							</yjs:LabelStyle>
+						</yjs:IconLabelStyle.wrappedStyle>
+					</yjs:IconLabelStyle>
+				</mindmap:MindMapIconLabelStyle.delegatingLabelStyle>
+			</mindmap:MindMapIconLabelStyle>
+			<mindmap:CollapseDecorator x:Key="2">
+				<mindmap:CollapseDecorator.wrappedNodeStyle>
+					<mindmap:MindMapNodeStyle>
+						<mindmap:MindMapNodeStyle.className>
+							<sys:String>level2</sys:String>
+						</mindmap:MindMapNodeStyle.className>
+					</mindmap:MindMapNodeStyle>
+				</mindmap:CollapseDecorator.wrappedNodeStyle>
+			</mindmap:CollapseDecorator>
+			<mindmap:MindMapIconLabelStyle x:Key="3">
+				<mindmap:MindMapIconLabelStyle.delegatingLabelStyle>
+					<yjs:IconLabelStyle href="resources/icons/no-icon.svg" iconSize="Empty" iconPlacement="{x:Static yx:InteriorNodeLabelModel.Left}" backgroundShape="RECTANGLE">
+						<yjs:IconLabelStyle.wrappedStyle>
+							<yjs:LabelStyle textSize="18">
+								<yjs:LabelStyle.font>
+									<yjs:Font fontSize="18" lineSpacing="0.2"/>
+								</yjs:LabelStyle.font>
+							</yjs:LabelStyle>
+						</yjs:IconLabelStyle.wrappedStyle>
+					</yjs:IconLabelStyle>
+				</mindmap:MindMapIconLabelStyle.delegatingLabelStyle>
+			</mindmap:MindMapIconLabelStyle>
+			<mindmap:CollapseDecorator x:Key="4">
+				<mindmap:CollapseDecorator.wrappedNodeStyle>
+					<mindmap:MindMapNodeStyle>
+						<mindmap:MindMapNodeStyle.className>
+							<sys:String>level1</sys:String>
+						</mindmap:MindMapNodeStyle.className>
+					</mindmap:MindMapNodeStyle>
+				</mindmap:CollapseDecorator.wrappedNodeStyle>
+			</mindmap:CollapseDecorator>
+			<mindmap:MindMapEdgeStyle x:Key="5">
+				<mindmap:MindMapEdgeStyle.thicknessStart>
+					<sys:Int32>8</sys:Int32>
+				</mindmap:MindMapEdgeStyle.thicknessStart>
+				<mindmap:MindMapEdgeStyle.thicknessEnd>
+					<sys:Int32>3</sys:Int32>
+				</mindmap:MindMapEdgeStyle.thicknessEnd>
+			</mindmap:MindMapEdgeStyle>
+			<mindmap:MindMapEdgeStyle x:Key="6">
+				<mindmap:MindMapEdgeStyle.thicknessStart>
+					<sys:Int32>25</sys:Int32>
+				</mindmap:MindMapEdgeStyle.thicknessStart>
+				<mindmap:MindMapEdgeStyle.thicknessEnd>
+					<sys:Int32>8</sys:Int32>
+				</mindmap:MindMapEdgeStyle.thicknessEnd>
+			</mindmap:MindMapEdgeStyle>
+			<mindmap:MindMapEdgeStyle x:Key="7">
+				<mindmap:MindMapEdgeStyle.thicknessStart>
+					<sys:Int32>4</sys:Int32>
+				</mindmap:MindMapEdgeStyle.thicknessStart>
+				<mindmap:MindMapEdgeStyle.thicknessEnd>
+					<sys:Int32>3</sys:Int32>
+				</mindmap:MindMapEdgeStyle.thicknessEnd>
+			</mindmap:MindMapEdgeStyle>
+		</y:SharedData>
+	</data>
+	<graph id="G" edgedefault="directed">
+		<node id="n0">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="hobbies" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" PreferredSize="106,33">
+						<y:Label.Style>
+							<mindmap:MindMapIconLabelStyle>
+								<mindmap:MindMapIconLabelStyle.delegatingLabelStyle>
+									<yjs:IconLabelStyle href="resources/icons/no-icon.svg" iconSize="Empty" iconPlacement="{x:Static yx:InteriorNodeLabelModel.Left}" backgroundShape="RECTANGLE">
+										<yjs:IconLabelStyle.wrappedStyle>
+											<yjs:LabelStyle textSize="30">
+												<yjs:LabelStyle.font>
+													<yjs:Font fontSize="30" lineSpacing="0.2"/>
+												</yjs:LabelStyle.font>
+											</yjs:LabelStyle>
+										</yjs:IconLabelStyle.wrappedStyle>
+									</yjs:IconLabelStyle>
+								</mindmap:MindMapIconLabelStyle.delegatingLabelStyle>
+							</mindmap:MindMapIconLabelStyle>
+						</y:Label.Style>
+					</y:Label>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-70" Y="-15" Width="170" Height="60"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":0,"text":"hobbies","depth":0,"collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<mindmap:CollapseDecorator>
+					<mindmap:CollapseDecorator.wrappedNodeStyle>
+						<yjs:ShapeNodeStyle shape="PILL">
+							<yjs:ShapeNodeStyle.stroke>
+								<yjs:Stroke lineCap="SQUARE" thickness="2">
+									<yjs:Stroke.fill>
+										<yjs:CssFill cssString="#60656a"/>
+									</yjs:Stroke.fill>
+								</yjs:Stroke>
+							</yjs:ShapeNodeStyle.stroke>
+						</yjs:ShapeNodeStyle>
+					</mindmap:CollapseDecorator.wrappedNodeStyle>
+				</mindmap:CollapseDecorator>
+			</data>
+			<port name="p0"/>
+			<port name="p1"/>
+			<port name="p2"/>
+			<port name="p3"/>
+			<port name="p4"/>
+			<port name="p5"/>
+		</node>
+		<node id="n1">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="games" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 3}" PreferredSize="55,20"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-180" Y="-64.75" Width="65" Height="30"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":1,"text":"games","depth":1,"left":true,"color":"#56926e","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="4"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+			<port name="p1">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+			<port name="p2">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+			<port name="p3">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n2">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="computer" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="67,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-323" Y="-100.25" Width="77" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":2,"text":"computer","depth":2,"left":true,"color":"#92ceaa","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n3">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="the settlers of catan" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="140,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-396" Y="-63.25" Width="150" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":3,"text":"the settlers of catan","depth":2,"left":true,"color":"#92ceaa","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n4">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="cops and robbers" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="124,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-380" Y="-26.25" Width="134" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":4,"text":"cops and robbers","depth":2,"left":true,"color":"#92ceaa","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n5">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="books" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 3}" PreferredSize="49,20"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="145" Y="-75.5" Width="59" Height="30"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":5,"text":"books","depth":1,"left":false,"color":"#ff6c00","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="4"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+			<port name="p1">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+			<port name="p2">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+			<port name="p3">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n6">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="thriller" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="44,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="249" Y="-37" Width="54" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":6,"text":"thriller","depth":2,"left":false,"color":"#ffa83c","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n7">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="science-fiction" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="102,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="249" Y="-74" Width="112" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":7,"text":"science-fiction","depth":2,"left":false,"color":"#ffa83c","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n8">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="fantasy" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="52,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="249" Y="-111" Width="62" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":8,"text":"fantasy","depth":2,"left":false,"color":"#ffa83c","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n9">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="collecting" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 3}" PreferredSize="76,20"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-201" Y="9.25" Width="86" Height="30"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":9,"text":"collecting","depth":1,"left":true,"color":"#4281a4","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="4"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+			<port name="p1">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n10">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="stamps" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="52,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-308" Y="10.75" Width="62" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":10,"text":"stamps","depth":2,"left":true,"color":"#7ebde0","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n11">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="sport" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 3}" PreferredSize="41,20"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="145" Y="35.5" Width="51" Height="30"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":11,"text":"sport","depth":1,"left":false,"color":"#AA5F82","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="4"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+			<port name="p1">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+			<port name="p2">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+			<port name="p3">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n12">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="climbing" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="59,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="249" Y="74" Width="69" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":12,"text":"climbing","depth":2,"left":false,"color":"#e69bbe","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+			<port name="p1">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+			<port name="p2">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n13">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="ice" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="21,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="406" Y="92.5" Width="31" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":13,"text":"ice","depth":3,"left":false,"color":"#ffb9dc","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n14">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="rock" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="31,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="406" Y="55.5" Width="41" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":14,"text":"rock","depth":3,"left":false,"color":"#ffb9dc","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n15">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="soccer" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="48,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="249" Y="37" Width="58" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":15,"text":"soccer","depth":2,"left":false,"color":"#e69bbe","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n16">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="dancing" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="57,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="249" Y="0" Width="67" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":16,"text":"dancing","depth":2,"left":false,"color":"#e69bbe","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n17">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="diy" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 3}" PreferredSize="24,20"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-149" Y="64.75" Width="34" Height="30"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":17,"text":"diy","depth":1,"left":true,"color":"#db3a34","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="4"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+			<port name="p1">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+			<port name="p2">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n18">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="cars" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="31,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-287" Y="47.75" Width="41" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":18,"text":"cars","depth":2,"left":true,"color":"#ff7670","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n19">
+			<data key="d0">
+				<x:List>
+					<y:Label Text="planes" LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 1}" PreferredSize="48,17"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="-304" Y="84.75" Width="58" Height="27"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"id":19,"text":"planes","depth":2,"left":true,"color":"#ff7670","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="2"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="1,1"/>
+				</data>
+			</port>
+		</node>
+		<node id="n20">
+			<data key="d0">
+				<x:List>
+					<y:Label LayoutParameter="{x:Static yx:InteriorNodeLabelModel.Center}" Style="{y:GraphMLReference 3}" PreferredSize="0,20"/>
+				</x:List>
+			</data>
+			<data key="d1">
+				<y:RectD X="145" Y="75.5" Width="10" Height="30"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"depth":1,"left":false,"color":"#4281a4","collapsed":false,"stateIcon":0}</y:Json>
+			</data>
+			<data key="d3">
+				<y:GraphMLReference ResourceKey="4"/>
+			</data>
+			<port name="p0">
+				<data key="d8">
+					<y:FreeNodePortLocationModelParameter Ratio="0,1"/>
+				</data>
+			</port>
+		</node>
+		<edge id="e0" source="n0" target="n1" sourceport="p0" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-92.5,15"/>
+					<y:Bend Location="-92.5,-34.75"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="6"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":0,"to":1,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e1" source="n1" target="n2" sourceport="p1" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-223.5,-34.75"/>
+					<y:Bend Location="-223.5,-73.25"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":1,"to":2,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e2" source="n1" target="n3" sourceport="p2" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-223.5,-34.75"/>
+					<y:Bend Location="-223.5,-36.25"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":1,"to":3,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e3" source="n1" target="n4" sourceport="p3" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-223.5,-34.75"/>
+					<y:Bend Location="-223.5,0.75"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":1,"to":4,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e4" source="n0" target="n5" sourceport="p1" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="122.5,15"/>
+					<y:Bend Location="122.5,-45.5"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="6"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":0,"to":5,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e5" source="n5" target="n6" sourceport="p1" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="226.5,-45.5"/>
+					<y:Bend Location="226.5,-10"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":5,"to":6,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e6" source="n5" target="n7" sourceport="p2" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="226.5,-45.5"/>
+					<y:Bend Location="226.5,-47"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":5,"to":7,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e7" source="n5" target="n8" sourceport="p3" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="226.5,-45.5"/>
+					<y:Bend Location="226.5,-84"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":5,"to":8,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e8" source="n0" target="n9" sourceport="p2" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-92.5,15"/>
+					<y:Bend Location="-92.5,39.25"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="6"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":0,"to":9,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e9" source="n9" target="n10" sourceport="p1" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-223.5,39.25"/>
+					<y:Bend Location="-223.5,37.75"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":9,"to":10,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e10" source="n0" target="n11" sourceport="p3" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="122.5,15"/>
+					<y:Bend Location="122.5,65.5"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="6"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":0,"to":11,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e11" source="n11" target="n12" sourceport="p1" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="226.5,65.5"/>
+					<y:Bend Location="226.5,101"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":11,"to":12,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e12" source="n12" target="n13" sourceport="p1" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="383.5,101"/>
+					<y:Bend Location="383.5,119.5"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="7"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":12,"to":13,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e13" source="n12" target="n14" sourceport="p2" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="383.5,101"/>
+					<y:Bend Location="383.5,82.5"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="7"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":12,"to":14,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e14" source="n11" target="n15" sourceport="p2" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="226.5,65.5"/>
+					<y:Bend Location="226.5,64"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":11,"to":15,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e15" source="n11" target="n16" sourceport="p3" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="226.5,65.5"/>
+					<y:Bend Location="226.5,27"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":11,"to":16,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e16" source="n0" target="n17" sourceport="p4" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-92.5,15"/>
+					<y:Bend Location="-92.5,94.75"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="6"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":0,"to":17,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e17" source="n17" target="n18" sourceport="p1" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-223.5,94.75"/>
+					<y:Bend Location="-223.5,74.75"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":17,"to":18,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e18" source="n17" target="n19" sourceport="p2" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="-223.5,94.75"/>
+					<y:Bend Location="-223.5,111.75"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="5"/>
+			</data>
+			<data key="d2">
+				<y:Json>{"from":17,"to":19,"type":"association"}</y:Json>
+			</data>
+		</edge>
+		<edge id="e19" source="n0" target="n20" sourceport="p5" targetport="p0">
+			<data key="d5">
+				<x:List>
+					<y:Bend Location="122.5,15"/>
+					<y:Bend Location="122.5,105.5"/>
+				</x:List>
+			</data>
+			<data key="d6">
+				<y:GraphMLReference ResourceKey="6"/>
+			</data>
+		</edge>
+	</graph>
+</graphml>

@@ -33,6 +33,7 @@ import { ResumeFormatter } from './tools/ResumeFormatter';
 import { ChecklistMaker } from './tools/ChecklistMaker';
 import { InvoiceGenerator } from './tools/InvoiceGenerator';
 import { FormFiller } from './tools/FormFiller';
+import { MindMapEditor } from './tools/MindMapEditor';
 
 interface ToolViewerModalProps {
   tool: ToolItem | null;
@@ -106,6 +107,9 @@ export const ToolViewerModal: React.FC<ToolViewerModalProps> = ({ tool, onClose 
         return <InvoiceGenerator />;
       case 'form-filler':
         return <FormFiller />;
+      case 'tip-calculator':
+      case 'mind-map-editor':
+        return <MindMapEditor />;
       default:
         return <div className="p-8 text-center text-gray-400">Tool component coming soon!</div>;
     }

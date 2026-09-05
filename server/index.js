@@ -38,6 +38,35 @@ app.post('/api/pdf/merge', (req, res) => {
   });
 });
 
+const fs = require('fs');
+const path = require('path');
+
+// Mindmap GraphML endpoints
+app.get('/api/mindmap', (req, res) => {
+  const filePath = path.join(__dirname, '..', 'mindmap.graphml');
+  if (fs.existsSync(filePath)) {
+    const xmlContent = fs.readFileSync(filePath, 'utf8');
+    res.setHeader('Content-Type', 'application/xml');
+    res.send(xmlContent);
+  } else {
+    res.status(404).json({ error: 'mindmap.graphml not found' });
+  }
+});
+
+app.post('/api/mindmap/save', (req, res) => {
+  try {
+    const { xmlContent } = req.body;
+    if (!xmlContent) {
+      return res.status(400).json({ error: 'xmlContent is required' });
+    }
+    const filePath = path.join(__dirname, '..', 'mindmap.graphml');
+    fs.writeFileSync(filePath, xmlContent, 'utf8');
+    res.json({ success: true, message: 'mindmap.graphml saved successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Express server running on http://localhost:${PORT}`);
 });

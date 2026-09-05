@@ -45,9 +45,11 @@ import {
   Crosshair,
   Hexagon,
   Shield,
+  Network,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
+  Network: <Network className="h-5 w-5 text-halo-cyan" />,
   Moon: <Moon className="h-5 w-5 text-halo-cyan" />,
   Camera: <Camera className="h-5 w-5 text-vice-pink" />,
   FileText: <FileText className="h-5 w-5 text-halo-cyan" />,
@@ -120,6 +122,80 @@ function getRarity(category: string) {
   }
 }
 
+function getUsefulToolTag(tool: ToolItem): { text: string; icon: React.ReactNode } {
+  switch (tool.id) {
+    case 'pdf-merger':
+      return { text: '100% PRIVATE PDF', icon: <Shield className="h-2.5 w-2.5" /> };
+    case 'image-to-pdf':
+      return { text: 'MULTI-PAGE STUDIO', icon: <Sparkles className="h-2.5 w-2.5" /> };
+    case 'json-formatter':
+      return { text: 'PRETTIFY & MINIFY', icon: <Code2 className="h-2.5 w-2.5" /> };
+    case 'markdown-to-html':
+      return { text: 'LIVE DUAL PANE', icon: <FileCode className="h-2.5 w-2.5" /> };
+    case 'file-converter':
+      return { text: 'DOCX • TXT • PDF', icon: <RefreshCw className="h-2.5 w-2.5" /> };
+    case 'note-to-pdf':
+      return { text: 'INSTANT PDF EXPORT', icon: <FileText className="h-2.5 w-2.5" /> };
+    case 'html-to-pdf':
+      return { text: 'PRINT ENGINE READY', icon: <Printer className="h-2.5 w-2.5" /> };
+    case 'table-to-csv':
+      return { text: 'EXCEL CSV EXPORT', icon: <Table className="h-2.5 w-2.5" /> };
+    case 'svg-code-editor':
+      return { text: 'BI-DIRECTIONAL GLOW', icon: <Code2 className="h-2.5 w-2.5" /> };
+    case 'passport-photo-maker':
+      return { text: '35x45MM • < 80 KB', icon: <Camera className="h-2.5 w-2.5" /> };
+    case 'photo-reducer':
+      return { text: '100KB HIGH-COMPRESS', icon: <Minimize2 className="h-2.5 w-2.5" /> };
+    case 'qr-generator':
+      return { text: 'HIGH-RES PNG', icon: <QrCode className="h-2.5 w-2.5" /> };
+    case 'text-to-speech':
+      return { text: '.WAV AUDIO EXPORT', icon: <Volume2 className="h-2.5 w-2.5" /> };
+    case 'speech-to-text':
+      return { text: 'REALTIME WAVEFORM', icon: <Mic className="h-2.5 w-2.5" /> };
+    case 'signature-generator':
+      return { text: 'HTML & CSS READY', icon: <PenTool className="h-2.5 w-2.5" /> };
+    case 'age-calculator':
+      return { text: 'EXACT DOB & LEAP YEAR', icon: <Calendar className="h-2.5 w-2.5" /> };
+    case 'loan-emi-calculator':
+      return { text: 'AMORTIZATION & CHART', icon: <Calculator className="h-2.5 w-2.5" /> };
+    case 'unit-converter':
+      return { text: '14 SHAPES & MACH SPEED', icon: <RefreshCw className="h-2.5 w-2.5" /> };
+    case 'percentage-calculator':
+      return { text: '3-IN-1 MATH TOOL', icon: <Percent className="h-2.5 w-2.5" /> };
+    case 'cgpa-converter':
+      return { text: 'CBSE 9.5 MULTIPLIER', icon: <GraduationCap className="h-2.5 w-2.5" /> };
+    case 'expense-tracker':
+      return { text: 'CATEGORY SUMMARY', icon: <Wallet className="h-2.5 w-2.5" /> };
+    case 'word-counter':
+      return { text: 'LIVE WPM & ACCURACY', icon: <AlignLeft className="h-2.5 w-2.5" /> };
+    case 'password-generator':
+      return { text: 'CRYPTO SECURE', icon: <Key className="h-2.5 w-2.5" /> };
+    case 'bill-splitter':
+      return { text: 'PORTION & TIP CALC', icon: <Users className="h-2.5 w-2.5" /> };
+    case 'water-calculator':
+      return { text: 'HYDRATION GOAL', icon: <Droplet className="h-2.5 w-2.5" /> };
+    case 'meeting-scheduler':
+      return { text: '.ICS & INVITE LINK', icon: <CalendarDays className="h-2.5 w-2.5" /> };
+    case 'resume-formatter':
+      return { text: 'CLEAN TYPOGRAPHY', icon: <FileCheck className="h-2.5 w-2.5" /> };
+    case 'checklist-maker':
+      return { text: 'PROGRESS BAR & PERSIST', icon: <CheckSquare className="h-2.5 w-2.5" /> };
+    case 'invoice-generator':
+      return { text: 'TAX & SUBTOTAL CALC', icon: <Receipt className="h-2.5 w-2.5" /> };
+    case 'form-filler':
+      return { text: '1-CLICK PROFILE AUTOFILL', icon: <UserCheck className="h-2.5 w-2.5" /> };
+    case 'sleep-calculator':
+      return { text: '90-MIN REM CYCLES', icon: <Moon className="h-2.5 w-2.5" /> };
+    case 'tip-calculator':
+      return { text: 'GRAPHML AUTO-SAVE', icon: <Network className="h-2.5 w-2.5" /> };
+    default:
+      if (tool.status === 'upgraded') {
+        return { text: '🔥 UPGRADED', icon: <Zap className="h-2.5 w-2.5" /> };
+      }
+      return { text: '⚡ CLIENT-SIDE', icon: <Zap className="h-2.5 w-2.5" /> };
+  }
+}
+
 interface ToolCardProps {
   tool: ToolItem;
   isSelected?: boolean;
@@ -129,6 +205,7 @@ interface ToolCardProps {
 export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
   const icon = ICON_MAP[tool.iconName] || <FileText className="h-5 w-5 text-halo-cyan" />;
   const rarity = getRarity(tool.category);
+  const usefulTag = getUsefulToolTag(tool);
 
   const handleClick = (e: React.MouseEvent) => {
     if (onSelect) {
@@ -372,12 +449,82 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
         );
 
       case 'tip-calculator':
+      case 'mind-map-editor':
         return (
-          <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#1E1800] via-[#241E05] to-[#0F1425] border border-vice-neon/30 p-3 flex flex-col justify-between overflow-hidden relative">
-            <div className="absolute inset-0 halo-scanlines opacity-15" />
-            <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">TIP • SPLIT</span><span className="px-1.5 py-0.5 bg-vice-neon/10 text-vice-neon font-mono text-[8px] font-bold border border-vice-neon/20 clip-chamfer-sm">15-25%</span></div>
-            <div className="grid grid-cols-3 gap-1.5 text-center relative z-10"><div className="p-1.5 bg-black/60 clip-chamfer-sm border border-vice-neon/20"><div className="font-mono text-[8px] text-white/40">TIP</div><div className="text-vice-neon font-mono font-bold text-xs">$18</div></div><div className="p-1.5 bg-black/60 clip-chamfer-sm border border-halo-cyan/20"><div className="font-mono text-[8px] text-white/40">TOTAL</div><div className="text-halo-cyan font-mono font-bold text-xs">$138</div></div><div className="p-1.5 bg-black/60 clip-chamfer-sm border border-emerald-400/20"><div className="font-mono text-[8px] text-white/40">EACH</div><div className="text-emerald-400 font-mono font-bold text-xs">$69</div></div></div>
-            <div className="font-mono text-[8px] text-white/30 text-center relative z-10">DINER SPLITTER • PRESETS</div>
+          <div className="w-full h-[176px] clip-chamfer-sm bg-slate-950 border border-cyan-500/30 p-3 flex flex-col justify-between overflow-hidden relative group/mindmap">
+            {/* Background Grid Pattern & Glow */}
+            <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:12px_12px] opacity-40 pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Header Strip */}
+            <div className="flex justify-between items-center relative z-10">
+              <div className="flex items-center gap-1.5">
+                <Network className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="font-tech font-bold text-white text-xs tracking-wider">MIND MAP • CANVAS</span>
+              </div>
+              <span className="px-1.5 py-0.5 bg-cyan-500/10 text-cyan-300 font-mono text-[8px] font-bold border border-cyan-500/30 clip-chamfer-sm flex items-center gap-1">
+                <Sparkles className="w-2.5 h-2.5 text-cyan-400 animate-pulse" />
+                GRAPHML ENGINE
+              </span>
+            </div>
+
+            {/* Interactive Mind Map Visual Graphic */}
+            <div className="relative w-full h-[100px] flex items-center justify-center z-10">
+              {/* Connecting Lines SVG */}
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
+                {/* Left Top: games */}
+                <path d="M 35 50 C 28 50, 28 20, 24 20" fill="none" stroke="#10b981" strokeWidth="2" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+                {/* Left Bottom: collecting */}
+                <path d="M 35 50 C 28 50, 28 80, 25 80" fill="none" stroke="#8b5cf6" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                {/* Right Top: books */}
+                <path d="M 65 50 C 72 50, 72 20, 76 20" fill="none" stroke="#f59e0b" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                {/* Right Bottom: sport */}
+                <path d="M 65 50 C 72 50, 72 80, 80 80" fill="none" stroke="#ff007f" strokeWidth="2" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+              </svg>
+
+              {/* Central Root Node */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 border-2 border-cyan-400 text-white rounded-xl shadow-lg shadow-cyan-500/30 flex items-center gap-1.5 font-bold text-[11px] z-20 transition-transform group-hover/mindmap:scale-105">
+                <span className="text-xs">🧠</span>
+                <span className="font-mono text-cyan-200">hobbies</span>
+                <span className="text-[7px] bg-cyan-500/20 text-cyan-300 px-1 py-0.5 rounded border border-cyan-400/40 font-mono">ROOT</span>
+              </div>
+
+              {/* Sub Nodes */}
+              {/* Top Left: games */}
+              <div className="absolute left-5 top-2 px-2 py-0.5 bg-emerald-950/90 border border-emerald-400/60 text-emerald-200 rounded-lg text-[9px] font-bold flex items-center gap-1 shadow-md shadow-emerald-500/10">
+                <span>🎮</span>
+                <span>games</span>
+                <span className="text-[7px] text-emerald-400 font-mono">👁️3</span>
+              </div>
+
+              {/* Bottom Left: collecting */}
+              <div className="absolute left-8 bottom-2 px-2 py-0.5 bg-purple-950/90 border border-purple-400/60 text-purple-200 rounded-lg text-[9px] font-bold flex items-center gap-1 shadow-md shadow-purple-500/10">
+                <span>🎨</span>
+                <span>collecting</span>
+              </div>
+
+              {/* Top Right: books */}
+              <div className="absolute right-6 top-2 px-2 py-0.5 bg-amber-950/90 border border-amber-400/60 text-amber-200 rounded-lg text-[9px] font-bold flex items-center gap-1 shadow-md shadow-amber-500/10">
+                <span>📚</span>
+                <span>books</span>
+                <span className="text-[7px] text-amber-400 font-mono">👁️3</span>
+              </div>
+
+              {/* Bottom Right: sport */}
+              <div className="absolute right-6 bottom-2 px-2 py-0.5 bg-pink-950/90 border border-pink-400/60 text-pink-200 rounded-lg text-[9px] font-bold flex items-center gap-1 shadow-md shadow-pink-500/10">
+                <span>⚽</span>
+                <span>sport</span>
+              </div>
+            </div>
+
+            {/* Footer Features */}
+            <div className="flex justify-between items-center font-mono text-[8px] font-bold text-slate-400 relative z-10 pt-1 border-t border-slate-800/60">
+              <span className="text-slate-400 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                AUTO-SAVE
+              </span>
+              <span className="text-cyan-300 font-semibold">GRAPHML IMPORT/EXPORT</span>
+            </div>
           </div>
         );
 
@@ -634,8 +781,9 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
             </span>
             <div className="font-mono text-[9px] tracking-[0.16em] font-bold text-halo-cyan">{rarity.label}</div>
           </div>
-          <div className={`px-2 py-1 clip-chamfer-sm font-mono text-[9px] tracking-[0.14em] font-black border ${rarity.badge} flex items-center gap-1`}>
-            <Shield className="h-2.5 w-2.5" /> READY
+          <div className={`px-2 py-1 clip-chamfer-sm font-mono text-[9px] tracking-[0.14em] font-black border ${rarity.badge} flex items-center gap-1.5 shadow-sm`}>
+            {usefulTag.icon}
+            <span>{usefulTag.text}</span>
           </div>
           {/* scan sweep */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
