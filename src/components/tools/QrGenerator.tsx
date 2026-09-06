@@ -5,6 +5,118 @@ import QRCode from 'qrcode';
 import { QrCode as QrIcon, Download, Copy, Check, Sparkles, Upload, Image as ImageIcon, Shield, Palette, Zap, Sliders } from 'lucide-react';
 
 const PRESET_ICONS: Record<string, { label: string; svg: string; color: string }> = {
+  Mail: {
+    label: 'Mail / Email',
+    color: '#38bdf8',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+    </svg>`
+  },
+  Phone: {
+    label: 'Mobile Phone',
+    color: '#34d399',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    </svg>`
+  },
+  Website: {
+    label: 'Website / Link',
+    color: '#c084fc',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
+    </svg>`
+  },
+  Location: {
+    label: 'Location Pin',
+    color: '#ea580c',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+    </svg>`
+  },
+  Profile: {
+    label: 'Profile / Contact',
+    color: '#6366f1',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>`
+  },
+  Company: {
+    label: 'Company / Office',
+    color: '#f59e0b',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
+    </svg>`
+  },
+  WiFi: {
+    label: 'WiFi Signal',
+    color: '#10b981',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.85a10 10 0 0 1 14 0"/><path d="M8.5 16.88a5 5 0 0 1 7 0"/>
+    </svg>`
+  },
+  Share: {
+    label: 'Share / vCard',
+    color: '#06b6d4',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="10.51" y2="6.99"/><line x1="15.41" x2="8.59" y1="17.01" y2="13.49"/>
+    </svg>`
+  },
+  QRCode: {
+    label: 'Scan QR Code',
+    color: '#8b5cf6',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/>
+    </svg>`
+  },
+  WhatsApp: {
+    label: 'WhatsApp Message',
+    color: '#25D366',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>
+    </svg>`
+  },
+  Instagram: {
+    label: 'Instagram Social',
+    color: '#E1306C',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+    </svg>`
+  },
+  GitHub: {
+    label: 'GitHub Code',
+    color: '#f8fafc',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#f8fafc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>
+    </svg>`
+  },
+  LinkedIn: {
+    label: 'LinkedIn Professional',
+    color: '#0A66C2',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#0A66C2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/>
+    </svg>`
+  },
+  Payment: {
+    label: 'Payment / Card',
+    color: '#22c55e',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+    </svg>`
+  },
+  Security: {
+    label: 'Security / Lock',
+    color: '#ef4444',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>`
+  },
+  Play: {
+    label: 'Play Video',
+    color: '#ea580c',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="6 3 20 12 6 21 6 3"/>
+    </svg>`
+  },
   Starbucks: {
     label: 'Starbucks Emblem',
     color: '#006241',
@@ -17,89 +129,47 @@ const PRESET_ICONS: Record<string, { label: string; svg: string; color: string }
       <circle cx="62" cy="45" r="3" fill="#ffffff"/>
     </svg>`
   },
-  Location: {
-    label: 'Location Pin',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-      <circle cx="12" cy="10" r="3"/>
-    </svg>`
-  },
-  Phone: {
-    label: 'Mobile Phone',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>
-      <path d="M12 18h.01"/>
-    </svg>`
-  },
-  Play: {
-    label: 'Play Video',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="#ea580c" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="6 3 20 12 6 21 6 3"/>
-    </svg>`
-  },
   Info: {
     label: 'Info Badge',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M12 16v-4"/>
-      <path d="M12 8h.01"/>
+    color: '#3b82f6',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
     </svg>`
   },
   Cart: {
     label: 'Shopping Cart',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+    color: '#eab308',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
       <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
       <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
     </svg>`
   },
-  WiFi: {
-    label: 'WiFi Signal',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 20h.01"/>
-      <path d="M2 8.82a15 15 0 0 1 20 0"/>
-      <path d="M5 12.85a10 10 0 0 1 14 0"/>
-      <path d="M8.5 16.88a5 5 0 0 1 7 0"/>
-    </svg>`
-  },
   Cloud: {
     label: 'Cloud Sync',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+    color: '#0284c7',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
       <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
     </svg>`
   },
   Coffee: {
     label: 'Coffee Cup',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
-      <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
-      <line x1="6" x2="6" y1="2" y2="4"/>
-      <line x1="10" x2="10" y1="2" y2="4"/>
-      <line x1="14" x2="14" y1="2" y2="4"/>
+    color: '#d97706',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/>
     </svg>`
   },
   Search: {
     label: 'Search Lens',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="m21 21-4.3-4.3"/>
+    color: '#a855f7',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
     </svg>`
   },
   Download: {
     label: 'Download Arrow',
-    color: '#ea580c',
-    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/>
-      <line x1="12" x2="12" y1="15" y2="3"/>
+    color: '#3b82f6',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
     </svg>`
   }
 };
@@ -125,7 +195,7 @@ export const QrGenerator: React.FC = () => {
 
   // Logo Engraving State
   const [logoMode, setLogoMode] = useState<'none' | 'preset' | 'upload'>('preset');
-  const [selectedPreset, setSelectedPreset] = useState<string>('Starbucks');
+  const [selectedPreset, setSelectedPreset] = useState<string>('Mail');
   const [uploadedLogoUrl, setUploadedLogoUrl] = useState<string>('');
   const [logoSizePercent, setLogoSizePercent] = useState<number>(24); // 15% to 35%
   const [logoShape, setLogoShape] = useState<'circle' | 'rounded' | 'square' | 'transparent'>('circle');
@@ -526,7 +596,7 @@ export const QrGenerator: React.FC = () => {
           {logoMode === 'preset' && (
             <div className="space-y-1.5 pt-1">
               <label className="text-xs text-gray-300 font-semibold">Select Built-In Vector Icon:</label>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
                 {Object.keys(PRESET_ICONS).map((key) => (
                   <button
                     key={key}
