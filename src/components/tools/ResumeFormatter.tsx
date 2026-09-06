@@ -348,53 +348,53 @@ export const ResumeFormatter: React.FC = () => {
   const [fontMode, setFontMode] = useLocalStorage<'sans' | 'serif'>('toolip_resume_font', 'sans');
 
   // Resume Data State with Local Storage Persistence
-  const [name, setName, resetName] = useLocalStorage<string>('toolip_resume_name', 'Alex Johnson');
-  const [title, setTitle, resetTitle] = useLocalStorage<string>('toolip_resume_title', 'Senior Full Stack Software Engineer');
-  const [email, setEmail, resetEmail] = useLocalStorage<string>('toolip_resume_email', 'alex.johnson@example.com');
-  const [phone, setPhone, resetPhone] = useLocalStorage<string>('toolip_resume_phone', '+1 (555) 345-6789');
-  const [location, setLocation, resetLocation] = useLocalStorage<string>('toolip_resume_location', 'San Francisco, CA');
-  const [linkedin, setLinkedin, resetLinkedin] = useLocalStorage<string>('toolip_resume_linkedin', 'linkedin.com/in/alexjohnson');
-  const [github, setGithub, resetGithub] = useLocalStorage<string>('toolip_resume_github', 'github.com/alexjohnson');
-  const [website, setWebsite, resetWebsite] = useLocalStorage<string>('toolip_resume_website', '');
+  const [name, setName, resetName] = useLocalStorage<string>('toolip_resume_name', 'Himesh Satyam');
+  const [title, setTitle, resetTitle] = useLocalStorage<string>('toolip_resume_title', 'Full-Stack Software Engineer');
+  const [email, setEmail, resetEmail] = useLocalStorage<string>('toolip_resume_email', 'satyamhimesh@gmail.com');
+  const [phone, setPhone, resetPhone] = useLocalStorage<string>('toolip_resume_phone', '+91 8105542318');
+  const [location, setLocation, resetLocation] = useLocalStorage<string>('toolip_resume_location', 'Katihar, Bihar, India');
+  const [linkedin, setLinkedin, resetLinkedin] = useLocalStorage<string>('toolip_resume_linkedin', 'linkedin.com/in/himesh-satyam');
+  const [github, setGithub, resetGithub] = useLocalStorage<string>('toolip_resume_github', 'github.com/himesh220002');
+  const [website, setWebsite, resetWebsite] = useLocalStorage<string>('toolip_resume_website', 'cyphertech.online');
 
   const [summary, setSummary, resetSummary] = useLocalStorage<string>(
     'toolip_resume_summary',
-    'Results-driven Software Engineer with 6+ years of experience specializing in Next.js, TypeScript, and high-performance web applications. Proven track record of scaling consumer platforms to 1M+ users and reducing backend latency by 35% through microservices architecture. Passionate about clean code, system design, and mentoring engineering teams.'
+    'Full-Stack Software Engineer with 3+ years of independent product development (Jan 2023 – Present) and internship experience, specializing in React, Next.js, Node.js, PostgreSQL, MongoDB and Python. Built and deployed 30+ client-side utilities and 3 major AI/full-stack platforms using REST APIs, JWT authentication and database design, with hands-on system design and deployment on Vercel/Netlify. Proven ability to design, build and ship scalable products end-to-end — from API architecture and RAG pipelines (embeddings, vector search, LLMs) to production delivery.'
   );
 
   const [experience, setExperience, resetExperience] = useLocalStorage<string>(
     'toolip_resume_exp',
-    'Senior Full Stack Developer — TechCorp Inc. | San Francisco, CA (2022 — Present)\n• Spearheaded Next.js frontend architecture serving 1M+ monthly active users; improved Lighthouse performance score from 72 to 96\n• Architected Express.js microservices and PostgreSQL optimization, reducing p95 latency by 35% and infra cost by 22%\n• Led and mentored a cross-functional team of 6 engineers; introduced CI/CD pipelines cutting deployment time by 60%\n\nSoftware Engineer — WebSolutions Co. | Remote (2019 — 2022)\n• Built responsive web applications and RESTful API integrations for 15+ enterprise clients\n• Automated testing and deployment workflows, improving release reliability by 40%\n• Collaborated with product and design to ship 3 major product releases on schedule'
+    'Independent Software Engineer / Product Builder — Self-Employed | Remote (Jan 2023 – Present)\n• Designed, developed and deployed 8+ production full-stack applications using Next.js, React, Node.js, Express, PostgreSQL and MongoDB, implementing REST APIs, JWT authentication and database-backed workflows\n• Built Toolip — 30+ client-side utilities (file conversion, image optimization, finance calculators) using Next.js, React and Tailwind CSS with 100% client-side execution, zero telemetry and responsive dark UI, deployed on Vercel\n• Engineered InputChat — AI orchestration platform using Next.js, React, Node.js and NVIDIA inference endpoints, supporting hybrid local + cloud LLM execution with modular orchestration for scalability\n• Developed CodeForge — RAG pipeline integrating Python, embeddings, semantic chunking, vector storage, vector search and reranking to improve query accuracy for code/document retrieval\n\nIntern — Technologics | Bangalore, India (Apr 2022 – May 2022)\n• Assisted in software development and project documentation, gaining exposure to real-world IT workflows and agile practices\n• Contributed to development tasks using modern stacks, collaborating with senior engineers on project deliverables'
   );
 
   const [education, setEducation, resetEducation] = useLocalStorage<string>(
     'toolip_resume_edu',
-    'B.S. in Computer Science — University of Technology | San Francisco, CA (2015 — 2019)\n• Graduated First Class Honors — GPA 3.8 / 4.0; Dean’s List (2016 — 2019)\n• Relevant Coursework: Data Structures, Algorithms, Distributed Systems, Machine Learning'
+    'Bachelor of Engineering in Computer Science & Engineering — SJCIT | 2023\n• Completed coursework 2017–2022, degree awarded Jan 2023 (SJCIT, Visvesvaraya Technological University)\n• Relevant Coursework: Data Structures & Algorithms, Object-Oriented Programming, Database Management, System Design'
   );
 
   const [projects, setProjects, resetProjects] = useLocalStorage<string>(
     'toolip_resume_projects',
-    'Toolip — Everyday Utilities Platform (2026)\n• Developed a privacy-first utilities suite with 29 client-side tools (file conversion, image optimization, finance calculators)\n• Engineered Web Audio API frequency visualizer and pdf-lib powered document pipeline; 100% client-side, zero data upload\n\nOpenSource — Performance Toolkit\n• Published 2 technical articles on web performance (12k+ reads); speaker at local JS meetup'
+    'InputChat — Local/Global Model Orchestration (2024)\n• Unified platform for running downloaded models alongside NVIDIA endpoint models using Next.js, React, Node.js and REST APIs\n• Enabled hybrid AI workflows by combining local inference with cloud endpoints, supporting scalable LLM execution\n• Designed with modular orchestration for scalability and developer usability, implementing system design and API architecture\n\nToolip — Everyday Utilities Suite (2024)\n• Built 30+ client-side tools including file conversion, image optimization and finance calculators using Next.js, React, Node.js and Tailwind CSS\n• Engineered with privacy-first design (100% client-side, zero telemetry), handling file processing entirely in browser\n• Delivered responsive, dark-themed UI consistent across utilities, deployed on Vercel with optimized performance\n\nCodeForge — RAG Pipeline (2024)\n• Developed retrieval-augmented generation pipeline integrating Python, embeddings, vector search, vector storage and LLMs\n• Implemented semantic chunking, vector storage and reranking for improved query accuracy, enhancing retrieval precision\n• Created intelligent code/document query workflows with suggestions for refinement, demonstrating AI engineering depth'
   );
 
   const [techSkills, setTechSkills, resetTechSkills] = useLocalStorage<string>(
     'toolip_resume_techskills',
-    'React, Next.js, TypeScript, JavaScript (ES6+), Node.js, Express.js, PostgreSQL, Tailwind CSS, Docker, Git, REST APIs, System Design'
+    'JavaScript, TypeScript, Python, SQL, HTML, CSS, React, Next.js, Tailwind CSS, Node.js, Express, REST APIs, JWT, PostgreSQL, MongoDB, Database Design, Indexing, PyTorch, RAG, Embeddings, Vector Search, Semantic Chunking, LLMs, Streamlit, ResNet50, Vercel, Netlify, AWS, GCP, Docker, Git, GitHub Actions, CI/CD, Linux'
   );
 
   const [softSkills, setSoftSkills, resetSoftSkills] = useLocalStorage<string>(
     'toolip_resume_softskills',
-    'Technical Leadership, System Design, Agile / Scrum, Code Review & Mentorship, Problem Solving'
+    'System Design, API Design, Object-Oriented Programming, Data Structures & Algorithms, Scalability, Problem Solving, Agile / Scrum, Code Review'
   );
 
   const [achievements, setAchievements, resetAchievements] = useLocalStorage<string>(
     'toolip_resume_achievements',
-    '• 1st Place — Global Hackathon 2024 (500+ teams)\n• AWS Certified Solutions Architect — Associate (2023)\n• Published: “Optimizing Next.js for 1M Users” — Medium, 12k+ claps'
+    '• GitHub: github.com/himesh220002 — 3 major open-source AI/full-stack platforms (InputChat, Toolip, CodeForge)\n• Portfolio: cyphertech.online — Live production deployments on Vercel/Netlify\n• Full-Stack Development — Udemy (comprehensive)\n• Python Programming — Udemy | Unity 3D with C# — Udemy'
   );
 
   const [languages, setLanguages, resetLanguages] = useLocalStorage<string>(
     'toolip_resume_languages',
-    'English (Native), Spanish (Fluent), Hindi (Conversational)'
+    'English (Professional), Hindi (Native)'
   );
 
   const [showFooter, setShowFooter, resetShowFooter] = useLocalStorage<boolean>('toolip_resume_show_footer', true);
@@ -526,7 +526,16 @@ export const ResumeFormatter: React.FC = () => {
   };
 
   const copyPlainResume = () => {
-    const plain = `${name}\n${title}\n${email} | ${phone} | ${location} | ${linkedin} ${github ? '| ' + github : ''}\n\nPROFESSIONAL SUMMARY\n${summary}\n\nWORK EXPERIENCE\n${experience}\n\nEDUCATION\n${education}\n\nPROJECTS\n${projects}\n\nTECHNICAL SKILLS\n${techSkills}\n\nSOFT SKILLS\n${softSkills}\n\nACHIEVEMENTS & CERTIFICATIONS\n${achievements}\n\nLANGUAGES\n${languages}`;
+    const clean = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const line1 = [`Email: ${email}`, `Phone: ${phone}`, `Location: ${location}`].filter((s) => !s.endsWith(': ') && s.split(': ')[1]?.trim()).join(' | ');
+    const line2 = [
+      linkedin ? `LinkedIn: ${clean(linkedin)}` : '',
+      github ? `GitHub: ${clean(github)}` : '',
+      website ? `Portfolio: ${clean(website)}` : '',
+    ]
+      .filter(Boolean)
+      .join(' | ');
+    const plain = `${name}\n${title}\n${line1}${line2 ? '\n' + line2 : ''}\n\nPROFESSIONAL SUMMARY\n${summary}\n\nWORK EXPERIENCE\n${experience}\n\nEDUCATION\n${education}\n\nPROJECTS\n${projects}\n\nTECHNICAL SKILLS\n${techSkills}\n\nSOFT SKILLS\n${softSkills}\n\nACHIEVEMENTS & CERTIFICATIONS\n${achievements}\n\nLANGUAGES\n${languages}`;
     navigator.clipboard.writeText(plain);
     setCopiedPlain(true);
     setTimeout(() => setCopiedPlain(false), 2000);
@@ -536,62 +545,63 @@ export const ResumeFormatter: React.FC = () => {
     const element = document.getElementById('printable-resume');
     if (!element) return;
 
-    // Try pop-up print window first (best A4 fidelity with full theme)
+    // Use a dedicated print window that clones the parent's compiled CSS.
+    // This keeps fonts/sizes pixel-perfect to the preview (same Tailwind
+    // build, same Google Fonts) while avoiding the visibility:hidden
+    // isolation that was rendering blank in some browsers.
     const printWindow = window.open('', '_blank', 'width=900,height=1100');
     if (!printWindow) {
-      // Fallback: use browser print with isolation CSS (already in <style> @media print)
-      window.print();
+      // Pop-up blocked → fallback to native print (relies on @media print)
+      const doPrint = () => window.print();
+      if (document.fonts && (document.fonts as any).ready) {
+        (document.fonts as any).ready.then(() => setTimeout(doPrint, 100));
+      } else {
+        setTimeout(doPrint, 100);
+      }
       return;
     }
 
-    const fontFamily =
-      fontMode === 'serif'
-        ? `'Merriweather', Georgia, 'Times New Roman', serif`
-        : `'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
-
-    // Clone all parent <style> and <link rel="stylesheet"> so Tailwind / globals carry over, plus CDN fallback
+    // Clone every <style> and <link rel="stylesheet"> from the parent
+    // document so the compiled Tailwind utilities (text-[14px], etc.) and
+    // globals are available verbatim — no CDN drift.
     const parentStyles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
       .map((el) => (el as HTMLElement).outerHTML)
       .join('\n');
+
+    const safeName = name.trim().toLowerCase().replace(/\s+/g, '_') || 'resume';
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Resume_${name.trim().toLowerCase().replace(/\s+/g, '_') || 'resume'}</title>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <!-- Tailwind CDN ensures all utility classes (text-[14px], bg-white, flex, etc.) render in print window -->
-          <script src="https://cdn.tailwindcss.com"></script>
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
+          <title>Resume_${safeName}</title>
           ${parentStyles}
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
           <style>
             @page { margin: 10mm 12mm; size: A4 portrait; }
-            * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            html, body { margin: 0; padding: 0; background: #ffffff !important; color: #0f172a; font-family: ${fontFamily}; }
-            a { color: inherit; text-decoration: none; }
-            ul { margin: 0; padding-left: 18px; }
-            li { margin-bottom: 3px; }
-            /* Ensure A4 preview box itself has no extra shadow/border in print */
-            #printable-resume { box-shadow: none !important; border: none !important; border-radius: 0 !important; max-width: none !important; }
-            @media print {
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; background-image: none !important; }
+            body::before, body::after, html::before, html::after { display: none !important; background: none !important; }
+            /* Kill Toolip's dark page background and decorative layers that leaked via cloned globals */
+            .hex-grid, .vice-grain, .halo-scanlines, .halo-scanlines::before, .vice-grain::after, .hex-grid::before { display: none !important; background: none !important; }
+            /* Keep the resume card centered on white A4, no shadow/border shrink */
+            #printable-resume { max-width: 800px !important; margin: 0 auto !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; background: #ffffff !important; }
+            #printable-resume > div { background: #ffffff !important; }
           </style>
         </head>
-        <body class="bg-white text-[#0f172a]">
-          <div style="max-width: 800px; margin: 0 auto; padding: 12px 8px; background: white;">
+        <body class="bg-white">
+          <div style="padding: 12px; background: #ffffff;">
             ${element.outerHTML}
           </div>
           <script>
-            // Wait for Tailwind CDN + fonts to apply before printing, so entire theme (colors, spacing, icons) loads
-            const doPrint = () => setTimeout(() => { window.print(); window.close(); }, 900);
+            const doPrint = () => setTimeout(() => { window.print(); window.close(); }, 600);
             if (document.fonts && document.fonts.ready) {
               document.fonts.ready.then(doPrint);
             } else {
               window.onload = doPrint;
             }
-            // Fallback if CDN is slow
             setTimeout(doPrint, 1800);
           <\/script>
         </body>
@@ -620,11 +630,24 @@ export const ResumeFormatter: React.FC = () => {
     }
   }, []);
 
-  const SectionHeading: React.FC<{ icon?: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => {
+  // One-time migration: old demo (Alex Johnson / TechCorp) → new Himesh Satyam ATS-90+ master resume
+  // If user still has the legacy demo data, auto-upgrade to the improved resume so preview matches the 75→90+ review
+  useEffect(() => {
+    const isLegacyDemo =
+      name === 'Alex Johnson' &&
+      email === 'alex.johnson@example.com' &&
+      title === 'Senior Full Stack Software Engineer';
+    const isLegacyExp = experience.includes('TechCorp Inc.') || experience.includes('WebSolutions Co.');
+    const isLegacyEdu = education.includes('University of Technology') && education.includes('2015 — 2019');
+    if (isLegacyDemo || isLegacyExp || isLegacyEdu) {
+      resetAllResume();
+    }
+  }, []);
+
+  const SectionHeading: React.FC<{ icon?: React.ReactNode; children: React.ReactNode }> = ({ icon: _icon, children }) => {
     if (template === 'classic') {
       return (
-        <div className="flex items-center gap-2 border-b border-gray-300 pb-1.5 mb-3 mt-6 first:mt-0">
-          {icon && <span className="text-gray-500">{icon}</span>}
+        <div className="border-b border-gray-300 pb-1.5 mb-3 mt-6 first:mt-0">
           <h3 className="text-[11px] font-extrabold tracking-[0.16em] uppercase text-gray-900">{children}</h3>
         </div>
       );
@@ -655,15 +678,28 @@ export const ResumeFormatter: React.FC = () => {
   const skillList = techSkills.split(',').map((s) => s.trim()).filter(Boolean);
   const softSkillList = softSkills.split(',').map((s) => s.trim()).filter(Boolean);
 
+  // Ensure Inter + Merriweather are loaded in the main document so preview and native print share the exact same fonts (fixes sans-vs-serif drift)
+  useEffect(() => {
+    if (typeof document !== 'undefined' && !document.querySelector('link[href*="fonts.googleapis.com"][href*="Inter"]')) {
+      const link = document.createElement('link');
+      link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@400;700;900&display=swap';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+  }, []);
+
   return (
     <div className="space-y-4">
       <style>{`
         @media print {
           @page { margin: 10mm 12mm; size: A4 portrait; }
-          html, body { background: #fff !important; }
+          html, body { background: #fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           body * { visibility: hidden !important; }
-          #printable-resume, #printable-resume * { visibility: visible !important; }
-          #printable-resume { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: none !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
+          #printable-resume, #printable-resume * { visibility: visible !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          /* Keep print container identical to on-screen preview: same max-width, no shadow/border shrink, same padding */
+          #printable-resume { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 800px !important; margin: 0 auto !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
+          /* Prevent Tailwind's responsive padding from shifting in print */
+          #printable-resume > div { padding: 28px 32px !important; }
           .print\\:hidden { display: none !important; }
         }
       `}</style>
@@ -849,12 +885,6 @@ export const ResumeFormatter: React.FC = () => {
             <textarea value={experience} onChange={(e) => setExperience(e.target.value)} rows={10} placeholder={"Senior Full Stack Developer — TechCorp Inc. | San Francisco, CA (2022 — Present)\n• Spearheaded Next.js architecture serving 1M+ users...\n• Reduced latency by 35%..."} className="w-full p-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 resize-none leading-relaxed font-mono text-[13px]" />
           </div>
 
-          {/* Education */}
-          <div ref={refEducation} className="p-3.5 bg-gray-900 border border-gray-800 rounded-xl space-y-2 scroll-mt-4">
-            <label className="text-[11px] font-black tracking-[0.14em] uppercase text-white flex items-center gap-1.5"><GraduationCap className="h-3.5 w-3.5 text-emerald-400" /> Education</label>
-            <textarea value={education} onChange={(e) => setEducation(e.target.value)} rows={4} placeholder="B.S. Computer Science — University (2015 — 2019)" className="w-full p-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 resize-none leading-relaxed font-mono text-[13px]" />
-          </div>
-
           {/* Projects */}
           <div ref={refProjects} className="p-3.5 bg-gray-900 border border-gray-800 rounded-xl space-y-2 scroll-mt-4">
             <label className="text-[11px] font-black tracking-[0.14em] uppercase text-white flex items-center gap-1.5"><Code2 className="h-3.5 w-3.5 text-amber-400" /> Featured Projects</label>
@@ -905,6 +935,12 @@ export const ResumeFormatter: React.FC = () => {
             </div>
           </div>
 
+          {/* Education — below Skills per request */}
+          <div ref={refEducation} className="p-3.5 bg-gray-900 border border-gray-800 rounded-xl space-y-2 scroll-mt-4">
+            <label className="text-[11px] font-black tracking-[0.14em] uppercase text-white flex items-center gap-1.5"><GraduationCap className="h-3.5 w-3.5 text-emerald-400" /> Education</label>
+            <textarea value={education} onChange={(e) => setEducation(e.target.value)} rows={4} placeholder="Bachelor of Engineering in Computer Science & Engineering — SJCIT | 2023" className="w-full p-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 resize-none leading-relaxed font-mono text-[13px]" />
+          </div>
+
           <div className="flex gap-2">
             <button onClick={handlePrint} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white hover:bg-gray-100 text-gray-900 font-black text-sm shadow-lg transition-colors"><Download className="h-4 w-4" /> Download PDF</button>
             <button onClick={copyPlainResume} className="px-4 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 font-semibold text-sm flex items-center gap-2">{copiedPlain ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}{copiedPlain ? 'Copied' : 'Copy Text'}</button>
@@ -946,13 +982,24 @@ export const ResumeFormatter: React.FC = () => {
                   </button>
                   <h1 className="font-black tracking-tight leading-none text-[#0f172a]" style={{ fontSize: '30px', letterSpacing: '-0.02em' }}>{name || 'Your Name'}</h1>
                   <p className="mt-1.5 font-semibold uppercase tracking-[0.18em] text-[11px]" style={{ color: template === 'modern' ? accentCfg.hex : '#475569' }}>{title || 'Professional Title'}</p>
-                  <div className={`mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10.5px] text-gray-600 font-medium leading-none ${template === 'classic' ? 'justify-center' : 'justify-start'}`}>
-                    {email && <span className="inline-flex items-center gap-1.5"><Mail className="h-3 w-3 text-gray-400" />{email}</span>}
-                    {phone && <><span className="text-gray-300">•</span><span className="inline-flex items-center gap-1.5"><Phone className="h-3 w-3 text-gray-400" />{phone}</span></>}
-                    {location && <><span className="text-gray-300">•</span><span className="inline-flex items-center gap-1.5"><MapPin className="h-3 w-3 text-gray-400" />{location}</span></>}
-                    {linkedin && <><span className="text-gray-300">•</span><span className="inline-flex items-center gap-1.5"><Linkedin className="h-3 w-3 text-gray-400" />{linkedin.replace(/^https?:\/\//, '')}</span></>}
-                    {github && <><span className="text-gray-300">•</span><span className="inline-flex items-center gap-1.5"><Github className="h-3 w-3 text-gray-400" />{github.replace(/^https?:\/\//, '')}</span></>}
-                    {website && <><span className="text-gray-300">•</span><span className="inline-flex items-center gap-1.5"><Globe className="h-3 w-3 text-gray-400" />{website.replace(/^https?:\/\//, '')}</span></>}
+                  {/* ATS-safe contact lines — plain labeled separators, no icons/symbols that confuse parsers */}
+                  <div className={`mt-3 space-y-1 text-[10.5px] leading-relaxed ${template === 'classic' ? 'text-center' : 'text-left'}`}>
+                    <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-gray-700 font-medium ${template === 'classic' ? 'justify-center' : 'justify-start'}`}>
+                      {email && <span>Email: {email}</span>}
+                      {email && phone && <span className="text-gray-400 font-normal">|</span>}
+                      {phone && <span>Phone: {phone}</span>}
+                      {phone && location && <span className="text-gray-400 font-normal">|</span>}
+                      {location && <span>Location: {location}</span>}
+                    </div>
+                    {(linkedin || github || website) && (
+                      <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-gray-700 font-medium ${template === 'classic' ? 'justify-center' : 'justify-start'}`}>
+                        {linkedin && <span>LinkedIn: {linkedin.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>}
+                        {linkedin && (github || website) && <span className="text-gray-400 font-normal">|</span>}
+                        {github && <span>GitHub: {github.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>}
+                        {github && website && <span className="text-gray-400 font-normal">|</span>}
+                        {website && <span>Portfolio: {website.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-5 h-px w-full bg-gray-200" />
                   {template === 'modern' && <div className="mt-px h-px w-full" style={{ backgroundColor: `${accentCfg.hex}14` }} />}
@@ -967,47 +1014,44 @@ export const ResumeFormatter: React.FC = () => {
                   </section>
                 )}
 
-                {/* Experience — Distinct Tiers: Role vs Company vs Location vs Dates vs Details */}
+                {/* Experience — ATS-safe: no decorative O/☐/icons, plain • separators */}
                 {ExpEntries.length > 0 && (
                   <section className="group relative">
                     <button onClick={() => scrollTo(refExperience)} className="absolute -right-2 top-6 p-1.5 bg-white border border-gray-200 rounded-lg shadow-md opacity-0 group-hover:opacity-100 hover:bg-gray-50 transition-all print:hidden"><Pencil className="h-3 w-3 text-gray-600" /></button>
-                    <SectionHeading icon={<Briefcase className="h-3.5 w-3.5" />}>Work Experience</SectionHeading>
-                    <div className="space-y-0">
+                    <SectionHeading>Work Experience</SectionHeading>
+                    <div className="space-y-6">
                       {ExpEntries.map((entry, idx) => {
                         const isLast = idx === ExpEntries.length - 1;
                         return (
-                          <div key={idx} className={`relative ${!isLast ? 'pb-5 mb-5 border-b border-gray-200' : ''}`}>
-                            <div className="absolute left-0 top-0 bottom-0 w-0.5 hidden sm:block" style={{ backgroundColor: template === 'modern' ? `${accentCfg.hex}22` : '#e2e8f0', display: template === 'executive' ? 'none' : undefined }} />
-                            <div className="sm:pl-5">
-                              {/* Row 1: Role + Dates badge — distinct hierarchy */}
-                              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                                <h4 className="text-[14px] font-black leading-tight tracking-tight text-gray-900 pr-2">{entry.role}</h4>
-                                {entry.dates && (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase border whitespace-nowrap shrink-0 shadow-sm" style={{
-                                    backgroundColor: template === 'modern' ? `${accentCfg.hex}12` : '#f1f5f9',
-                                    borderColor: template === 'modern' ? `${accentCfg.hex}30` : '#cbd5e1',
-                                    color: template === 'modern' ? accentCfg.hex : '#0f172a'
-                                  }}>
-                                    <Calendar className="h-3 w-3 opacity-70" />{entry.dates}
-                                  </span>
-                                )}
-                              </div>
-                              {/* Row 2: Company + Location — clearly separate from Role (smaller, accent) */}
-                              {(entry.company || entry.location) && (
-                                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]">
-                                  {entry.company && <span className="inline-flex items-center gap-1 font-bold" style={{ color: template === 'modern' ? accentCfg.hex : '#334155' }}><Building2 className="h-3.5 w-3.5 opacity-70" />{entry.company}</span>}
-                                  {entry.company && entry.location && <span className="h-1 w-1 rounded-full bg-gray-400" />}
-                                  {entry.location && <span className="inline-flex items-center gap-1 text-gray-500 font-medium"><MapPin className="h-3 w-3 text-gray-400" />{entry.location}</span>}
-                                </div>
+                          <div key={idx} className="space-y-0">
+                            {/* Row 1: Role + Dates — plain text badge, no Calendar icon */}
+                            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                              <h4 className="text-[14px] font-black leading-tight tracking-tight text-gray-900 pr-2">{entry.role}</h4>
+                              {entry.dates && (
+                                <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase border whitespace-nowrap shrink-0" style={{
+                                  backgroundColor: template === 'modern' ? `${accentCfg.hex}10` : '#f1f5f9',
+                                  borderColor: template === 'modern' ? `${accentCfg.hex}30` : '#cbd5e1',
+                                  color: template === 'modern' ? accentCfg.hex : '#0f172a'
+                                }}>
+                                  {entry.dates}
+                                </span>
                               )}
-                              {/* Bullets: Details — visually lighter, smaller, indented vs header */}
-                              {entry.bullets.length > 0 ? (
-                                <ul className="mt-3 ml-4 space-y-1.5 list-disc marker:text-gray-300">
-                                  {entry.bullets.map((b, i) => <li key={i} className="text-[11.5px] leading-[1.65] text-gray-500 pl-1">{b}</li>)}
-                                </ul>
-                              ) : null}
                             </div>
-                            <div className="absolute left-[-5px] top-1.5 h-3 w-3 rounded-full bg-white border-[2.5px] hidden sm:block shadow-sm" style={{ borderColor: template === 'modern' ? accentCfg.hex : '#64748b' }} />
+                            {/* Row 2: Company • Location — plain • separator, no Building2/MapPin icons */}
+                            {(entry.company || entry.location) && (
+                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]">
+                                {entry.company && <span className="font-bold" style={{ color: template === 'modern' ? accentCfg.hex : '#334155' }}>{entry.company}</span>}
+                                {entry.company && entry.location && <span className="text-gray-400">•</span>}
+                                {entry.location && <span className="text-gray-500 font-medium">{entry.location}</span>}
+                              </div>
+                            )}
+                            {/* Details: plain • bullets (no decorative symbols) */}
+                            {entry.bullets.length > 0 ? (
+                              <ul className="mt-3 ml-5 space-y-1.5 list-disc marker:text-gray-400">
+                                {entry.bullets.map((b, i) => <li key={i} className="text-[11.5px] leading-[1.65] text-gray-500 pl-1">{b}</li>)}
+                              </ul>
+                            ) : null}
+                            {!isLast && <div className="h-px bg-gray-200 mt-6" />}
                           </div>
                         );
                       })}
@@ -1015,66 +1059,28 @@ export const ResumeFormatter: React.FC = () => {
                   </section>
                 )}
 
-                {/* Projects — Name vs Subtitle vs Dates distinction */}
+                {/* Projects — plain text, no decorative icons */}
                 {projects && (
                   <section className="group relative">
                     <button onClick={() => scrollTo(refProjects)} className="absolute -right-2 top-6 p-1.5 bg-white border border-gray-200 rounded-lg shadow-md opacity-0 group-hover:opacity-100 hover:bg-gray-50 transition-all print:hidden"><Pencil className="h-3 w-3 text-gray-600" /></button>
-                    <SectionHeading icon={<Code2 className="h-3.5 w-3.5" />}>Featured Projects</SectionHeading>
-                    <div className="space-y-5">
+                    <SectionHeading>Featured Projects</SectionHeading>
+                    <div className="space-y-6">
                       {ProjectBlocks.map((block, idx) => {
                         const { name: projName, subtitle, dates } = parseProjectHeading(block.heading);
                         const isLast = idx === ProjectBlocks.length - 1;
                         return (
-                          <div key={idx} className={`relative sm:pl-4 ${!isLast ? 'pb-5 border-b border-gray-100' : ''}`}>
-                            <div className="absolute left-0 top-0 bottom-0 w-0.5 hidden sm:block" style={{ backgroundColor: '#e5e7eb', display: template === 'executive' ? 'none' : undefined }} />
-                            <div className="absolute left-[-5px] top-1 h-2.5 w-2.5 rounded-full bg-white border-2 border-gray-400 hidden sm:block" />
+                          <div key={idx} className="space-y-0">
                             <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
                               <h4 className="text-[13px] font-extrabold leading-tight text-gray-900">{projName}</h4>
-                              {dates && <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-200 text-gray-600 text-[10px] font-bold tracking-wide uppercase whitespace-nowrap"><Calendar className="h-3 w-3 opacity-70" />{dates}</span>}
+                              {dates && <span className="inline-flex px-2.5 py-1 rounded-full bg-gray-50 border border-gray-200 text-gray-600 text-[10px] font-bold tracking-wide uppercase whitespace-nowrap">{dates}</span>}
                             </div>
-                            {subtitle && <p className="mt-1 text-[11.5px] font-semibold text-gray-500 flex items-center gap-1"><ExternalLink className="h-3 w-3 opacity-60" />{subtitle}</p>}
+                            {subtitle && <p className="mt-1 text-[11.5px] font-semibold text-gray-500">{subtitle}</p>}
                             {block.bullets.length > 0 && (
-                              <ul className="mt-2.5 ml-4 space-y-1.5 list-disc marker:text-gray-400">
+                              <ul className="mt-2.5 ml-5 space-y-1.5 list-disc marker:text-gray-400">
                                 {block.bullets.map((b, i) => <li key={i} className="text-[11.5px] leading-[1.65] text-gray-600 pl-1">{b}</li>)}
                               </ul>
                             )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                )}
-
-                {/* Education — Degree vs School vs Location vs Dates */}
-                {EduEntries.length > 0 && (
-                  <section className="group relative">
-                    <button onClick={() => scrollTo(refEducation)} className="absolute -right-2 top-6 p-1.5 bg-white border border-gray-200 rounded-lg shadow-md opacity-0 group-hover:opacity-100 hover:bg-gray-50 transition-all print:hidden"><Pencil className="h-3 w-3 text-gray-600" /></button>
-                    <SectionHeading icon={<GraduationCap className="h-3.5 w-3.5" />}>Education</SectionHeading>
-                    <div className="space-y-0">
-                      {EduEntries.map((entry, idx) => {
-                        const isLast = idx === EduEntries.length - 1;
-                        return (
-                          <div key={idx} className={`relative ${!isLast ? 'pb-5 mb-5 border-b border-gray-200' : ''}`}>
-                            <div className="absolute left-0 top-0 bottom-0 w-0.5 hidden sm:block" style={{ backgroundColor: template === 'modern' ? `${accentCfg.hex}22` : '#e2e8f0', display: template === 'executive' ? 'none' : undefined }} />
-                            <div className="sm:pl-5">
-                              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                                <h4 className="text-[14px] font-black leading-tight text-gray-900 pr-2">{entry.degree}</h4>
-                                {entry.dates && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase border whitespace-nowrap shrink-0 shadow-sm" style={{ backgroundColor: template === 'modern' ? `${accentCfg.hex}12` : '#f0fdf4', borderColor: template === 'modern' ? `${accentCfg.hex}30` : '#a7f3d0', color: template === 'modern' ? accentCfg.hex : '#065f46' }}><Calendar className="h-3 w-3 opacity-70" />{entry.dates}</span>}
-                              </div>
-                              {(entry.school || entry.location) && (
-                                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]">
-                                  {entry.school && <span className="inline-flex items-center gap-1 font-bold" style={{ color: template === 'modern' ? accentCfg.hex : '#1e293b' }}><Building2 className="h-3.5 w-3.5 opacity-70" />{entry.school}</span>}
-                                  {entry.school && entry.location && <span className="h-1 w-1 rounded-full bg-gray-400" />}
-                                  {entry.location && <span className="inline-flex items-center gap-1 text-gray-500 font-medium"><MapPin className="h-3 w-3 text-gray-400" />{entry.location}</span>}
-                                </div>
-                              )}
-                              {entry.bullets.length > 0 && (
-                                <ul className="mt-3 ml-4 space-y-1.5 list-disc marker:text-gray-300">
-                                  {entry.bullets.map((b, i) => <li key={i} className="text-[11.5px] leading-[1.65] text-gray-500 pl-1">{b}</li>)}
-                                </ul>
-                              )}
-                            </div>
-                            <div className="absolute left-[-5px] top-1.5 h-3 w-3 rounded-full bg-white border-[2.5px] hidden sm:block shadow-sm" style={{ borderColor: template === 'modern' ? accentCfg.hex : '#64748b' }} />
+                            {!isLast && <div className="h-px bg-gray-200 mt-6" />}
                           </div>
                         );
                       })}
@@ -1109,6 +1115,40 @@ export const ResumeFormatter: React.FC = () => {
                     )}
                   </div>
                 </section>
+
+                {/* Education — plain • separators, no O/☐ icons — placed below Skills per request */}
+                {EduEntries.length > 0 && (
+                  <section className="group relative">
+                    <button onClick={() => scrollTo(refEducation)} className="absolute -right-2 top-6 p-1.5 bg-white border border-gray-200 rounded-lg shadow-md opacity-0 group-hover:opacity-100 hover:bg-gray-50 transition-all print:hidden"><Pencil className="h-3 w-3 text-gray-600" /></button>
+                    <SectionHeading>Education</SectionHeading>
+                    <div className="space-y-6">
+                      {EduEntries.map((entry, idx) => {
+                        const isLast = idx === EduEntries.length - 1;
+                        return (
+                          <div key={idx} className="space-y-0">
+                            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                              <h4 className="text-[14px] font-black leading-tight text-gray-900 pr-2">{entry.degree}</h4>
+                              {entry.dates && <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase border whitespace-nowrap shrink-0" style={{ backgroundColor: template === 'modern' ? `${accentCfg.hex}10` : '#f0fdf4', borderColor: template === 'modern' ? `${accentCfg.hex}30` : '#a7f3d0', color: template === 'modern' ? accentCfg.hex : '#065f46' }}>{entry.dates}</span>}
+                            </div>
+                            {(entry.school || entry.location) && (
+                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]">
+                                {entry.school && <span className="font-bold" style={{ color: template === 'modern' ? accentCfg.hex : '#1e293b' }}>{entry.school}</span>}
+                                {entry.school && entry.location && <span className="text-gray-400">•</span>}
+                                {entry.location && <span className="text-gray-500 font-medium">{entry.location}</span>}
+                              </div>
+                            )}
+                            {entry.bullets.length > 0 && (
+                              <ul className="mt-3 ml-5 space-y-1.5 list-disc marker:text-gray-400">
+                                {entry.bullets.map((b, i) => <li key={i} className="text-[11.5px] leading-[1.65] text-gray-500 pl-1">{b}</li>)}
+                              </ul>
+                            )}
+                            {!isLast && <div className="h-px bg-gray-200 mt-6" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
 
                 {/* Achievements & Languages */}
                 {achievements && (
