@@ -1594,22 +1594,20 @@ Generated via Toolip Premium Business Card Generator`;
                 <button
                   type="button"
                   onClick={() => setThemeSyncMode('same')}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    themeSyncMode === 'same'
+                  className={`px-3 py-1 rounded-lg transition-all ${themeSyncMode === 'same'
                       ? 'bg-indigo-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   Same Both Sides
                 </button>
                 <button
                   type="button"
                   onClick={() => setThemeSyncMode('different')}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    themeSyncMode === 'different'
+                  className={`px-3 py-1 rounded-lg transition-all ${themeSyncMode === 'different'
                       ? 'bg-indigo-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   Different Both Sides
                 </button>
@@ -1623,11 +1621,10 @@ Generated via Toolip Premium Business Card Generator`;
                   <button
                     key={tKey}
                     onClick={() => handleSelectUnifiedTheme(tKey)}
-                    className={`p-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center space-x-2 ${
-                      cardTheme === tKey
+                    className={`p-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center space-x-2 ${cardTheme === tKey
                         ? 'bg-slate-800 border-indigo-400 text-white shadow-lg scale-105'
                         : 'bg-slate-950 border-slate-800 text-gray-400 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <span
                       className="h-3.5 w-3.5 rounded-full border border-gray-600 shrink-0"
@@ -1651,11 +1648,10 @@ Generated via Toolip Premium Business Card Generator`;
                       <button
                         key={`front-${tKey}`}
                         onClick={() => setFrontCardTheme(tKey)}
-                        className={`p-2 rounded-xl border text-[11px] font-bold transition-all flex items-center space-x-2 ${
-                          frontCardTheme === tKey
+                        className={`p-2 rounded-xl border text-[11px] font-bold transition-all flex items-center space-x-2 ${frontCardTheme === tKey
                             ? 'bg-sky-950/80 border-sky-400 text-sky-200 shadow-md scale-105'
                             : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:text-white'
-                        }`}
+                          }`}
                       >
                         <span
                           className="h-3 w-3 rounded-full border border-gray-600 shrink-0"
@@ -1678,11 +1674,10 @@ Generated via Toolip Premium Business Card Generator`;
                       <button
                         key={`back-${tKey}`}
                         onClick={() => setBackCardTheme(tKey)}
-                        className={`p-2 rounded-xl border text-[11px] font-bold transition-all flex items-center space-x-2 ${
-                          backCardTheme === tKey
+                        className={`p-2 rounded-xl border text-[11px] font-bold transition-all flex items-center space-x-2 ${backCardTheme === tKey
                             ? 'bg-emerald-950/80 border-emerald-400 text-emerald-200 shadow-md scale-105'
                             : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:text-white'
-                        }`}
+                          }`}
                       >
                         <span
                           className="h-3 w-3 rounded-full border border-gray-600 shrink-0"
@@ -1762,7 +1757,7 @@ Generated via Toolip Premium Business Card Generator`;
             </div>
 
             {/* Slideable Font Size & Padding Controls */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 pt-2">
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-xs font-bold text-gray-200">
                   <span>Card Width (px):</span>
@@ -2325,11 +2320,10 @@ Generated via Toolip Premium Business Card Generator`;
                           key={iconItem.id}
                           type="button"
                           onClick={() => setSelectedVectorIcon(iconItem.id)}
-                          className={`p-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1.5 ${
-                            isSelected
+                          className={`p-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1.5 ${isSelected
                               ? 'bg-sky-950/80 border-sky-400 text-sky-300 shadow-lg scale-105'
                               : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-                          }`}
+                            }`}
                         >
                           <IconComponent className={`h-4 w-4 ${isSelected ? 'text-sky-400' : 'text-slate-400'}`} />
                           <span className="text-[10px] truncate w-full text-center">{iconItem.label.split(' ')[0]}</span>
