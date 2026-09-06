@@ -12,7 +12,8 @@ import {
   Sparkles,
   RotateCcw,
   Palette,
-  CheckSquare
+  CheckSquare,
+  Maximize2
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
@@ -45,6 +46,69 @@ export const MarkdownToHtml: React.FC = () => {
   const [copied, setCopied] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'rendered' | 'html'>('rendered');
   const [previewTheme, setPreviewTheme] = useState<'github' | 'dark' | 'serif' | 'minimal'>('github');
+
+  // Pane Resizing & Drag Expand State
+  const [editorHeight, setEditorHeight] = useLocalStorage<number>('toolip_md_editor_height', 420);
+  const [outputHeight, setOutputHeight] = useLocalStorage<number>('toolip_md_output_height', 420);
+  const [syncHeights, setSyncHeights] = useLocalStorage<boolean>('toolip_md_sync_heights', true);
+  const [cornerDragEnabled, setCornerDragEnabled] = useLocalStorage<boolean>('toolip_md_corner_drag', true);
+
+  const handleMouseDown = (e: React.MouseEvent, pane: 'input' | 'output') => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startEditorH = editorHeight;
+    const startOutputH = outputHeight;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      if (pane === 'input') {
+        const newH = Math.max(200, Math.min(1400, startEditorH + deltaY));
+        setEditorHeight(newH);
+        if (syncHeights) setOutputHeight(newH);
+      } else {
+        const newH = Math.max(200, Math.min(1400, startOutputH + deltaY));
+        setOutputHeight(newH);
+        if (syncHeights) setEditorHeight(newH);
+      }
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, pane: 'input' | 'output') => {
+    if (!e.touches[0]) return;
+    const startY = e.touches[0].clientY;
+    const startEditorH = editorHeight;
+    const startOutputH = outputHeight;
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      if (!moveEvent.touches[0]) return;
+      const deltaY = moveEvent.touches[0].clientY - startY;
+      if (pane === 'input') {
+        const newH = Math.max(200, Math.min(1400, startEditorH + deltaY));
+        setEditorHeight(newH);
+        if (syncHeights) setOutputHeight(newH);
+      } else {
+        const newH = Math.max(200, Math.min(1400, startOutputH + deltaY));
+        setOutputHeight(newH);
+        if (syncHeights) setEditorHeight(newH);
+      }
+    };
+
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+  };
 
   // Complete GitHub Flavored Markdown Parser
   const parseMarkdown = (text: string) => {
@@ -232,41 +296,136 @@ export const MarkdownToHtml: React.FC = () => {
         </div>
       </div>
 
+      {/* Height & Drag Expand Options Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl text-xs backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gray-400 font-semibold flex items-center gap-1.5">
+            <Maximize2 className="h-3.5 w-3.5 text-indigo-400" /> Height:
+          </span>
+          {[
+            { label: 'Compact', size: 300 },
+            { label: 'Standard', size: 420 },
+            { label: 'Tall', size: 580 },
+            { label: 'Max', size: 750 }
+          ].map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => {
+                setEditorHeight(preset.size);
+                setOutputHeight(preset.size);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                editorHeight === preset.size
+                  ? 'bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/40'
+                  : 'bg-slate-800 hover:bg-slate-700 text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              {preset.label} ({preset.size}px)
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center space-x-1.5 text-gray-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={syncHeights}
+              onChange={(e) => {
+                setSyncHeights(e.target.checked);
+                if (e.target.checked) setOutputHeight(editorHeight);
+              }}
+              className="rounded bg-slate-800 border-slate-700 text-indigo-500 focus:ring-0 h-3.5 w-3.5"
+            />
+            <span className="text-[11px]">Sync Panes</span>
+          </label>
+
+          <label className="flex items-center space-x-1.5 text-gray-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={cornerDragEnabled}
+              onChange={(e) => setCornerDragEnabled(e.target.checked)}
+              className="rounded bg-slate-800 border-slate-700 text-indigo-500 focus:ring-0 h-3.5 w-3.5"
+            />
+            <span className="text-[11px] font-semibold text-indigo-400">Bottom-Right Drag Expand</span>
+          </label>
+        </div>
+      </div>
+
       {/* Editor & Preview Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Markdown Input */}
-        <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl">
+        <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl relative">
           <label className="text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
             <FileCode className="h-4 w-4" />
             <span>Markdown Source Editor</span>
           </label>
-          <textarea
-            value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
-            placeholder="Type your markdown here..."
-            className="w-full h-[420px] p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-sky-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none shadow-inner leading-relaxed"
-          />
+          <div className="relative group">
+            <textarea
+              value={markdown}
+              onChange={(e) => setMarkdown(e.target.value)}
+              placeholder="Type your markdown here..."
+              style={{ height: `${editorHeight}px` }}
+              className={`w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-sky-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed shadow-inner ${
+                cornerDragEnabled ? 'resize-y' : 'resize-none'
+              }`}
+            />
+            {/* Custom Bottom-Right Corner Drag Handle */}
+            {cornerDragEnabled && (
+              <div
+                onMouseDown={(e) => handleMouseDown(e, 'input')}
+                onTouchStart={(e) => handleTouchStart(e, 'input')}
+                title="Drag bottom-right corner to expand markdown editor height"
+                className="absolute bottom-2.5 right-2.5 p-1 rounded-br-lg rounded-tl-md bg-indigo-950/90 hover:bg-indigo-500 border border-indigo-500/50 text-indigo-400 hover:text-white cursor-se-resize shadow-lg transition-colors group-hover:opacity-100 flex items-center justify-center select-none z-10"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 16 16">
+                  <path d="M14 14H11V12H14V14ZM14 10H7V8H14V10ZM14 6H3V4H14V6Z" />
+                </svg>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Output View */}
-        <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl">
+        <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl relative">
           <label className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
             <Eye className="h-4 w-4" />
             <span>{viewMode === 'rendered' ? 'Visual Rendered HTML Output' : 'Raw HTML Markup'}</span>
           </label>
 
-          {viewMode === 'rendered' ? (
-            <div
-              className={`w-full h-[420px] p-5 rounded-2xl text-sm overflow-auto shadow-2xl border ${getThemeClass()}`}
-              dangerouslySetInnerHTML={{ __html: htmlOutput }}
-            />
-          ) : (
-            <textarea
-              readOnly
-              value={htmlOutput}
-              className="w-full h-[420px] p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-emerald-300 focus:outline-none resize-none shadow-inner"
-            />
-          )}
+          <div className="relative group">
+            {viewMode === 'rendered' ? (
+              <div
+                style={{ height: `${outputHeight}px` }}
+                className={`w-full p-5 rounded-2xl text-sm overflow-auto shadow-2xl border ${getThemeClass()} ${
+                  cornerDragEnabled ? 'resize-y' : ''
+                }`}
+                dangerouslySetInnerHTML={{ __html: htmlOutput }}
+              />
+            ) : (
+              <textarea
+                readOnly
+                value={htmlOutput}
+                style={{ height: `${outputHeight}px` }}
+                className={`w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-emerald-300 focus:outline-none shadow-inner ${
+                  cornerDragEnabled ? 'resize-y' : 'resize-none'
+                }`}
+              />
+            )}
+
+            {/* Custom Bottom-Right Corner Drag Handle */}
+            {cornerDragEnabled && (
+              <div
+                onMouseDown={(e) => handleMouseDown(e, 'output')}
+                onTouchStart={(e) => handleTouchStart(e, 'output')}
+                title="Drag bottom-right corner to expand preview pane height"
+                className="absolute bottom-2.5 right-2.5 p-1 rounded-br-lg rounded-tl-md bg-emerald-950/90 hover:bg-emerald-500 border border-emerald-500/50 text-emerald-400 hover:text-white cursor-se-resize shadow-lg transition-colors group-hover:opacity-100 flex items-center justify-center select-none z-10"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 16 16">
+                  <path d="M14 14H11V12H14V14ZM14 10H7V8H14V10ZM14 6H3V4H14V6Z" />
+                </svg>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

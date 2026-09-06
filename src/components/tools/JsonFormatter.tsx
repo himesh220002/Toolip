@@ -14,7 +14,8 @@ import {
   ChevronDown,
   FileCode,
   CheckCircle2,
-  FileType
+  FileType,
+  Maximize2
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
@@ -86,6 +87,70 @@ export const JsonFormatter: React.FC = () => {
   const [parsedObject, setParsedObject] = useState<any>(null);
   const [jsonStats, setJsonStats] = useState<{ keys: number; size: string; depth: number } | null>(null);
   const [repairNotice, setRepairNotice] = useState<string>('');
+
+  // Pane Resizing & Drag Expand State
+  const [editorHeight, setEditorHeight] = useLocalStorage<number>('toolip_json_editor_height', 384);
+  const [outputHeight, setOutputHeight] = useLocalStorage<number>('toolip_json_output_height', 384);
+  const [syncHeights, setSyncHeights] = useLocalStorage<boolean>('toolip_json_sync_heights', true);
+  const [cornerDragEnabled, setCornerDragEnabled] = useLocalStorage<boolean>('toolip_json_corner_drag', true);
+
+  const handleMouseDown = (e: React.MouseEvent, pane: 'input' | 'output') => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startEditorH = editorHeight;
+    const startOutputH = outputHeight;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      if (pane === 'input') {
+        const newH = Math.max(200, Math.min(1400, startEditorH + deltaY));
+        setEditorHeight(newH);
+        if (syncHeights) setOutputHeight(newH);
+      } else {
+        const newH = Math.max(200, Math.min(1400, startOutputH + deltaY));
+        setOutputHeight(newH);
+        if (syncHeights) setEditorHeight(newH);
+      }
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, pane: 'input' | 'output') => {
+    if (!e.touches[0]) return;
+    const startY = e.touches[0].clientY;
+    const startEditorH = editorHeight;
+    const startOutputH = outputHeight;
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      if (!moveEvent.touches[0]) return;
+      const deltaY = moveEvent.touches[0].clientY - startY;
+      if (pane === 'input') {
+        const newH = Math.max(200, Math.min(1400, startEditorH + deltaY));
+        setEditorHeight(newH);
+        if (syncHeights) setOutputHeight(newH);
+      } else {
+        const newH = Math.max(200, Math.min(1400, startOutputH + deltaY));
+        setOutputHeight(newH);
+        if (syncHeights) setEditorHeight(newH);
+      }
+    };
+
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+  };
+
 
   // Calculate object depth recursively
   const getObjectDepth = (obj: any): number => {
@@ -394,22 +459,95 @@ export const JsonFormatter: React.FC = () => {
         </div>
       )}
 
+      {/* Height & Drag Expand Options Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 bg-gray-900/60 border border-gray-800 rounded-xl text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gray-400 font-semibold flex items-center gap-1.5">
+            <Maximize2 className="h-3.5 w-3.5 text-sky-400" /> Height:
+          </span>
+          {[
+            { label: 'Compact', size: 280 },
+            { label: 'Standard', size: 384 },
+            { label: 'Tall', size: 560 },
+            { label: 'Max', size: 750 }
+          ].map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => {
+                setEditorHeight(preset.size);
+                setOutputHeight(preset.size);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                editorHeight === preset.size
+                  ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
+                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              {preset.label} ({preset.size}px)
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center space-x-1.5 text-gray-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={syncHeights}
+              onChange={(e) => {
+                setSyncHeights(e.target.checked);
+                if (e.target.checked) setOutputHeight(editorHeight);
+              }}
+              className="rounded bg-gray-800 border-gray-700 text-sky-500 focus:ring-0 h-3.5 w-3.5"
+            />
+            <span className="text-[11px]">Sync Panes</span>
+          </label>
+
+          <label className="flex items-center space-x-1.5 text-gray-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={cornerDragEnabled}
+              onChange={(e) => setCornerDragEnabled(e.target.checked)}
+              className="rounded bg-gray-800 border-gray-700 text-sky-500 focus:ring-0 h-3.5 w-3.5"
+            />
+            <span className="text-[11px] font-semibold text-sky-400">Bottom-Right Drag Expand</span>
+          </label>
+        </div>
+      </div>
+
       {/* Editor & Viewer Dual Pane */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Input Textarea Pane */}
-        <div className="space-y-1">
+        <div className="space-y-1 relative">
           <div className="flex justify-between items-center text-xs text-gray-400 font-semibold">
             <span>Raw JSON Input Editor:</span>
             <span className="font-mono text-[11px] text-sky-400">
               {inputJson.split('\n').length} lines • {inputJson.length} chars
             </span>
           </div>
-          <textarea
-            value={inputJson}
-            onChange={(e) => setInputJson(e.target.value)}
-            placeholder="Paste your unformatted or minified JSON string here..."
-            className="w-full h-96 p-3.5 bg-gray-950 border border-gray-800 rounded-xl font-mono text-xs text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none leading-relaxed"
-          />
+          <div className="relative group">
+            <textarea
+              value={inputJson}
+              onChange={(e) => setInputJson(e.target.value)}
+              placeholder="Paste your unformatted or minified JSON string here..."
+              style={{ height: `${editorHeight}px` }}
+              className={`w-full p-3.5 bg-gray-950 border border-gray-800 rounded-xl font-mono text-xs text-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed ${
+                cornerDragEnabled ? 'resize-y' : 'resize-none'
+              }`}
+            />
+            {/* Custom Bottom-Right Corner Drag Handle */}
+            {cornerDragEnabled && (
+              <div
+                onMouseDown={(e) => handleMouseDown(e, 'input')}
+                onTouchStart={(e) => handleTouchStart(e, 'input')}
+                title="Drag bottom-right corner to expand input editor height"
+                className="absolute bottom-2.5 right-2.5 p-1 rounded-br-lg rounded-tl-md bg-sky-950/90 hover:bg-sky-500 border border-sky-500/50 text-sky-400 hover:text-white cursor-se-resize shadow-lg transition-colors group-hover:opacity-100 flex items-center justify-center select-none z-10"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 16 16">
+                  <path d="M14 14H11V12H14V14ZM14 10H7V8H14V10ZM14 6H3V4H14V6Z" />
+                </svg>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Output & Inspection Pane */}
@@ -448,27 +586,48 @@ export const JsonFormatter: React.FC = () => {
             </div>
           </div>
 
-          <div className="w-full h-96 p-3.5 bg-gray-950 border border-gray-800 rounded-xl overflow-auto">
-            {viewMode === 'formatted' && (
-              <pre className="font-mono text-xs text-emerald-300 whitespace-pre-wrap leading-relaxed">
-                {outputJson || <span className="text-gray-600">Enter valid JSON to view formatted code output...</span>}
-              </pre>
-            )}
+          <div className="relative group">
+            <div
+              style={{ height: `${outputHeight}px` }}
+              className={`w-full p-3.5 bg-gray-950 border border-gray-800 rounded-xl overflow-auto ${
+                cornerDragEnabled ? 'resize-y' : ''
+              }`}
+            >
+              {viewMode === 'formatted' && (
+                <pre className="font-mono text-xs text-emerald-300 whitespace-pre-wrap leading-relaxed">
+                  {outputJson || <span className="text-gray-600">Enter valid JSON to view formatted code output...</span>}
+                </pre>
+              )}
 
-            {viewMode === 'tree' && (
-              <div>
-                {parsedObject ? (
-                  <RenderTree data={parsedObject} name="Payload" />
-                ) : (
-                  <span className="font-mono text-xs text-gray-600">Enter valid JSON to render interactive tree view...</span>
-                )}
+              {viewMode === 'tree' && (
+                <div>
+                  {parsedObject ? (
+                    <RenderTree data={parsedObject} name="Payload" />
+                  ) : (
+                    <span className="font-mono text-xs text-gray-600">Enter valid JSON to render interactive tree view...</span>
+                  )}
+                </div>
+              )}
+
+              {viewMode === 'yaml' && (
+                <pre className="font-mono text-xs text-amber-300 whitespace-pre-wrap leading-relaxed">
+                  {yamlOutput || <span className="text-gray-600 font-mono text-xs">Enter valid JSON to render YAML payload...</span>}
+                </pre>
+              )}
+            </div>
+
+            {/* Custom Bottom-Right Corner Drag Handle */}
+            {cornerDragEnabled && (
+              <div
+                onMouseDown={(e) => handleMouseDown(e, 'output')}
+                onTouchStart={(e) => handleTouchStart(e, 'output')}
+                title="Drag bottom-right corner to expand output pane height"
+                className="absolute bottom-2.5 right-2.5 p-1 rounded-br-lg rounded-tl-md bg-emerald-950/90 hover:bg-emerald-500 border border-emerald-500/50 text-emerald-400 hover:text-white cursor-se-resize shadow-lg transition-colors group-hover:opacity-100 flex items-center justify-center select-none z-10"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 16 16">
+                  <path d="M14 14H11V12H14V14ZM14 10H7V8H14V10ZM14 6H3V4H14V6Z" />
+                </svg>
               </div>
-            )}
-
-            {viewMode === 'yaml' && (
-              <pre className="font-mono text-xs text-amber-300 whitespace-pre-wrap leading-relaxed">
-                {yamlOutput || <span className="text-gray-600 font-mono text-xs">Enter valid JSON to render YAML payload...</span>}
-              </pre>
             )}
           </div>
         </div>

@@ -203,6 +203,51 @@ export const NoteToPdf: React.FC = () => {
   const [authorName, setAuthorName, resetAuthorName] = useLocalStorage<string>('toolip_notepdf_author', DEFAULT_AUTHOR);
   const [noteBody, setNoteBody, resetNoteBody] = useLocalStorage<string>('toolip_notepdf_body', DEFAULT_BODY);
 
+  // Pane Resizing & Drag Expand State for Note Content Body
+  const [noteBodyHeight, setNoteBodyHeight] = useLocalStorage<number>('toolip_notepdf_height', 280);
+  const [cornerDragEnabled, setCornerDragEnabled] = useLocalStorage<boolean>('toolip_notepdf_corner_drag', true);
+
+  const handleBodyMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = noteBodyHeight;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      const newH = Math.max(160, Math.min(1400, startH + deltaY));
+      setNoteBodyHeight(newH);
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleBodyTouchStart = (e: React.TouchEvent) => {
+    if (!e.touches[0]) return;
+    const startY = e.touches[0].clientY;
+    const startH = noteBodyHeight;
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      if (!moveEvent.touches[0]) return;
+      const deltaY = moveEvent.touches[0].clientY - startY;
+      const newH = Math.max(160, Math.min(1400, startH + deltaY));
+      setNoteBodyHeight(newH);
+    };
+
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+  };
+
   const resetAllNoteData = () => {
     resetNoteTitle();
     resetNoteSubtitle();
@@ -1128,14 +1173,36 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
           </div>
 
           {/* Multiline Content Textarea */}
-          <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl">
-            <div className="flex justify-between items-center text-xs">
+          <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl relative">
+            <div className="flex justify-between items-center text-xs flex-wrap gap-2">
               <span className="font-bold text-sky-400 uppercase tracking-widest flex items-center space-x-1.5">
                 <Type className="h-4 w-4" />
                 <span>Note Content Body</span>
               </span>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-wrap gap-1.5">
+                {/* Height Presets Bar */}
+                <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                  {[
+                    { label: 'Compact', size: 200 },
+                    { label: 'Standard', size: 280 },
+                    { label: 'Tall', size: 480 },
+                    { label: 'Max', size: 650 }
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => setNoteBodyHeight(preset.size)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
+                        noteBodyHeight === preset.size
+                          ? 'bg-sky-600 text-white border-sky-400'
+                          : 'bg-slate-900 border-slate-800 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
                 <button
                   onClick={insertSampleMathNote}
                   className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-[10px] font-extrabold flex items-center space-x-1 transition-all"
@@ -1168,13 +1235,30 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
               </div>
             </div>
 
-            <textarea
-              value={noteBody}
-              onChange={(e) => setNoteBody(e.target.value)}
-              rows={12}
-              placeholder="Type your notes, meeting bullet points, or document draft here..."
-              className="w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-gray-200 focus:outline-none resize-none leading-relaxed font-mono whitespace-pre-wrap shadow-inner"
-            />
+            <div className="relative group">
+              <textarea
+                value={noteBody}
+                onChange={(e) => setNoteBody(e.target.value)}
+                style={{ height: `${noteBodyHeight}px` }}
+                placeholder="Type your notes, meeting bullet points, or document draft here..."
+                className={`w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-gray-200 focus:outline-none leading-relaxed font-mono whitespace-pre-wrap shadow-inner ${
+                  cornerDragEnabled ? 'resize-y' : 'resize-none'
+                }`}
+              />
+              {/* Custom Bottom-Right Corner Drag Handle */}
+              {cornerDragEnabled && (
+                <div
+                  onMouseDown={handleBodyMouseDown}
+                  onTouchStart={handleBodyTouchStart}
+                  title="Drag bottom-right corner to expand note content body height"
+                  className="absolute bottom-2.5 right-2.5 p-1 rounded-br-lg rounded-tl-md bg-sky-950/90 hover:bg-sky-500 border border-sky-500/50 text-sky-400 hover:text-white cursor-se-resize shadow-lg transition-colors group-hover:opacity-100 flex items-center justify-center select-none z-10"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 16 16">
+                    <path d="M14 14H11V12H14V14ZM14 10H7V8H14V10ZM14 6H3V4H14V6Z" />
+                  </svg>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Document Theme & Custom Color Selectors */}

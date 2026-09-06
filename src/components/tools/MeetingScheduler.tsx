@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calendar, Clock, Copy, Check, Download, Video, ExternalLink, MapPin, Sparkles, Key, Lock, Unlock, RotateCcw } from 'lucide-react';
+import { Calendar, Clock, Copy, Check, Download, Video, ExternalLink, MapPin, Sparkles, Key, Lock, Unlock, RotateCcw, FileText, Share2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const MeetingScheduler: React.FC = () => {
@@ -151,189 +151,223 @@ Generated via Toolip Meeting Scheduler`;
 
   return (
     <div className="space-y-6">
-      {/* Platform Quick Launcher Buttons */}
-      <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl space-y-3">
-        <div className="flex justify-between items-center text-xs">
-          <span className="flex items-center space-x-2 text-gray-300 font-semibold">
-            <Video className="h-4 w-4 text-sky-400" />
+      {/* Platform Quick Launcher Header Bar */}
+      <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-4 backdrop-blur-xl shadow-xl">
+        <div className="flex justify-between items-center text-sm">
+          <span className="flex items-center space-x-2 text-white font-bold tracking-wide">
+            <Video className="h-5 w-5 text-sky-400" />
             <span>Launch Video Meeting Platform:</span>
           </span>
 
           <button
             onClick={resetAllMeeting}
             title="Reset meeting details to defaults"
-            className="flex items-center space-x-1 px-2.5 py-1 bg-gray-950 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-rose-400 rounded-lg text-[11px] font-semibold transition-all"
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-rose-500/50 text-gray-400 hover:text-rose-400 rounded-xl text-xs font-semibold transition-all"
           >
-            <RotateCcw className="h-3 w-3" />
-            <span>Reset</span>
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset Defaults</span>
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={openGoogleMeet}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md transition-colors"
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition-all hover:scale-105"
           >
             <span>Google Meet</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={openZoom}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md transition-colors"
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/20 transition-all hover:scale-105"
           >
             <span>Zoom</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={openSlack}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md transition-colors"
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-600/20 transition-all hover:scale-105"
           >
             <span>Slack Huddle</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={openSkype}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md transition-colors"
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-lg shadow-sky-600/20 transition-all hover:scale-105"
           >
             <span>Skype</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={openDiscord}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-colors"
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all hover:scale-105"
           >
             <span>Discord</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Input Form Fields */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-gray-900 border border-gray-800 rounded-xl">
-        <div className="space-y-1 sm:col-span-2">
-          <label className="text-xs font-semibold text-gray-300">Meeting Title:</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-sm text-gray-200 focus:outline-none"
-          />
+      {/* Upgraded Form Card (Increased Font Sizes) */}
+      <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-5 backdrop-blur-xl shadow-xl">
+        <div className="text-sm font-bold text-sky-400 uppercase tracking-widest flex items-center space-x-2">
+          <Calendar className="h-4.5 w-4.5 text-sky-400" />
+          <span>Meeting Specification & Details</span>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-300 flex items-center space-x-1">
-            <MapPin className="h-3.5 w-3.5 text-rose-400" />
-            <span>Physical Location / Room:</span>
-          </label>
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g. Conference Room A or Office 3rd Floor..."
-            className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-xs text-gray-200 focus:outline-none"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-300 flex items-center space-x-1">
-            <Video className="h-3.5 w-3.5 text-sky-400" />
-            <span>Video Call URL / Link:</span>
-          </label>
-          <input
-            type="url"
-            value={videoLink}
-            onChange={(e) => setVideoLink(e.target.value)}
-            placeholder="e.g. https://meet.google.com/abc-defg-hij..."
-            className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-xs text-sky-300 font-mono focus:outline-none"
-          />
-        </div>
-
-        {/* Password Security Toggle Switch */}
-        <div className="sm:col-span-1 p-3 bg-gray-950 border border-gray-800/80 rounded-lg space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-gray-300 flex items-center space-x-2 cursor-pointer">
-              <Key className="h-4 w-4 text-amber-400" />
-              <span>Require Meeting Passcode / Password</span>
-            </label>
-            <button
-              onClick={() => setHasPassword(!hasPassword)}
-              className={`relative inline-flex h-2 w-9 items-center rounded-full transition-colors ${hasPassword ? 'bg-amber-500' : 'bg-gray-800'
-                }`}
-            >
-              <span
-                className={`inline-block h-4 w-2 transform rounded-full bg-white transition-transform ${hasPassword ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-              />
-            </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Meeting Title Input */}
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-sm font-bold text-gray-200 block">Meeting Title / Topic:</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Q4 Product Roadmap & Architecture Sync..."
+              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed shadow-inner"
+            />
           </div>
 
-          {hasPassword && (
-            <div className="flex items-center space-x-2 pt-1">
+          {/* Physical Location */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold text-gray-200 flex items-center space-x-1.5">
+              <MapPin className="h-4 w-4 text-rose-400" />
+              <span>Location / Room:</span>
+            </label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Conference Room A or Main Office..."
+              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-semibold text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-inner"
+            />
+          </div>
+
+          {/* Video Call URL */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold text-gray-200 flex items-center space-x-1.5">
+              <Video className="h-4 w-4 text-sky-400" />
+              <span>Video Meeting Link:</span>
+            </label>
+            <input
+              type="url"
+              value={videoLink}
+              onChange={(e) => setVideoLink(e.target.value)}
+              placeholder="e.g. https://meet.google.com/abc-defg-hij..."
+              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-mono font-bold text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-inner"
+            />
+          </div>
+
+          {/* Password Security Card */}
+          <div className="md:col-span-1 p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3 shadow-inner">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-gray-200 flex items-center space-x-2 cursor-pointer">
+                <Key className="h-4 w-4 text-amber-400" />
+                <span>Require Passcode / Security PIN</span>
+              </label>
+              <button
+                onClick={() => setHasPassword(!hasPassword)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  hasPassword ? 'bg-amber-500' : 'bg-slate-800'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    hasPassword ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {hasPassword && (
+              <div className="flex items-center space-x-2 pt-1">
+                <input
+                  type="text"
+                  value={meetingPassword}
+                  onChange={(e) => setMeetingPassword(e.target.value)}
+                  placeholder="Enter passcode (e.g. 123456)..."
+                  className="flex-1 px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-sm font-mono font-bold text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Date Input */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold text-gray-200 flex items-center space-x-1.5">
+              <Calendar className="h-4 w-4 text-indigo-400" />
+              <span>Meeting Date:</span>
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-inner"
+            />
+          </div>
+
+          {/* Time Picker Controls */}
+          <div className="grid grid-cols-2 gap-3 md:col-span-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-bold text-gray-200 flex items-center space-x-1.5">
+                <Clock className="h-4 w-4 text-emerald-400" />
+                <span>Start Time:</span>
+              </label>
               <input
-                type="text"
-                value={meetingPassword}
-                onChange={(e) => setMeetingPassword(e.target.value)}
-                placeholder="Enter meeting passcode (e.g. 123456)..."
-                className="flex-1 px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg text-xs font-mono font-bold text-amber-300 focus:outline-none"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-inner"
               />
             </div>
-          )}
-        </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-300">Meeting Date:</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-sm text-gray-200 focus:outline-none"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-300">Start Time:</label>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-sm text-gray-200 focus:outline-none"
-            />
+            <div className="space-y-1.5">
+              <label className="text-sm font-bold text-gray-200 flex items-center space-x-1.5">
+                <Clock className="h-4 w-4 text-rose-400" />
+                <span>End Time:</span>
+              </label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-inner"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-300">End Time:</label>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-sm text-gray-200 focus:outline-none"
+          {/* Description / Agenda */}
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-sm font-bold text-gray-200 flex items-center space-x-1.5">
+              <FileText className="h-4 w-4 text-purple-400" />
+              <span>Agenda / Notes:</span>
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              placeholder="Add agenda items, goals, or meeting expectations..."
+              className="w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none leading-relaxed shadow-inner"
             />
           </div>
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label className="text-xs font-semibold text-gray-300">Agenda / Notes:</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          className="w-full p-3 bg-gray-950 border border-gray-800 rounded-xl text-xs text-gray-200 focus:outline-none resize-none leading-relaxed"
-        />
-      </div>
-
-      {/* Formatted Group Chat Preview Card */}
-      <div className="p-4 bg-gray-950 border border-gray-800 rounded-xl space-y-2">
-        <div className="flex justify-between items-center text-xs font-semibold text-gray-400">
-          <span>Formatted Business Group Chat Preview:</span>
-          <span className="text-[10px] text-sky-400">Ready for WhatsApp / Slack / Teams</span>
+      {/* Formatted Business Group Chat Preview Card */}
+      <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl shadow-xl">
+        <div className="flex justify-between items-center text-sm font-bold text-gray-300">
+          <span className="flex items-center space-x-2">
+            <Share2 className="h-4 w-4 text-sky-400" />
+            <span>Formatted Group Chat Invite Preview:</span>
+          </span>
+          <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-xs font-mono font-bold border border-sky-500/30">
+            WhatsApp • Slack • Teams
+          </span>
         </div>
-        <pre className="p-3 bg-gray-900 rounded-lg font-mono text-xs text-sky-200 overflow-x-auto whitespace-pre-wrap">
+        <pre className="p-4 bg-slate-950 border border-slate-800/80 rounded-2xl font-mono text-sm text-sky-200 overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-inner">
           {`📅 MEETING INVITATION: ${title}
 --------------------------------------------------
 📌 Agenda: ${description}
@@ -346,20 +380,20 @@ Generated via Toolip Meeting Scheduler`;
       </div>
 
       {/* Main Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-4">
         <button
           onClick={generateIcs}
-          className="flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-sky-500/25 transition-all"
+          className="flex-1 flex items-center justify-center space-x-2 py-4 rounded-2xl bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-600 hover:from-sky-400 hover:to-purple-500 text-white font-extrabold text-sm shadow-xl shadow-sky-500/25 transition-all hover:scale-105"
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-5 w-5" />
           <span>Download Standard .ICS Calendar File</span>
         </button>
 
         <button
           onClick={copyFormattedGroupChatInvite}
-          className="flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/25 transition-all"
+          className="flex-1 flex items-center justify-center space-x-2 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-500/25 transition-all hover:scale-105"
         >
-          {copiedInvite ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copiedInvite ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
           <span>{copiedInvite ? 'Copied Invitation!' : 'Copy Formatted Group Chat Invite'}</span>
         </button>
       </div>
