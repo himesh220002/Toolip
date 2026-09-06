@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { QrCode as QrIcon, Download, Copy, Check, Sparkles, Upload, Image as ImageIcon, Shield, Palette, Zap } from 'lucide-react';
+import { QrCode as QrIcon, Download, Copy, Check, Sparkles, Upload, Image as ImageIcon, Shield, Palette, Zap, Sliders } from 'lucide-react';
 
 const PRESET_ICONS: Record<string, { label: string; svg: string; color: string }> = {
   Starbucks: {
@@ -105,12 +105,23 @@ const PRESET_ICONS: Record<string, { label: string; svg: string; color: string }
 };
 
 export const QrGenerator: React.FC = () => {
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const [text, setText] = useState<string>('https://toolip.app');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [fgColor, setFgColor] = useState<string>('#006241');
+  const [fgColor, setFgColor] = useState<string>('#032326');
   const [bgColor, setBgColor] = useState<string>('#ffffff');
   const [size, setSize] = useState<number>(360);
   const [errorMsg, setErrorMsg] = useState<string>('');
+
+  // Padding & Corner Roundness Sliders
+  const [qrPadding, setQrPadding] = useState<number>(30); // 30px
+  const [qrBorderRadius, setQrBorderRadius] = useState<number>(34); // 34px
+  const [eyeRadius, setEyeRadius] = useState<number>(10); // 10px (Corner eye roundness)
 
   // Logo Engraving State
   const [logoMode, setLogoMode] = useState<'none' | 'preset' | 'upload'>('preset');
@@ -119,13 +130,64 @@ export const QrGenerator: React.FC = () => {
   const [logoSizePercent, setLogoSizePercent] = useState<number>(24); // 15% to 35%
   const [logoShape, setLogoShape] = useState<'circle' | 'rounded' | 'square' | 'transparent'>('circle');
   const [logoBgColor, setLogoBgColor] = useState<string>('#ffffff');
+  const [iconColor, setIconColor] = useState<string>(''); // Center Icon Color Changer
+  const [iconPadding, setIconPadding] = useState<number>(4); // 0px to 16px (Icon Inner Padding)
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     generateQrWithLogo();
-  }, [text, fgColor, bgColor, size, logoMode, selectedPreset, uploadedLogoUrl, logoSizePercent, logoShape, logoBgColor]);
+  }, [text, fgColor, bgColor, size, qrPadding, qrBorderRadius, eyeRadius, logoMode, selectedPreset, uploadedLogoUrl, logoSizePercent, logoShape, logoBgColor, iconColor, iconPadding]);
+
+  // Helper to draw Position Eye (7x7 modules) with custom corner roundness
+  const drawPositionEye = (
+    ctx: CanvasRenderingContext2D,
+    pad: number,
+    startCol: number,
+    startRow: number,
+    moduleSize: number,
+    fg: string,
+    bg: string,
+    eyeR: number
+  ) => {
+    const x = pad + startCol * moduleSize;
+    const y = pad + startRow * moduleSize;
+    const outerW = 7 * moduleSize;
+    const innerW = 5 * moduleSize;
+    const innerOffset = 1 * moduleSize;
+    const dotW = 3 * moduleSize;
+    const dotOffset = 2 * moduleSize;
+
+    // 1. Outer 7x7 Ring
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    if (eyeR > 0) {
+      ctx.roundRect(x, y, outerW, outerW, Math.min(eyeR, outerW / 2));
+    } else {
+      ctx.rect(x, y, outerW, outerW);
+    }
+    ctx.fill();
+
+    // 2. Inner 5x5 Cutout
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    if (eyeR > 0) {
+      ctx.roundRect(x + innerOffset, y + innerOffset, innerW, innerW, Math.max(0, eyeR - 2));
+    } else {
+      ctx.rect(x + innerOffset, y + innerOffset, innerW, innerW);
+    }
+    ctx.fill();
+
+    // 3. Center 3x3 Dot
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    if (eyeR > 0) {
+      ctx.roundRect(x + dotOffset, y + dotOffset, dotW, dotW, Math.max(0, eyeR - 4));
+    } else {
+      ctx.rect(x + dotOffset, y + dotOffset, dotW, dotW);
+    }
+    ctx.fill();
+  };
 
   const generateQrWithLogo = async () => {
     if (!text.trim()) {
@@ -134,28 +196,72 @@ export const QrGenerator: React.FC = () => {
     }
 
     try {
+      // Create QR Matrix using QRCode library
+      const qrMatrix = QRCode.create(text, { errorCorrectionLevel: 'H' });
+      const moduleCount = qrMatrix.modules.size;
+
+      const pad = qrPadding;
+      const totalWidth = size + pad * 2;
+      const totalHeight = size + pad * 2;
+      const moduleSize = size / moduleCount;
+
       const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
+      canvas.width = totalWidth;
+      canvas.height = totalHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // 1. Generate Base QR Code with High Error Correction Level 'H' (allows 30% center mask)
-      await QRCode.toCanvas(canvas, text, {
-        width: size,
-        margin: 2,
-        errorCorrectionLevel: 'H',
-        color: {
-          dark: fgColor,
-          light: bgColor,
-        },
-      });
+      // 1. Draw Canvas Background with Exact User Corner Roundness & Outer Padding
+      ctx.save();
+      ctx.fillStyle = bgColor;
+      ctx.beginPath();
+      if (qrBorderRadius > 0) {
+        ctx.roundRect(0, 0, totalWidth, totalHeight, qrBorderRadius);
+      } else {
+        ctx.rect(0, 0, totalWidth, totalHeight);
+      }
+      ctx.fill();
 
-      // 2. Engrave Logo in Center if logo mode is enabled
+      // Clip canvas to outer corner roundness so modules never spill over
+      if (qrBorderRadius > 0) {
+        ctx.clip();
+      }
+
+      // 2. Custom Draw 3 Position Eyes with Eye Roundness
+      drawPositionEye(ctx, pad, 0, 0, moduleSize, fgColor, bgColor, eyeRadius); // Top-Left
+      drawPositionEye(ctx, pad, moduleCount - 7, 0, moduleSize, fgColor, bgColor, eyeRadius); // Top-Right
+      drawPositionEye(ctx, pad, 0, moduleCount - 7, moduleSize, fgColor, bgColor, eyeRadius); // Bottom-Left
+
+      // 3. Draw Data Modules
+      ctx.fillStyle = fgColor;
+      for (let row = 0; row < moduleCount; row++) {
+        for (let col = 0; col < moduleCount; col++) {
+          // Skip 3 Position Eyes
+          const isTopLeftEye = col < 7 && row < 7;
+          const isTopRightEye = col >= moduleCount - 7 && row < 7;
+          const isBottomLeftEye = col < 7 && row >= moduleCount - 7;
+          if (isTopLeftEye || isTopRightEye || isBottomLeftEye) continue;
+
+          if (qrMatrix.modules.get(row, col)) {
+            const x = pad + col * moduleSize;
+            const y = pad + row * moduleSize;
+            // Draw module rectangle with slight overlap to prevent hairline seams
+            ctx.fillRect(x, y, moduleSize + 0.4, moduleSize + 0.4);
+          }
+        }
+      }
+
+      // 4. Engrave Center Logo if enabled
       if (logoMode !== 'none') {
         let logoSrc = '';
         if (logoMode === 'preset' && PRESET_ICONS[selectedPreset]) {
-          const svgRaw = PRESET_ICONS[selectedPreset].svg;
+          let svgRaw = PRESET_ICONS[selectedPreset].svg;
+          // Apply custom Icon Color if set
+          if (iconColor) {
+            svgRaw = svgRaw
+              .replace(/fill="((?!none)[^"]*)"/gi, `fill="${iconColor}"`)
+              .replace(/stroke="((?!none)[^"]*)"/gi, `stroke="${iconColor}"`);
+          }
           logoSrc = `data:image/svg+xml;utf8,${encodeURIComponent(svgRaw)}`;
         } else if (logoMode === 'upload' && uploadedLogoUrl) {
           logoSrc = uploadedLogoUrl;
@@ -167,15 +273,15 @@ export const QrGenerator: React.FC = () => {
           await new Promise<void>((resolve) => {
             logoImg.onload = () => {
               const logoDim = Math.floor(size * (logoSizePercent / 100));
-              const centerX = (size - logoDim) / 2;
-              const centerY = (size - logoDim) / 2;
+              const centerX = pad + (size - logoDim) / 2;
+              const centerY = pad + (size - logoDim) / 2;
 
               // Draw Center Background Mask Badge
               if (logoShape !== 'transparent') {
                 ctx.fillStyle = logoBgColor;
                 ctx.beginPath();
                 if (logoShape === 'circle') {
-                  ctx.arc(size / 2, size / 2, logoDim / 2 + 4, 0, Math.PI * 2);
+                  ctx.arc(totalWidth / 2, totalHeight / 2, logoDim / 2 + 4, 0, Math.PI * 2);
                 } else if (logoShape === 'rounded') {
                   const r = 12;
                   ctx.roundRect(centerX - 4, centerY - 4, logoDim + 8, logoDim + 8, r);
@@ -185,9 +291,9 @@ export const QrGenerator: React.FC = () => {
                 ctx.fill();
               }
 
-              // Draw Logo Graphic on top
-              const pad = 4;
-              ctx.drawImage(logoImg, centerX + pad, centerY + pad, logoDim - pad * 2, logoDim - pad * 2);
+              // Draw Logo Graphic on top with custom Inner Padding
+              const innerPad = iconPadding;
+              ctx.drawImage(logoImg, centerX + innerPad, centerY + innerPad, Math.max(1, logoDim - innerPad * 2), Math.max(1, logoDim - innerPad * 2));
               resolve();
             };
             logoImg.onerror = () => resolve();
@@ -196,6 +302,7 @@ export const QrGenerator: React.FC = () => {
         }
       }
 
+      ctx.restore();
       setQrDataUrl(canvas.toDataURL('image/png'));
       setErrorMsg('');
     } catch (err: any) {
@@ -243,6 +350,8 @@ export const QrGenerator: React.FC = () => {
               onClick={() => {
                 setText('https://starbucks.com');
                 setFgColor('#006241');
+                setEyeRadius(8);
+                setQrBorderRadius(24);
                 setLogoMode('preset');
                 setSelectedPreset('Starbucks');
               }}
@@ -254,6 +363,7 @@ export const QrGenerator: React.FC = () => {
               onClick={() => {
                 setText('WIFI:S:MyHomeWiFi;T:WPA;P:Password123;;');
                 setFgColor('#ea580c');
+                setEyeRadius(6);
                 setLogoMode('preset');
                 setSelectedPreset('WiFi');
               }}
@@ -267,6 +377,115 @@ export const QrGenerator: React.FC = () => {
             >
               ✉️ Email Preset
             </button>
+          </div>
+        </div>
+
+        {/* QR Roundness & Outer Padding Sliders Panel */}
+        <div className="p-4 bg-gray-900 border border-gray-800 rounded-2xl space-y-3.5">
+          <div className="flex justify-between items-center text-xs font-bold text-sky-400 uppercase tracking-wider">
+            <span className="flex items-center space-x-1.5">
+              <Sliders className="h-4 w-4 text-sky-400" />
+              <span>QR Corner Roundness & Outer Padding Controls</span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* 1. Outer Padding Slider */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs text-gray-300">
+                <span className="font-semibold">Outer Padding:</span>
+                <span className="font-mono text-sky-400 font-bold">{qrPadding}px</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={40}
+                value={qrPadding}
+                onChange={(e) => setQrPadding(Number(e.target.value))}
+                className="w-full accent-sky-500 bg-gray-800 h-2 rounded-lg cursor-pointer"
+              />
+              <div className="flex gap-1">
+                {[0, 10, 18, 30].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setQrPadding(p)}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all ${
+                      qrPadding === p ? 'bg-sky-600 text-white border-sky-400' : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {p === 0 ? 'None (0px)' : `${p}px`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Outer Corner Roundness Slider */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs text-gray-300">
+                <span className="font-semibold">Outer Corner Radius:</span>
+                <span className="font-mono text-sky-400 font-bold">{qrBorderRadius}px</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={48}
+                value={qrBorderRadius}
+                onChange={(e) => setQrBorderRadius(Number(e.target.value))}
+                className="w-full accent-sky-500 bg-gray-800 h-2 rounded-lg cursor-pointer"
+              />
+              <div className="flex gap-1">
+                {[
+                  { value: 0, label: '0px Sharp' },
+                  { value: 16, label: '16px Soft' },
+                  { value: 24, label: '24px Round' },
+                  { value: 40, label: '40px Curved' },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    onClick={() => setQrBorderRadius(r.value)}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all ${
+                      qrBorderRadius === r.value ? 'bg-sky-600 text-white border-sky-400' : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Position Eye Corner Roundness Slider */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs text-gray-300">
+                <span className="font-semibold">Position Eye Roundness:</span>
+                <span className="font-mono text-emerald-400 font-bold">{eyeRadius}px</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={16}
+                value={eyeRadius}
+                onChange={(e) => setEyeRadius(Number(e.target.value))}
+                className="w-full accent-emerald-500 bg-gray-800 h-2 rounded-lg cursor-pointer"
+              />
+              <div className="flex gap-1">
+                {[
+                  { value: 0, label: 'Square' },
+                  { value: 6, label: 'Soft' },
+                  { value: 10, label: 'Rounded' },
+                  { value: 14, label: 'Smooth' },
+                ].map((eR) => (
+                  <button
+                    key={eR.value}
+                    onClick={() => setEyeRadius(eR.value)}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all ${
+                      eyeRadius === eR.value ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {eR.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -350,9 +569,9 @@ export const QrGenerator: React.FC = () => {
             </div>
           )}
 
-          {/* Logo Size & Mask Shape Settings */}
+          {/* Logo Size, Mask Shape & Inner Padding Settings */}
           {logoMode !== 'none' && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-gray-800/80">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-800/80">
               {/* Logo Size Slider */}
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-gray-300">
@@ -365,6 +584,22 @@ export const QrGenerator: React.FC = () => {
                   max={32}
                   value={logoSizePercent}
                   onChange={(e) => setLogoSizePercent(Number(e.target.value))}
+                  className="w-full accent-amber-500 bg-gray-800 h-2 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Icon Inner Padding Slider */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-gray-300">
+                  <span>Icon Padding:</span>
+                  <span className="font-mono text-amber-400 font-bold">{iconPadding}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={16}
+                  value={iconPadding}
+                  onChange={(e) => setIconPadding(Number(e.target.value))}
                   className="w-full accent-amber-500 bg-gray-800 h-2 rounded-lg cursor-pointer"
                 />
               </div>
@@ -399,52 +634,111 @@ export const QrGenerator: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Center Icon Color Changer Panel */}
+          {logoMode === 'preset' && (
+            <div className="space-y-2 pt-2 border-t border-gray-800/80">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-300 font-bold flex items-center space-x-1.5">
+                  <Palette className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Center Icon Color Changer:</span>
+                </span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setIconColor(fgColor)}
+                    className="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-sky-300 text-[10px] font-bold border border-gray-700 transition-colors"
+                  >
+                    Match QR Color
+                  </button>
+                  <input
+                    type="color"
+                    value={iconColor || PRESET_ICONS[selectedPreset]?.color || fgColor}
+                    onChange={(e) => setIconColor(e.target.value)}
+                    className="h-6 w-8 rounded bg-transparent border-0 cursor-pointer"
+                  />
+                  <span className="font-mono text-[10px] text-amber-400 font-bold">
+                    {iconColor || PRESET_ICONS[selectedPreset]?.color || fgColor}
+                  </span>
+                </div>
+              </div>
+
+              {/* Icon Color Swatches */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  '#006241', '#ea580c', '#0284c7', '#6366f1',
+                  '#ec4899', '#f43f5e', '#34d399', '#f59e0b',
+                  '#ffffff', '#000000'
+                ].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setIconColor(color)}
+                    className={`h-5 w-5 rounded-full border transition-transform hover:scale-125 shadow-sm ${
+                      iconColor === color ? 'border-amber-400 scale-110 ring-2 ring-amber-400/50' : 'border-gray-700'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    title={`Set icon color to ${color}`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Color & Size Pickers */}
         <div className="grid grid-cols-2 gap-3 p-4 bg-gray-900 border border-gray-800 rounded-2xl">
           <div className="space-y-1">
             <label className="text-xs text-gray-400 font-semibold">QR Modules Color:</label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="color"
-                value={fgColor}
-                onChange={(e) => setFgColor(e.target.value)}
-                className="h-8 w-8 rounded bg-transparent border-0 cursor-pointer"
-              />
-              <span className="text-xs font-mono text-gray-300">{fgColor}</span>
+            <div className="flex items-center space-x-2" suppressHydrationWarning>
+              {isMounted ? (
+                <input
+                  type="color"
+                  value={fgColor}
+                  onChange={(e) => setFgColor(e.target.value)}
+                  className="h-8 w-8 rounded bg-transparent border-0 cursor-pointer"
+                  suppressHydrationWarning
+                />
+              ) : (
+                <div className="h-8 w-8 rounded border border-gray-700" style={{ backgroundColor: fgColor }} />
+              )}
+              <span className="text-xs font-mono text-gray-300" suppressHydrationWarning>{fgColor}</span>
             </div>
           </div>
 
           <div className="space-y-1">
             <label className="text-xs text-gray-400 font-semibold">Background Color:</label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="color"
-                value={bgColor}
-                onChange={(e) => setBgColor(e.target.value)}
-                className="h-8 w-8 rounded bg-transparent border-0 cursor-pointer"
-              />
-              <span className="text-xs font-mono text-gray-300">{bgColor}</span>
+            <div className="flex items-center space-x-2" suppressHydrationWarning>
+              {isMounted ? (
+                <input
+                  type="color"
+                  value={bgColor}
+                  onChange={(e) => setBgColor(e.target.value)}
+                  className="h-8 w-8 rounded bg-transparent border-0 cursor-pointer"
+                  suppressHydrationWarning
+                />
+              ) : (
+                <div className="h-8 w-8 rounded border border-gray-700" style={{ backgroundColor: bgColor }} />
+              )}
+              <span className="text-xs font-mono text-gray-300" suppressHydrationWarning>{bgColor}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Column: Live QR Preview Canvas & Download (5 Cols) */}
+      {/* Right Column: Live Exact QR Output Preview Canvas & Download (5 Cols) */}
       <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 bg-gray-950 border border-gray-800 rounded-3xl space-y-5 shadow-2xl">
         {qrDataUrl ? (
           <>
-            <div className="p-5 rounded-3xl bg-white shadow-2xl shadow-emerald-500/10 border border-gray-200">
-              <img src={qrDataUrl} alt="Engraved QR Code" className="w-64 h-64 object-contain" />
+            {/* Display Exact QR Image without artificial outer container padding */}
+            <div className="flex items-center justify-center p-2 rounded-2xl transition-all">
+              <img src={qrDataUrl} alt="Exact Engraved QR Code" className="max-w-full max-h-[380px] object-contain drop-shadow-2xl" />
             </div>
 
             <div className="text-center space-y-1">
               <div className="text-xs font-bold text-emerald-400 flex items-center justify-center gap-1.5">
                 <Shield className="h-4 w-4" />
-                <span>100% Scannable • Engraved Logo Centre</span>
+                <span>Exact Canvas Render • 100% Scannable</span>
               </div>
-              <p className="text-[11px] text-gray-500">Includes Error Correction Level H for maximum reliability</p>
+              <p className="text-[11px] text-gray-500">Downloaded PNG contains exact custom padding & corner roundness</p>
             </div>
 
             <a
@@ -453,11 +747,11 @@ export const QrGenerator: React.FC = () => {
               className="flex items-center space-x-2 px-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-xl shadow-emerald-500/25 transition-all hover:scale-105"
             >
               <Download className="h-4.5 w-4.5" />
-              <span>Download Engraved QR PNG</span>
+              <span>Download High-Res PNG</span>
             </a>
           </>
         ) : (
-          <div className="text-xs text-gray-500 py-12">Enter text above to preview engraved QR code</div>
+          <div className="text-xs text-gray-500 py-12">Enter text above to preview exact QR code</div>
         )}
       </div>
     </div>
