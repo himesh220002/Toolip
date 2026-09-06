@@ -123,6 +123,80 @@ const sanitizeImageUrl = (url: string): string => {
   return trimmed;
 };
 
+// 🎨 Built-In Vector Icons Preset Registry for QR Code Overlay
+export const BUILT_IN_VECTOR_ICONS = [
+  { id: 'none', label: 'None (Clean QR)', icon: Sparkles, svg: '' },
+  { id: 'logo', label: 'Company Logo', icon: ImageIcon, svg: 'logo' },
+  { id: 'mail', label: 'Mail / Email', icon: Mail, svg: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>' },
+  { id: 'phone', label: 'Phone / Call', icon: Phone, svg: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>' },
+  { id: 'globe', label: 'Website / Link', icon: Globe, svg: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>' },
+  { id: 'mappin', label: 'Location / Address', icon: MapPin, svg: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>' },
+  { id: 'user', label: 'Profile / Contact', icon: User, svg: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
+  { id: 'building', label: 'Company / Office', icon: Building2, svg: '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>' },
+  { id: 'share', label: 'Share / vCard', icon: Share2, svg: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="10.51" y2="6.99"/><line x1="15.41" x2="8.59" y1="17.01" y2="13.49"/>' },
+  { id: 'qrcode', label: 'Scan QR Code', icon: QrIcon, svg: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/>' },
+];
+
+const getVectorIconDataUrl = (iconId: string, color: string, fallbackLogoUrl: string): string => {
+  if (iconId === 'none') return '';
+  if (iconId === 'logo') return sanitizeImageUrl(fallbackLogoUrl);
+  const found = BUILT_IN_VECTOR_ICONS.find((i) => i.id === iconId);
+  if (found && found.svg) {
+    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${found.svg}</svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgStr)}`;
+  }
+  return '';
+};
+
+const drawCenterIconOverlay = async (
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  qrSquareSize: number,
+  selectedIcon: string,
+  fgColor: string,
+  bgColor: string,
+  companyLogoUrl: string
+) => {
+  if (selectedIcon === 'none') return;
+  const iconUrl = getVectorIconDataUrl(selectedIcon, fgColor, companyLogoUrl);
+  if (!iconUrl) return;
+
+  const centerBadgeSize = Math.floor(qrSquareSize * 0.22);
+
+  const iconImg = new Image();
+  iconImg.crossOrigin = 'anonymous';
+  await new Promise<void>((resolve) => {
+    iconImg.onload = () => {
+      ctx.save();
+      // Outer border circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, centerBadgeSize / 2 + 3, 0, Math.PI * 2);
+      ctx.fillStyle = bgColor;
+      ctx.fill();
+      ctx.strokeStyle = fgColor;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Inner white fill circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, centerBadgeSize / 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.clip();
+
+      const drawSize = centerBadgeSize * 0.62;
+      ctx.drawImage(iconImg, centerX - drawSize / 2, centerY - drawSize / 2, drawSize, drawSize);
+      ctx.restore();
+      resolve();
+    };
+    iconImg.onerror = () => resolve();
+    iconImg.src = iconUrl.includes('googleusercontent.com')
+      ? `${iconUrl}?v=${Date.now()}`
+      : iconUrl;
+  });
+};
+
 export const SignatureGenerator: React.FC = () => {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   useEffect(() => {
@@ -304,6 +378,7 @@ export const SignatureGenerator: React.FC = () => {
   const [eyeRadius, setEyeRadius] = useState<number>(10); // 10px
   const [qrFgColor, setQrFgColor] = useState<string>('#032326'); // #032326
   const [qrBgColor, setQrBgColor] = useState<string>('#ffffff'); // #ffffff
+  const [selectedVectorIcon, setSelectedVectorIcon] = useLocalStorage<string>('toolip_qr_vector_icon', 'logo');
 
   // Copy Feedback States
   const [copiedHtml, setCopiedHtml] = useState<boolean>(false);
@@ -317,7 +392,7 @@ export const SignatureGenerator: React.FC = () => {
   useEffect(() => {
     generateInternalQrCanvas();
     generateSharePdfQrCanvas();
-  }, [website, qrPadding, qrBorderRadius, eyeRadius, qrFgColor, qrBgColor, fullName, company, role, phone, email, logoUrl, businessQrNoticeText]);
+  }, [website, qrPadding, qrBorderRadius, eyeRadius, qrFgColor, qrBgColor, fullName, company, role, phone, email, logoUrl, businessQrNoticeText, selectedVectorIcon]);
 
   const drawPositionEye = (
     ctx: CanvasRenderingContext2D,
@@ -368,7 +443,7 @@ export const SignatureGenerator: React.FC = () => {
     ctx.fill();
   };
 
-  const drawCustomQrCanvas = (payloadText: string): string => {
+  const drawCustomQrCanvas = async (payloadText: string): Promise<string> => {
     if (!payloadText.trim()) return '';
 
     try {
@@ -420,6 +495,18 @@ export const SignatureGenerator: React.FC = () => {
           }
         }
       }
+
+      // Draw Center Built-In Vector Icon Overlay
+      await drawCenterIconOverlay(
+        ctx,
+        totalWidth / 2,
+        totalHeight / 2,
+        baseSize,
+        selectedVectorIcon,
+        qrFgColor,
+        qrBgColor,
+        logoUrl
+      );
 
       ctx.restore();
       return canvas.toDataURL('image/png');
@@ -581,7 +668,7 @@ export const SignatureGenerator: React.FC = () => {
 
   const generateInternalQrCanvas = async () => {
     if (!website.trim()) return;
-    const url = drawCustomQrCanvas(website);
+    const url = await drawCustomQrCanvas(website);
     if (url) setInternalQrDataUrl(url);
   };
 
@@ -2214,6 +2301,41 @@ Generated via Toolip Premium Business Card Generator`;
                         Reset #ffffff
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                {/* Select Built-In Vector Icon Section */}
+                <div className="space-y-2 pt-3 border-t border-slate-800/80">
+                  <div className="flex items-center justify-between text-xs font-bold text-sky-400 uppercase tracking-widest">
+                    <span className="flex items-center space-x-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+                      <span>Select Built-In Vector Icon</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      {BUILT_IN_VECTOR_ICONS.find((i) => i.id === selectedVectorIcon)?.label}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {BUILT_IN_VECTOR_ICONS.map((iconItem) => {
+                      const IconComponent = iconItem.icon;
+                      const isSelected = selectedVectorIcon === iconItem.id;
+                      return (
+                        <button
+                          key={iconItem.id}
+                          type="button"
+                          onClick={() => setSelectedVectorIcon(iconItem.id)}
+                          className={`p-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1.5 ${
+                            isSelected
+                              ? 'bg-sky-950/80 border-sky-400 text-sky-300 shadow-lg scale-105'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                          }`}
+                        >
+                          <IconComponent className={`h-4 w-4 ${isSelected ? 'text-sky-400' : 'text-slate-400'}`} />
+                          <span className="text-[10px] truncate w-full text-center">{iconItem.label.split(' ')[0]}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
