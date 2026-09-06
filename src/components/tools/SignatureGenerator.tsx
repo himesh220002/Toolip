@@ -150,8 +150,17 @@ export const SignatureGenerator: React.FC = () => {
   );
 
   // Theme & Layout Options
+  const [themeSyncMode, setThemeSyncMode] = useLocalStorage<'same' | 'different'>('toolip_card_theme_sync_mode', 'same');
   const [cardTheme, setCardTheme] = useLocalStorage<keyof typeof CARD_THEMES>('toolip_card_theme', 'midnight');
+  const [frontCardTheme, setFrontCardTheme] = useLocalStorage<keyof typeof CARD_THEMES>('toolip_card_front_theme', 'midnight');
+  const [backCardTheme, setBackCardTheme] = useLocalStorage<keyof typeof CARD_THEMES>('toolip_card_back_theme', 'midnight');
   const [activeSide, setActiveSide] = useState<'front' | 'back' | 'both'>('both');
+
+  const handleSelectUnifiedTheme = (tKey: keyof typeof CARD_THEMES) => {
+    setCardTheme(tKey);
+    setFrontCardTheme(tKey);
+    setBackCardTheme(tKey);
+  };
 
   // Typography & Slideable Font Sizing Controls (All Measurements Strictly in PX)
   const [cardFontFamily, setCardFontFamily] = useLocalStorage<string>('toolip_card_font', 'Inter');
@@ -648,38 +657,40 @@ Generated via Toolip Premium Business Card Generator`;
   // Get Full HTML Code of Front & Back Cards
   const getFullCardHtml = () => {
     const activeQr = qrSourceMode === 'upload' && uploadedQrUrl ? uploadedQrUrl : internalQrDataUrl;
-    const theme = CARD_THEMES[cardTheme];
+    const frontTheme = CARD_THEMES[themeSyncMode === 'different' ? frontCardTheme : cardTheme];
+    const backTheme = CARD_THEMES[themeSyncMode === 'different' ? backCardTheme : cardTheme];
+    const backKey = themeSyncMode === 'different' ? backCardTheme : cardTheme;
     const cleanLogoUrl = sanitizeImageUrl(logoUrl);
     const cleanAvatarUrl = sanitizeImageUrl(avatarUrl);
 
     return `<!-- Toolip Premium Business Card HTML -->
 <div style="display: flex; flex-wrap: wrap; gap: 24px; font-family: '${cardFontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px;">
   <!-- FRONT SIDE CARD -->
-  <div style="width: ${cardWidth}px; height: ${cardHeight}px; border-radius: 24px; padding: ${cardPadding}px; background: ${theme.cssGradient}; border: ${theme.cssBorder}; color: ${theme.hexTextColor}; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; position: relative; overflow: hidden; box-shadow: 0 14px 28px -5px rgba(0,0,0,0.35);">
+  <div style="width: ${cardWidth}px; height: ${cardHeight}px; border-radius: 24px; padding: ${cardPadding}px; background: ${frontTheme.cssGradient}; border: ${frontTheme.cssBorder}; color: ${frontTheme.hexTextColor}; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; position: relative; overflow: hidden; box-shadow: 0 14px 28px -5px rgba(0,0,0,0.35);">
     <div style="position: absolute; top: -50px; right: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(99, 102, 241, 0.15); filter: blur(25px); pointer-events: none;"></div>
     <div style="position: absolute; bottom: -50px; left: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(14, 165, 233, 0.15); filter: blur(25px); pointer-events: none;"></div>
     <div style="z-index: 10; display: flex; flex-direction: column; align-items: center;">
       <img src="${cleanLogoUrl}" style="height: ${logoSize}px; width: ${logoSize}px; object-fit: contain; margin-bottom: 8px;" />
       <div>
         <div style="font-size: ${companyFontSize}px; font-weight: 900; letter-spacing: -0.02em; opacity: ${companyOpacity / 100}; line-height: 1.15;">${company}</div>
-        <div style="font-size: ${taglineFontSize}px; color: ${theme.hexSubTextColor}; font-weight: 700; margin-top: 4px; opacity: ${taglineOpacity / 100}; line-height: 1.15;">${tagline}</div>
+        <div style="font-size: ${taglineFontSize}px; color: ${frontTheme.hexSubTextColor}; font-weight: 700; margin-top: 4px; opacity: ${taglineOpacity / 100}; line-height: 1.15;">${tagline}</div>
       </div>
     </div>
   </div>
 
   <!-- BACK SIDE CARD -->
-  <div style="width: ${cardWidth}px; height: ${cardHeight}px; border-radius: 24px; padding: ${cardPadding}px; background: ${theme.cssGradient}; border: ${theme.cssBorder}; color: ${theme.hexTextColor}; display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; box-shadow: 0 14px 28px -5px rgba(0,0,0,0.35);">
+  <div style="width: ${cardWidth}px; height: ${cardHeight}px; border-radius: 24px; padding: ${cardPadding}px; background: ${backTheme.cssGradient}; border: ${backTheme.cssBorder}; color: ${backTheme.hexTextColor}; display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; box-shadow: 0 14px 28px -5px rgba(0,0,0,0.35);">
     <div style="position: absolute; top: -50px; right: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(99, 102, 241, 0.15); filter: blur(25px); pointer-events: none;"></div>
     <div style="position: absolute; bottom: -50px; left: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(14, 165, 233, 0.15); filter: blur(25px); pointer-events: none;"></div>
     <div style="flex: 1; padding-right: 10px; z-index: 10; overflow: hidden; min-width: 0;">
       <div style="display: flex; ${avatarLayout === 'col' ? 'flex-direction: column; align-items: flex-start; gap: 6px;' : 'align-items: center; gap: 10px;'} margin-bottom: 8px;">
-        <img src="${cleanAvatarUrl}" style="height: ${avatarSize}px; width: ${avatarSize}px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2);" />
+        <img src="${cleanAvatarUrl}" style="height: ${avatarSize}px; width: ${avatarSize}px; border-radius: 50%; object-fit: cover; border: 2px solid ${backKey === 'minimal' ? '#cbd5e1' : 'rgba(255,255,255,0.2)'};" />
         <div style="min-width: 0;">
-          <div style="font-size: ${nameFontSize}px; font-weight: 900; line-height: 1.2;">${fullName}</div>
-          <div style="font-size: ${roleFontSize}px; color: ${theme.hexSubTextColor}; font-weight: 700; line-height: 1.25; margin-top: 2px; word-break: break-word;">${role}</div>
+          <div style="font-size: ${nameFontSize}px; font-weight: 900; line-height: 1.2; color: ${backTheme.hexTextColor};">${fullName}</div>
+          <div style="font-size: ${roleFontSize}px; color: ${backTheme.hexSubTextColor}; font-weight: 700; line-height: 1.25; margin-top: 2px; word-break: break-word;">${role}</div>
         </div>
       </div>
-      <div style="font-size: ${contactFontSize}px; font-weight: 500; opacity: 0.92; display: flex; flex-direction: column; gap: 3.5px;">
+      <div style="font-size: ${contactFontSize}px; font-weight: 500; opacity: 0.92; display: flex; flex-direction: column; gap: 3.5px; color: ${backTheme.hexTextColor};">
         <div style="display: flex; align-items: center; gap: 6px; line-height: 1.25; word-break: break-word;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
           <span>${email}</span>
@@ -716,7 +727,9 @@ Generated via Toolip Premium Business Card Generator`;
   // 🖨️ Professional Press-Ready 300 DPI PDF Engine (2 Separate Pages, 3mm Bleed, Crop Marks, CMYK Print Space)
   const downloadPressReadyPdf = () => {
     const activeQr = qrSourceMode === 'upload' && uploadedQrUrl ? uploadedQrUrl : internalQrDataUrl;
-    const theme = CARD_THEMES[cardTheme];
+    const frontTheme = CARD_THEMES[themeSyncMode === 'different' ? frontCardTheme : cardTheme];
+    const backTheme = CARD_THEMES[themeSyncMode === 'different' ? backCardTheme : cardTheme];
+    const backKey = themeSyncMode === 'different' ? backCardTheme : cardTheme;
     const cleanLogoUrl = sanitizeImageUrl(logoUrl);
     const cleanAvatarUrl = sanitizeImageUrl(avatarUrl);
     const printWindow = window.open('', '_blank');
@@ -729,7 +742,7 @@ Generated via Toolip Premium Business Card Generator`;
           <title>${fullName} — Press Ready Business Card (Separated Pages + 3mm Bleed)</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@300;400;600;700;800;900&family=Outfit:wght@300;400;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Poppins:wght@300;400;600;700;800;900&family=Roboto:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
           <style>
             /* 🎯 Commercial Printer Setup: Card (3.5" x 2.0" / 88.9mm x 50.8mm) + 3mm Bleed = 94.9mm x 56.8mm */
             @page {
@@ -766,15 +779,25 @@ Generated via Toolip Premium Business Card Generator`;
               break-after: avoid;
             }
 
-            /* 3mm Bleed Area Background */
-            .bleed-bg {
+            /* 3mm Bleed Area Backgrounds */
+            .front-bleed-bg {
               position: absolute;
               top: 0;
               left: 0;
               width: 94.9mm;
               height: 56.8mm;
-              background: ${theme.cssGradient};
-              border: ${theme.cssBorder};
+              background: ${frontTheme.cssGradient};
+              border: ${frontTheme.cssBorder};
+              z-index: 1;
+            }
+            .back-bleed-bg {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 94.9mm;
+              height: 56.8mm;
+              background: ${backTheme.cssGradient};
+              border: ${backTheme.cssBorder};
               z-index: 1;
             }
 
@@ -803,10 +826,10 @@ Generated via Toolip Premium Business Card Generator`;
               align-items: center;
             }
 
-            /* Crop / Trim Marks in Bleed Margin */
+            /* High Precision Vector Corner Crop Ticks (0.5px hair-lines) */
             .crop-tick {
               position: absolute;
-              z-index: 50;
+              z-index: 20;
               background: rgba(255, 255, 255, 0.9);
               mix-blend-mode: difference;
             }
@@ -859,7 +882,7 @@ Generated via Toolip Premium Business Card Generator`;
               font-size: ${companyFontSize}px;
               font-weight: 900;
               letter-spacing: -0.02em;
-              color: ${theme.hexTextColor};
+              color: ${frontTheme.hexTextColor};
               opacity: ${companyOpacity / 100};
               margin: 0;
               line-height: 1.15;
@@ -867,7 +890,7 @@ Generated via Toolip Premium Business Card Generator`;
             .company-tagline {
               font-size: ${taglineFontSize}px;
               font-weight: 700;
-              color: ${theme.hexSubTextColor};
+              color: ${frontTheme.hexSubTextColor};
               opacity: ${taglineOpacity / 100};
               margin-top: 4px;
               line-height: 1.15;
@@ -877,21 +900,21 @@ Generated via Toolip Premium Business Card Generator`;
               height: ${avatarSize}px;
               border-radius: 50%;
               object-fit: cover;
-              border: 2px solid rgba(255,255,255,0.2);
+              border: 2px solid ${backKey === 'minimal' ? '#cbd5e1' : 'rgba(255,255,255,0.2)'};
               box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
               flex-shrink: 0;
             }
             .person-name {
               font-size: ${nameFontSize}px;
               font-weight: 900;
-              color: ${theme.hexTextColor};
+              color: ${backTheme.hexTextColor};
               margin: 0;
               line-height: 1.15;
             }
             .person-role {
               font-size: ${roleFontSize}px;
               font-weight: 700;
-              color: ${theme.hexSubTextColor};
+              color: ${backTheme.hexSubTextColor};
               margin: 2px 0 0 0;
               line-height: 1.25;
               word-break: break-word;
@@ -900,7 +923,7 @@ Generated via Toolip Premium Business Card Generator`;
               margin-top: 8px;
               font-size: ${contactFontSize}px;
               font-weight: 500;
-              color: ${theme.hexTextColor};
+              color: ${backTheme.hexTextColor};
               opacity: 0.92;
               display: flex;
               flex-direction: column;
@@ -943,7 +966,7 @@ Generated via Toolip Premium Business Card Generator`;
         <body>
           <!-- PAGE 1: FRONT SIDE (COMMERCIAL PRESS READY) -->
           <div class="press-page">
-            <div class="bleed-bg"></div>
+            <div class="front-bleed-bg"></div>
             <div class="crop-tick crop-tl-h"></div>
             <div class="crop-tick crop-tl-v"></div>
             <div class="crop-tick crop-tr-h"></div>
@@ -968,7 +991,7 @@ Generated via Toolip Premium Business Card Generator`;
 
           <!-- PAGE 2: BACK SIDE (COMMERCIAL PRESS READY) -->
           <div class="press-page">
-            <div class="bleed-bg"></div>
+            <div class="back-bleed-bg"></div>
             <div class="crop-tick crop-tl-h"></div>
             <div class="crop-tick crop-tl-v"></div>
             <div class="crop-tick crop-tr-h"></div>
@@ -1020,8 +1043,19 @@ Generated via Toolip Premium Business Card Generator`;
 
           <script>
             window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 750);
+              if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(function() {
+                  setTimeout(function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 800);
+                  }, 400);
+                });
+              } else {
+                setTimeout(function() {
+                  window.print();
+                  setTimeout(function() { window.close(); }, 800);
+                }, 800);
+              }
             };
           </script>
         </body>
@@ -1033,7 +1067,8 @@ Generated via Toolip Premium Business Card Generator`;
   // Digital Showcase A4 Sheet PDF Download Engine
   const downloadTwoSidedPdf = () => {
     const activeQr = qrSourceMode === 'upload' && uploadedQrUrl ? uploadedQrUrl : internalQrDataUrl;
-    const theme = CARD_THEMES[cardTheme];
+    const frontTheme = CARD_THEMES[themeSyncMode === 'different' ? frontCardTheme : cardTheme];
+    const backTheme = CARD_THEMES[themeSyncMode === 'different' ? backCardTheme : cardTheme];
     const cleanLogoUrl = sanitizeImageUrl(logoUrl);
     const cleanAvatarUrl = sanitizeImageUrl(avatarUrl);
     const printWindow = window.open('', '_blank');
@@ -1046,7 +1081,7 @@ Generated via Toolip Premium Business Card Generator`;
           <title>${fullName} — Business Card Showcase PDF</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@300;400;600;700;800;900&family=Outfit:wght@300;400;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Poppins:wght@300;400;600;700;800;900&family=Roboto:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
           <style>
             @page { size: A4 portrait; margin: 15mm; }
             * {
@@ -1082,18 +1117,18 @@ Generated via Toolip Premium Business Card Generator`;
               box-shadow: 0 14px 28px -5px rgba(0,0,0,0.35);
             }
             .card-front {
-              background: ${theme.cssGradient};
-              border: ${theme.cssBorder};
-              color: ${theme.hexTextColor};
+              background: ${frontTheme.cssGradient};
+              border: ${frontTheme.cssBorder};
+              color: ${frontTheme.hexTextColor};
               flex-direction: column;
               align-items: center;
               justify-content: center;
               text-align: center;
             }
             .card-back {
-              background: ${theme.cssGradient};
-              border: ${theme.cssBorder};
-              color: ${theme.hexTextColor};
+              background: ${backTheme.cssGradient};
+              border: ${backTheme.cssBorder};
+              color: ${backTheme.hexTextColor};
               flex-direction: row;
               justify-content: space-between;
               align-items: center;
@@ -1134,7 +1169,7 @@ Generated via Toolip Premium Business Card Generator`;
               font-size: ${companyFontSize}px;
               font-weight: 900;
               letter-spacing: -0.02em;
-              color: ${theme.hexTextColor};
+              color: ${frontTheme.hexTextColor};
               opacity: ${companyOpacity / 100};
               margin: 0;
               line-height: 1.15;
@@ -1142,7 +1177,7 @@ Generated via Toolip Premium Business Card Generator`;
             .company-tagline {
               font-size: ${taglineFontSize}px;
               font-weight: 700;
-              color: ${theme.hexSubTextColor};
+              color: ${frontTheme.hexSubTextColor};
               opacity: ${taglineOpacity / 100};
               margin-top: 4px;
               line-height: 1.15;
@@ -1152,21 +1187,21 @@ Generated via Toolip Premium Business Card Generator`;
               height: ${avatarSize}px;
               border-radius: 50%;
               object-fit: cover;
-              border: 2px solid rgba(255,255,255,0.2);
+              border: 2px solid ${themeSyncMode === 'different' && backCardTheme === 'minimal' || themeSyncMode === 'same' && cardTheme === 'minimal' ? '#cbd5e1' : 'rgba(255,255,255,0.2)'};
               box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
               flex-shrink: 0;
             }
             .person-name {
               font-size: ${nameFontSize}px;
               font-weight: 900;
-              color: ${theme.hexTextColor};
+              color: ${backTheme.hexTextColor};
               margin: 0;
               line-height: 1.15;
             }
             .person-role {
               font-size: ${roleFontSize}px;
               font-weight: 700;
-              color: ${theme.hexSubTextColor};
+              color: ${backTheme.hexSubTextColor};
               margin: 2px 0 0 0;
               line-height: 1.25;
               word-break: break-word;
@@ -1175,7 +1210,7 @@ Generated via Toolip Premium Business Card Generator`;
               margin-top: 8px;
               font-size: ${contactFontSize}px;
               font-weight: 500;
-              color: ${theme.hexTextColor};
+              color: ${backTheme.hexTextColor};
               opacity: 0.92;
               display: flex;
               flex-direction: column;
@@ -1271,8 +1306,19 @@ Generated via Toolip Premium Business Card Generator`;
 
           <script>
             window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 750);
+              if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(function() {
+                  setTimeout(function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 800);
+                  }, 400);
+                });
+              } else {
+                setTimeout(function() {
+                  window.print();
+                  setTimeout(function() { window.close(); }, 800);
+                }, 800);
+              }
             };
           </script>
         </body>
@@ -1281,11 +1327,24 @@ Generated via Toolip Premium Business Card Generator`;
     printWindow.document.close();
   };
 
-  const currentTheme = CARD_THEMES[cardTheme];
+  const effectiveFrontKey = themeSyncMode === 'different' ? frontCardTheme : cardTheme;
+  const effectiveBackKey = themeSyncMode === 'different' ? backCardTheme : cardTheme;
+
+  const currentFrontTheme = CARD_THEMES[effectiveFrontKey];
+  const currentBackTheme = CARD_THEMES[effectiveBackKey];
+  const currentTheme = currentBackTheme;
   const activeInternalQr = qrSourceMode === 'upload' && uploadedQrUrl ? uploadedQrUrl : internalQrDataUrl;
 
   return (
     <div className="space-y-6">
+      {/* 🎨 DYNAMIC GOOGLE FONTS ENGINE (Instant Font Switching on Click/Select) */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@300;400;600;700;800;900&family=Outfit:wght@300;400;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Poppins:wght@300;400;600;700;800;900&family=Roboto:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;600;700&display=swap"
+        rel="stylesheet"
+      />
+
       {/* Top Workspace Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-900/90 border border-slate-800 rounded-3xl backdrop-blur-xl shadow-xl">
         <div className="flex items-center space-x-2 text-sm font-bold text-white">
@@ -1435,33 +1494,120 @@ Generated via Toolip Premium Business Card Generator`;
         {/* Left Column: Card Inputs & Theme Pickers (7 Cols) */}
         <div className="lg:col-span-7 space-y-5">
 
-          {/* Card Theme Picker */}
-          <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-3 backdrop-blur-xl shadow-xl">
-            <div className="flex justify-between items-center text-xs font-bold text-indigo-400 uppercase tracking-widest">
-              <span className="flex items-center space-x-1.5">
+          {/* Card Theme Picker (Same Both Sides vs Different Both Sides) */}
+          <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-3xl space-y-4 backdrop-blur-xl shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-800/80">
+              <div className="flex items-center space-x-1.5 text-xs font-bold text-indigo-400 uppercase tracking-widest">
                 <Palette className="h-4 w-4 text-indigo-400" />
                 <span>Select Premium Card Theme</span>
-              </span>
+              </div>
+
+              {/* Mode Switcher: Same Both Sides vs Different Both Sides */}
+              <div className="inline-flex p-1 bg-slate-950/80 border border-slate-800/80 rounded-xl text-[11px] font-bold shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setThemeSyncMode('same')}
+                  className={`px-3 py-1 rounded-lg transition-all ${
+                    themeSyncMode === 'same'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Same Both Sides
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setThemeSyncMode('different')}
+                  className={`px-3 py-1 rounded-lg transition-all ${
+                    themeSyncMode === 'different'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Different Both Sides
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {(Object.keys(CARD_THEMES) as Array<keyof typeof CARD_THEMES>).map((tKey) => (
-                <button
-                  key={tKey}
-                  onClick={() => setCardTheme(tKey)}
-                  className={`p-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center space-x-2 ${cardTheme === tKey
-                    ? 'bg-slate-800 border-indigo-400 text-white shadow-lg scale-105'
-                    : 'bg-slate-950 border-slate-800 text-gray-400 hover:text-white'
+            {themeSyncMode === 'same' ? (
+              /* Unified Theme Selector */
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {(Object.keys(CARD_THEMES) as Array<keyof typeof CARD_THEMES>).map((tKey) => (
+                  <button
+                    key={tKey}
+                    onClick={() => handleSelectUnifiedTheme(tKey)}
+                    className={`p-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center space-x-2 ${
+                      cardTheme === tKey
+                        ? 'bg-slate-800 border-indigo-400 text-white shadow-lg scale-105'
+                        : 'bg-slate-950 border-slate-800 text-gray-400 hover:text-white'
                     }`}
-                >
-                  <span
-                    className="h-3.5 w-3.5 rounded-full border border-gray-600 shrink-0"
-                    style={{ backgroundColor: CARD_THEMES[tKey].accent }}
-                  />
-                  <span className="truncate">{CARD_THEMES[tKey].name}</span>
-                </button>
-              ))}
-            </div>
+                  >
+                    <span
+                      className="h-3.5 w-3.5 rounded-full border border-gray-600 shrink-0"
+                      style={{ backgroundColor: CARD_THEMES[tKey].accent }}
+                    />
+                    <span className="truncate">{CARD_THEMES[tKey].name}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              /* Independent Theme Selectors Per Side */
+              <div className="space-y-4 pt-1">
+                {/* Front Side Theme Selection */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-sky-400 uppercase tracking-wider">
+                    <span>Front Side Theme (Logo Card)</span>
+                    <span className="text-[10px] font-mono text-slate-400">{CARD_THEMES[frontCardTheme].name}</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {(Object.keys(CARD_THEMES) as Array<keyof typeof CARD_THEMES>).map((tKey) => (
+                      <button
+                        key={`front-${tKey}`}
+                        onClick={() => setFrontCardTheme(tKey)}
+                        className={`p-2 rounded-xl border text-[11px] font-bold transition-all flex items-center space-x-2 ${
+                          frontCardTheme === tKey
+                            ? 'bg-sky-950/80 border-sky-400 text-sky-200 shadow-md scale-105'
+                            : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        <span
+                          className="h-3 w-3 rounded-full border border-gray-600 shrink-0"
+                          style={{ backgroundColor: CARD_THEMES[tKey].accent }}
+                        />
+                        <span className="truncate">{CARD_THEMES[tKey].name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Back Side Theme Selection */}
+                <div className="space-y-2 pt-2 border-t border-slate-800/60">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                    <span>Back Side Theme (Info & QR Card)</span>
+                    <span className="text-[10px] font-mono text-slate-400">{CARD_THEMES[backCardTheme].name}</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {(Object.keys(CARD_THEMES) as Array<keyof typeof CARD_THEMES>).map((tKey) => (
+                      <button
+                        key={`back-${tKey}`}
+                        onClick={() => setBackCardTheme(tKey)}
+                        className={`p-2 rounded-xl border text-[11px] font-bold transition-all flex items-center space-x-2 ${
+                          backCardTheme === tKey
+                            ? 'bg-emerald-950/80 border-emerald-400 text-emerald-200 shadow-md scale-105'
+                            : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        <span
+                          className="h-3 w-3 rounded-full border border-gray-600 shrink-0"
+                          style={{ backgroundColor: CARD_THEMES[tKey].accent }}
+                        />
+                        <span className="truncate">{CARD_THEMES[tKey].name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Slideable Typography & Font Sizing Controls */}
@@ -1473,15 +1619,32 @@ Generated via Toolip Premium Business Card Generator`;
               </span>
             </div>
 
-            {/* Font Family Selection */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-200">Select Card Font Family:</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['Inter', 'Outfit', 'Poppins', 'Roboto', 'Montserrat', 'Segoe UI'].map((font) => (
+            {/* Font Family Selection (Interactive Buttons + Dropdown Select) */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs font-bold text-gray-200">
+                <span>Select Card Font Family:</span>
+                <span className="text-amber-400 font-mono text-[11px]">{cardFontFamily}</span>
+              </div>
+
+              {/* Quick Pill Buttons */}
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {[
+                  'Inter',
+                  'Outfit',
+                  'Poppins',
+                  'Roboto',
+                  'Montserrat',
+                  'Playfair Display',
+                  'Cinzel',
+                  'Space Grotesk',
+                  'Fira Code',
+                  'Segoe UI',
+                ].map((font) => (
                   <button
                     key={font}
+                    type="button"
                     onClick={() => setCardFontFamily(font)}
-                    className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all ${cardFontFamily === font
+                    className={`py-2 px-2 rounded-xl border text-xs font-bold transition-all truncate ${cardFontFamily === font
                       ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md scale-105'
                       : 'bg-slate-950 border-slate-800 text-gray-400 hover:text-white'
                       }`}
@@ -1491,6 +1654,24 @@ Generated via Toolip Premium Business Card Generator`;
                   </button>
                 ))}
               </div>
+
+              {/* Direct Select Dropdown */}
+              <select
+                value={cardFontFamily}
+                onChange={(e) => setCardFontFamily(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+              >
+                <option value="Inter">Inter (Modern Clean Sans)</option>
+                <option value="Outfit">Outfit (Tech Bold Display)</option>
+                <option value="Poppins">Poppins (Geometric Friendly)</option>
+                <option value="Roboto">Roboto (Standard Corporate)</option>
+                <option value="Montserrat">Montserrat (Luxury Premium)</option>
+                <option value="Playfair Display">Playfair Display (Classic Elegant Serif)</option>
+                <option value="Cinzel">Cinzel (High Luxury Roman Serif)</option>
+                <option value="Space Grotesk">Space Grotesk (Futuristic Cyber)</option>
+                <option value="Fira Code">Fira Code (Developer Monospace)</option>
+                <option value="Segoe UI">Segoe UI (System Native)</option>
+              </select>
             </div>
 
             {/* Slideable Font Size & Padding Controls */}
@@ -2098,7 +2279,7 @@ Generated via Toolip Premium Business Card Generator`;
               </div>
 
               <div
-                className={`mx-auto rounded-3xl border shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden transition-all duration-300 ${currentTheme.bg} ${currentTheme.cardBorder}`}
+                className={`mx-auto rounded-3xl border shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden transition-all duration-300 ${currentFrontTheme.bg} ${currentFrontTheme.cardBorder}`}
                 style={{ width: `${cardWidth}px`, height: `${cardHeight}px`, maxWidth: '100%', padding: `${cardPadding}px`, fontFamily: `'${cardFontFamily}', sans-serif` }}
               >
                 {/* Decorative geometry background glow */}
@@ -2108,8 +2289,8 @@ Generated via Toolip Premium Business Card Generator`;
                 <div className="z-10 flex flex-col items-center justify-center space-y-3">
                   <img src={sanitizeImageUrl(logoUrl)} crossOrigin="anonymous" alt="Logo" className="object-contain mb-1" style={{ width: `${logoSize}px`, height: `${logoSize}px` }} />
                   <div className="space-y-1">
-                    <h2 className={`font-black tracking-tight ${currentTheme.textColor}`} style={{ fontSize: `${companyFontSize}px`, opacity: companyOpacity / 100 }}>{company}</h2>
-                    <p className={`font-bold ${currentTheme.subTextColor}`} style={{ fontSize: `${taglineFontSize}px`, opacity: taglineOpacity / 100 }}>{tagline}</p>
+                    <h2 className={`font-black tracking-tight ${currentFrontTheme.textColor}`} style={{ fontSize: `${companyFontSize}px`, opacity: companyOpacity / 100, fontFamily: 'inherit' }}>{company}</h2>
+                    <p className={`font-bold ${currentFrontTheme.subTextColor}`} style={{ fontSize: `${taglineFontSize}px`, opacity: taglineOpacity / 100, fontFamily: 'inherit' }}>{tagline}</p>
                   </div>
                 </div>
               </div>
@@ -2125,20 +2306,20 @@ Generated via Toolip Premium Business Card Generator`;
               </div>
 
               <div
-                className={`mx-auto rounded-3xl border shadow-2xl flex items-center justify-between relative overflow-hidden transition-all duration-300 ${currentTheme.bg} ${currentTheme.cardBorder}`}
+                className={`mx-auto rounded-3xl border shadow-2xl flex items-center justify-between relative overflow-hidden transition-all duration-300 ${currentBackTheme.bg} ${currentBackTheme.cardBorder} ${currentBackTheme.textColor}`}
                 style={{ width: `${cardWidth}px`, height: `${cardHeight}px`, maxWidth: '100%', padding: `${cardPadding}px`, fontFamily: `'${cardFontFamily}', sans-serif` }}
               >
                 {/* Left Side: Photo + Contact Info */}
                 <div className="flex-1 pr-3 space-y-2 z-10 min-w-0">
                   <div className={`flex ${avatarLayout === 'col' ? 'flex-col gap-2 items-start' : 'items-center space-x-3'} mb-2`}>
-                    <img src={sanitizeImageUrl(avatarUrl)} crossOrigin="anonymous" alt={fullName} className="rounded-full object-cover border-2 border-white/20 shadow-md shrink-0" style={{ width: `${avatarSize}px`, height: `${avatarSize}px` }} />
+                    <img src={sanitizeImageUrl(avatarUrl)} crossOrigin="anonymous" alt={fullName} className={`rounded-full object-cover border-2 ${effectiveBackKey === 'minimal' ? 'border-slate-300' : 'border-white/20'} shadow-md shrink-0`} style={{ width: `${avatarSize}px`, height: `${avatarSize}px` }} />
                     <div className="min-w-0">
-                      <h3 className={`font-black tracking-tight leading-tight ${currentTheme.textColor}`} style={{ fontSize: `${nameFontSize}px` }}>{fullName}</h3>
-                      <p className={`font-bold leading-tight ${currentTheme.subTextColor}`} style={{ fontSize: `${roleFontSize}px` }}>{role}</p>
+                      <h3 className={`font-black tracking-tight leading-tight ${currentBackTheme.textColor}`} style={{ fontSize: `${nameFontSize}px`, fontFamily: 'inherit' }}>{fullName}</h3>
+                      <p className={`font-bold leading-tight ${currentBackTheme.subTextColor}`} style={{ fontSize: `${roleFontSize}px`, fontFamily: 'inherit' }}>{role}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-1 font-medium opacity-90 leading-tight" style={{ fontSize: `${contactFontSize}px` }}>
+                  <div className={`space-y-1 font-medium opacity-90 leading-tight ${currentBackTheme.textColor}`} style={{ fontSize: `${contactFontSize}px` }}>
                     <div className="flex items-center space-x-1.5">
                       <Mail className="h-3.5 w-3.5 text-sky-400 shrink-0" />
                       <span className="break-all sm:break-words">{email}</span>

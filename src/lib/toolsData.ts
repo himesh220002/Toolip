@@ -200,15 +200,15 @@ export const INITIAL_TOOLS: ToolItem[] = [
   },
   {
     id: 'signature-generator',
-    title: 'Email Signature Generator',
+    title: 'Business Card Generator',
     category: 'Image & Media Tools',
-    description: 'Create professional HTML email signatures with avatars, job titles, and social links.',
+    description: 'Create professional two-sided business cards with custom typography, slideable font/padding controls, embedded dual QR codes, and 300 DPI press-ready PDF export.',
     iconName: 'PenTool',
     status: 'completed',
-    notes: 'Generates clean email HTML signature markup.',
-    features: ['Live HTML preview', 'Custom color theme', '1-Click HTML Copy'],
-    updatedAt: '2026-09-04T00:00:00.000Z',
-    seoKeywords: ['signature generator', 'email signature builder', 'html signature'],
+    notes: 'Generates commercial 300 DPI press PDFs with 3mm bleed, crop ticks, and clean HTML markup.',
+    features: ['Two-Sided Card Preview', '300 DPI Press PDF with 3mm Bleed', 'Embedded & Standalone Dual QR System', 'Slideable Fonts, Sizes & Padding', '1-Click HTML & Text Auto-Fill'],
+    updatedAt: '2026-09-06T00:00:00.000Z',
+    seoKeywords: ['business card generator', 'business card creator', 'press ready pdf business card', 'two sided business card', 'html business card generator'],
   },
   // Calculators & Converters
   {

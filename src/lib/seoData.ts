@@ -418,6 +418,64 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoInfo> = {
           'Clicking "Deduplicate" scans all rows in your table, identifies identical duplicate rows, removes them, and displays a summary of how many rows were removed.'
       }
     ]
+  },
+  'signature-generator': {
+    id: 'signature-generator',
+    primaryKeyword: 'business card generator',
+    supportingKeywords: [
+      'business card creator online',
+      'press ready business card pdf',
+      '300 dpi business card generator',
+      'two sided business card maker',
+      'html business card template',
+      'printable business card builder',
+      'qr code business card maker'
+    ],
+    metaTitle: 'Free Business Card Generator — Two-Sided 300 DPI Press PDF & Dual QR | Toolip',
+    metaDescription:
+      'Create print-ready two-sided business cards with custom typography, slideable layout dimensions, embedded contact QR codes, 3mm press bleed, and instant 300 DPI PDF downloads.',
+    articleContent: {
+      heading: 'The Complete Guide to Designing & Exporting Commercial Press-Ready Business Cards',
+      paragraphs: [
+        'Creating a memorable business card requires a perfect balance of typography, layout spacing, visual branding, and print-ready technical specifications. Whether you are handing out physical cards at a networking conference or sharing digital card HTML snippets with clients, your card represents your professional identity.',
+        'Toolip Business Card Generator gives you full design control with responsive sliders for font family, text size, item padding, avatar dimensions, and card background themes. Both the Front (Logo & Brand) and Back (Contact Details & QR Code) sides are rendered in real time with exact pixel measurements for absolute visual precision.',
+        'For commercial printing, generic PDFs with mixed canvases often get rejected by print shops. Toolip exports 2-page commercial PDFs built to exact standard dimensions (3.5" x 2.0" trimmed / 88.9mm x 50.8mm) with 3mm extended bleed edges and corner crop marks for professional offset and digital printers. All rendering happens 100% locally in your browser memory.'
+      ],
+      useCases: [
+        'Corporate Networking & Conferences: Print sharp 300 DPI physical cards with dual scannable vCard & digital links.',
+        'Freelancers & Executives: Design modern two-sided cards with dark mode, glassmorphism, or clean minimalist aesthetics.',
+        'HTML & Web Email Signatures: Copy generated clean HTML markup directly into email signatures or digital portfolios.'
+      ],
+      howToSteps: [
+        'Enter your company name, full name, job title, email, phone number, website, and physical address.',
+        'Paste existing business card HTML or code into the Auto-Fill parser to auto-populate fields in 1 click.',
+        'Customize typography (Inter, Outfit, Poppins, Montserrat, etc.), font sizes, padding, and logo/avatar sizes.',
+        'Toggle Embedded QR code (on back card) or Standalone QR code (dedicated layout) and paste your custom vCard or website URL.',
+        'Click "DOWNLOAD PRESS PDF (300 DPI)" to generate a 2-page print file with 3mm bleed and crop marks, or copy HTML/Text with 1 click.'
+      ]
+    },
+    faqs: [
+      {
+        question: 'What is the exact print size and bleed of the exported PDF?',
+        answer:
+          'The PDF exports at standard international business card specs: 3.5 inches x 2.0 inches trimmed (88.9mm x 50.8mm), plus a 3mm extended bleed margin on all edges (total canvas 94.9mm x 56.8mm) at 300 DPI with vector text and logo elements.'
+      },
+      {
+        question: 'Why are the Front and Back sides exported on separate pages in the PDF?',
+        answer:
+          'Commercial print shops require two-sided business cards to be submitted as individual separate pages or separate files rather than stacked on a single canvas, ensuring automated duplex printing and precise die-cutting.'
+      },
+      {
+        question: 'How does the 1-Click HTML Auto-Fill importer work?',
+        answer:
+          'When you paste HTML or text from previous designs, our DOM parser strips SVG icons and scripts, extracts clean leaf node text, and uses smart pattern matching to automatically sort emails, phone numbers, websites, and address details.'
+      },
+      {
+        question: 'Is my contact data or photo uploaded to any external server?',
+        answer:
+          'No. Toolip processes all image files, font rendering, HTML parsing, and PDF downloads locally inside your browser DOM memory with zero server uploads.'
+      }
+    ]
   }
 };
 
