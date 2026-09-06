@@ -360,6 +360,64 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoInfo> = {
           'Clicking the collapse icon on a parent node toggles the visibility of its entire child subtree, helping you collapse dense branches for clarity.'
       }
     ]
+  },
+  'table-to-csv': {
+    id: 'table-to-csv',
+    primaryKeyword: 'table csv json editor',
+    supportingKeywords: [
+      'table to csv converter',
+      'csv to html table editor',
+      'json to csv converter',
+      'excel tab separated editor',
+      'bi-directional table editor',
+      'json syntax error validator',
+      'markdown table to csv'
+    ],
+    metaTitle: 'Free Table ↔ CSV ↔ JSON Editor — Bi-Directional Table, HTML & JSON Studio | Toolip',
+    metaDescription:
+      'Bi-directionally convert and edit Tables, CSV, TSV, Markdown, HTML <table> code, and JSON arrays. Features live JSON syntax error alerts, targeted row/col placement, and instant exports.',
+    articleContent: {
+      heading: 'The Ultimate Guide to Bi-Directional Table ↔ CSV ↔ JSON ↔ HTML Data Editing',
+      paragraphs: [
+        'Data conversion between tabular spreadsheets, CSV files, HTML web tables, and JSON arrays is often plagued by syntax errors, lost delimiters, and cumbersome manual editing. Copying tab-separated data from Excel or Google Sheets into standard web forms often breaks alignment or merges column headers.',
+        'Toolip Table ↔ CSV ↔ JSON Editor provides complete, aggressive control over your data structure. Paste raw Excel tables, CSV, TSV, Markdown, HTML <table> markup, or JSON arrays into the Data Source Input. Our multi-delimiter parsing engine automatically detects Tabs (\\t), Commas (,), Semicolons (;), Pipes (|), and Multiple Spaces (\\s{2+}).',
+        'Edit values directly in the Spreadsheet Grid Editor with targeted Row Placement (+Above, +Below) and Column Placement (+Left, +Right). Edit HTML <table> markup directly or switch to the Live JSON Editor with real-time syntax error validation banners. Export cleanly to .HTML, .CSV, .JSON, or Markdown with 1 click.'
+      ],
+      useCases: [
+        'Excel & Web Table Parsing: Convert pasted tab-separated tables or HTML markup into clean CSV or JSON arrays.',
+        'JSON & HTML Code Repair: Edit raw JSON payloads or HTML <table> tags live with real-time syntax validation.',
+        'Data Cleanup & Transformation: Transpose rows/columns, deduplicate identical rows, and transform text cases (UPPERCASE/lowercase/Capitalize).'
+      ],
+      howToSteps: [
+        'Paste raw data (Excel tab-separated text, CSV, TSV, Markdown, HTML <table>, or JSON array) or upload a file.',
+        'Select or auto-detect your delimiter (Tab, Comma, Semicolon, Pipe, or Multiple Spaces).',
+        'Use the Grid Editor to edit cells, or click "+L" / "+R" on column headers and "+A" / "+B" on row headers for targeted row/column insertion.',
+        'Switch between "HTML Code (<table>)", "Live Preview", "CSV", and "JSON" tabs for live bi-directional editing with syntax error alerts.',
+        'Click "Copy" or "Download" to export your data in .HTML, .CSV, .JSON, or Markdown format.'
+      ]
+    },
+    faqs: [
+      {
+        question: 'How does bi-directional editing between Table, HTML, and JSON work?',
+        answer:
+          'Modifying data in the Grid Editor updates the HTML <table> code, CSV text, and JSON array live. Conversely, directly editing raw HTML or JSON code updates the Grid Editor and all other output formats in real time.'
+      },
+      {
+        question: 'What happens if I type invalid JSON syntax in the JSON editor?',
+        answer:
+          'If you introduce a syntax error in the JSON editor (such as missing quotes or trailing commas), a prominent red alert banner displays the exact line and error details so you can fix it immediately.'
+      },
+      {
+        question: 'How do I insert new rows or columns at specific positions?',
+        answer:
+          'Click the "+A" (Above) or "+B" (Below) buttons on any row header to insert a row at that exact position. Click "+L" (Left) or "+R" (Right) on any column header to insert a column at that exact location.'
+      },
+      {
+        question: 'How does the Deduplicate feature work?',
+        answer:
+          'Clicking "Deduplicate" scans all rows in your table, identifies identical duplicate rows, removes them, and displays a summary of how many rows were removed.'
+      }
+    ]
   }
 };
 

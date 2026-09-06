@@ -379,8 +379,37 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
         return (
           <div className="w-full h-[176px] clip-chamfer-sm bg-gradient-to-br from-[#081A18] via-[#0F2626] to-[#0F1425] border border-emerald-400/30 p-3 flex flex-col justify-between overflow-hidden relative">
             <div className="absolute inset-0 halo-scanlines opacity-15" />
-            <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">TABLE → CSV</span><span className="px-1.5 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[8px] font-bold border border-emerald-400/20 clip-chamfer-sm">EXCEL .CSV</span></div>
-            <div className="p-2 bg-black/60 border border-emerald-400/20 clip-chamfer-sm font-mono text-[9px] text-emerald-300 space-y-1 relative z-10"><div className="flex justify-between border-b border-white/5 pb-1 text-white/40"><span>Name</span><span>Role</span><span>Status</span></div><div className="flex justify-between text-white"><span>Alex</span><span>Eng</span><span className="text-emerald-400">✓ Active</span></div><div className="flex justify-between text-white"><span>Mathew</span><span>Sale</span><span className="text-emerald-400">✓ Active</span></div></div>
+            <div className="flex justify-between items-center relative z-10"><span className="font-tech font-bold text-white text-xs">TABLE &lt;-&gt; CSV &gt;-&gt; JSON</span><span className="px-1.5 py-0.5 bg-emerald-400/10 text-emerald-300 font-mono text-[8px] font-bold border border-emerald-400/20 clip-chamfer-sm">EXCEL .CSV</span></div>
+            <div className="p-2 bg-black/60 border border-emerald-400/20 clip-chamfer-sm font-mono text-[9px] text-emerald-300 relative z-10">
+              <table className="w-full border-collapse">
+                {/* Header */}
+                <thead className="border-b border-white/5 text-white/40">
+                  <tr>
+                    <th className="text-left px-2 py-1">Name</th>
+                    <th className="text-left px-2 py-1">Role</th>
+                    <th className="text-left px-2 py-1">Email</th>
+                    <th className="text-left px-2 py-1">Status</th>
+                  </tr>
+                </thead>
+
+                {/* Body */}
+                <tbody className="text-white">
+                  <tr>
+                    <td className="px-2 py-1">Alexen</td>
+                    <td className="px-2 py-1">Eng</td>
+                    <td className="px-2 py-1">abc@email.com</td>
+                    <td className="px-2 py-1 text-emerald-400">✓ Active</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1">Mathew</td>
+                    <td className="px-2 py-1">Sale</td>
+                    <td className="px-2 py-1">xyz@maile.com</td>
+                    <td className="px-2 py-1 text-emerald-400">✓ Active</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
             <div className="flex justify-between font-mono text-[8px] font-bold text-emerald-300/60 relative z-10"><span>TSV • HTML</span><span className="text-halo-cyan">1-CLICK EXPORT</span></div>
           </div>
         );

@@ -324,7 +324,7 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
             </div>
 
             {/* Actual tool — dark armor surface so selectors stay visible */}
-            <div className={`bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_label]:text-white/60 ${
+            <div className={`bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_textarea]:bg-[#060913] [&_textarea]:text-white [&_textarea]:border-white/10 [&_label]:text-white/60 ${
               isWorkspaceExpanded
                 ? 'flex-1 overflow-y-auto p-[20px] flex flex-col min-h-0'
                 : 'p-4 sm:p-6 lg:p-8 min-h-[460px]'
