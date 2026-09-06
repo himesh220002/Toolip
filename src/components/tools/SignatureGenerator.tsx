@@ -190,33 +190,94 @@ export const SignatureGenerator: React.FC = () => {
     }
 
     try {
-      const emailMatch = rawHtml.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
-      if (emailMatch) setEmail(emailMatch[1]);
+      if (typeof window === 'undefined') return;
 
-      const phoneMatch = rawHtml.match(/(\+?[0-9][0-9\s\-\(\)]{7,}[0-9])/);
-      if (phoneMatch) setPhone(phoneMatch[1]);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(rawHtml, 'text/html');
 
-      const urlMatch = rawHtml.match(/https?:\/\/[^\s"'<>]+/);
-      if (urlMatch) setWebsite(urlMatch[0]);
+      // 1. Remove SVG, script, and style tags so SVG viewBox="0 0 24 24" or CSS rules never pollute phone or text parsing
+      doc.querySelectorAll('svg, script, style').forEach((node) => node.remove());
 
+      // 2. Extract Image URLs for Logo & Avatar
       const imgMatches = Array.from(rawHtml.matchAll(/src=["']([^"']+)["']/g));
       if (imgMatches.length > 0 && imgMatches[0][1]) setLogoUrl(imgMatches[0][1]);
       if (imgMatches.length > 1 && imgMatches[1][1]) setAvatarUrl(imgMatches[1][1]);
 
-      if (typeof window !== 'undefined') {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(rawHtml, 'text/html');
-        const headings = Array.from(doc.querySelectorAll('h1, h2, h3, h4, div, span, p'))
-          .map((el) => el.textContent?.trim())
-          .filter((txt): txt is string => Boolean(txt && txt.length > 1 && !txt.includes('<') && !txt.includes('{')));
+      // 3. Class-based Extraction (if present)
+      let foundCompany = doc.querySelector('.company-title')?.textContent?.trim();
+      let foundTagline = doc.querySelector('.company-tagline')?.textContent?.trim();
+      let foundName = doc.querySelector('.person-name')?.textContent?.trim();
+      let foundRole = doc.querySelector('.person-role')?.textContent?.trim();
 
-        if (headings.length > 0) setCompany(headings[0]);
-        if (headings.length > 1) setFullName(headings[1]);
-        if (headings.length > 2) setRole(headings[2]);
-        if (headings.length > 3) setTagline(headings[3]);
+      // 4. Extract all clean leaf text elements from SVG-stripped DOM tree
+      const allLeafTexts = Array.from(doc.querySelectorAll('h1, h2, h3, h4, p, span, div, td, b, strong, a'))
+        .filter((el) => el.children.length === 0)
+        .map((el) => el.textContent?.trim())
+        .filter((txt): txt is string => Boolean(txt && txt.length > 1 && !txt.includes('<') && !txt.includes('{') && !txt.includes('}')));
+
+      // 5. Intelligent Field Classifier for Email, Phone, Website & Address
+      let foundEmail = '';
+      let foundPhone = '';
+      let foundWebsite = '';
+      let foundAddress = '';
+      const headerTexts: string[] = [];
+
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+      const phoneRegex = /(?:\+?\d{1,4}[\s.-]?)?\(?\d{2,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,4}/;
+      const domainRegex = /(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)+(?:com|app|online|io|net|org|dev|co|in|edu|tech|site|xyz|store|agency|design|me|info)(?:\/[^\s"'<>]*)?/i;
+
+      for (const txt of allLeafTexts) {
+        // Email matching
+        if (!foundEmail && emailRegex.test(txt)) {
+          const m = txt.match(emailRegex);
+          if (m) foundEmail = m[0];
+          continue;
+        }
+
+        // Website matching (domain extension, no @)
+        if (!foundWebsite && !txt.includes('@') && domainRegex.test(txt)) {
+          const m = txt.match(domainRegex);
+          if (m) foundWebsite = m[0];
+          continue;
+        }
+
+        // Phone matching (must start with +, (###), or match phone digits with 7+ digits)
+        if (!foundPhone && (txt.includes('+') || phoneRegex.test(txt)) && txt.replace(/\D/g, '').length >= 7) {
+          const m = txt.match(/(\+?[0-9][0-9\s\-\(\)]{7,}[0-9])/);
+          if (m && m[1].replace(/\D/g, '').length >= 7) {
+            foundPhone = m[1].trim();
+            continue;
+          }
+        }
+
+        // Address matching (contains comma or location terms)
+        if (!foundAddress && (txt.includes(',') || /\b(street|st|way|suite|route|rd|road|ave|avenue|blvd|po box|box|bihar|katihar|san francisco|ca|ny|usa|uk|india|in)\b/i.test(txt)) && txt.length > 5) {
+          foundAddress = txt;
+          continue;
+        }
+
+        // Collect remaining clean texts for branding headers
+        headerTexts.push(txt);
       }
 
-      setHtmlParseStatus('✓ HTML design details successfully imported and applied!');
+      // Apply Contact Information
+      if (foundEmail) setEmail(foundEmail);
+      if (foundPhone) setPhone(foundPhone);
+      if (foundWebsite) setWebsite(foundWebsite);
+      if (foundAddress) setAddress(foundAddress);
+
+      // Apply Branding / Person Information
+      if (!foundCompany && headerTexts.length > 0) foundCompany = headerTexts[0];
+      if (!foundTagline && headerTexts.length > 1) foundTagline = headerTexts[1];
+      if (!foundName && headerTexts.length > 2) foundName = headerTexts[2];
+      if (!foundRole && headerTexts.length > 3) foundRole = headerTexts[3];
+
+      if (foundCompany) setCompany(foundCompany);
+      if (foundTagline) setTagline(foundTagline);
+      if (foundName) setFullName(foundName);
+      if (foundRole) setRole(foundRole);
+
+      setHtmlParseStatus('✓ HTML imported! Email, Phone, Website & Address auto-filled accurately!');
       setTimeout(() => setHtmlParseStatus(''), 3500);
     } catch (e) {
       setHtmlParseStatus('HTML code ready for direct custom rendering.');
