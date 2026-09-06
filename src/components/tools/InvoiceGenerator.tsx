@@ -465,7 +465,7 @@ export const InvoiceGenerator: React.FC = () => {
         {/* Subtle Background Watermark Logo Overlay */}
         {logoUrl && (
           <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.06] z-0"
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.03] z-20"
             style={{
               backgroundImage: `url(${logoUrl})`,
               backgroundPosition: 'center',
