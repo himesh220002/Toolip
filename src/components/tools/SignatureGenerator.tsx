@@ -619,20 +619,20 @@ Generated via Toolip Premium Business Card Generator`;
         </div>
       </div>
       <div style="font-size: ${contactFontSize}px; font-weight: 500; opacity: 0.92; display: flex; flex-direction: column; gap: 3.5px;">
-        <div style="display: flex; align-items: flex-start; gap: 6px; line-height: 1.25; word-break: break-word;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <div style="display: flex; align-items: center; gap: 6px; line-height: 1.25; word-break: break-word;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
           <span>${email}</span>
         </div>
-        <div style="display: flex; align-items: flex-start; gap: 6px; line-height: 1.25; word-break: break-word;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <div style="display: flex; align-items: center; gap: 6px; line-height: 1.25; word-break: break-word;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           <span>${phone}</span>
         </div>
-        <div style="display: flex; align-items: flex-start; gap: 6px; line-height: 1.25; word-break: break-word;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        <div style="display: flex; align-items: center; gap: 6px; line-height: 1.25; word-break: break-word;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
           <span>${website.replace(/^https?:\/\//, '')}</span>
         </div>
-        <div style="display: flex; align-items: flex-start; gap: 6px; line-height: 1.25; word-break: break-word;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        <div style="display: flex; align-items: center; gap: 6px; line-height: 1.25; word-break: break-word;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
           <span>${address}</span>
         </div>
       </div>
@@ -652,7 +652,324 @@ Generated via Toolip Premium Business Card Generator`;
     setTimeout(() => setCopiedHtml(false), 2000);
   };
 
-  // Two-Sided PDF Download Engine
+  // 🖨️ Professional Press-Ready 300 DPI PDF Engine (2 Separate Pages, 3mm Bleed, Crop Marks, CMYK Print Space)
+  const downloadPressReadyPdf = () => {
+    const activeQr = qrSourceMode === 'upload' && uploadedQrUrl ? uploadedQrUrl : internalQrDataUrl;
+    const theme = CARD_THEMES[cardTheme];
+    const cleanLogoUrl = sanitizeImageUrl(logoUrl);
+    const cleanAvatarUrl = sanitizeImageUrl(avatarUrl);
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${fullName} — Press Ready Business Card (Separated Pages + 3mm Bleed)</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+          <style>
+            /* 🎯 Commercial Printer Setup: Card (3.5" x 2.0" / 88.9mm x 50.8mm) + 3mm Bleed = 94.9mm x 56.8mm */
+            @page {
+              size: 94.9mm 56.8mm;
+              margin: 0;
+            }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+              box-sizing: border-box;
+            }
+            html, body {
+              width: 94.9mm;
+              height: 56.8mm;
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              font-family: '${cardFontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+
+            /* SEPARATED PAGES FOR COMMERCIAL PRINTING */
+            .press-page {
+              width: 94.9mm;
+              height: 56.8mm;
+              position: relative;
+              overflow: hidden;
+              page-break-after: always;
+              break-after: page;
+              background: #ffffff;
+            }
+            .press-page:last-child {
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+
+            /* 3mm Bleed Area Background */
+            .bleed-bg {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 94.9mm;
+              height: 56.8mm;
+              background: ${theme.cssGradient};
+              border: ${theme.cssBorder};
+              z-index: 1;
+            }
+
+            /* Trim Boundary Box (88.9mm x 50.8mm centered inside 3mm bleed) */
+            .trim-box {
+              position: absolute;
+              top: 3mm;
+              left: 3mm;
+              width: 88.9mm;
+              height: 50.8mm;
+              padding: ${cardPadding}px;
+              display: flex;
+              z-index: 10;
+              box-sizing: border-box;
+              overflow: hidden;
+            }
+            .trim-front {
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              text-align: center;
+            }
+            .trim-back {
+              flex-direction: row;
+              justify-content: space-between;
+              align-items: center;
+            }
+
+            /* Crop / Trim Marks in Bleed Margin */
+            .crop-tick {
+              position: absolute;
+              z-index: 50;
+              background: rgba(255, 255, 255, 0.9);
+              mix-blend-mode: difference;
+            }
+            /* Top Left Ticks */
+            .crop-tl-h { top: 3mm; left: 0; width: 2.5mm; height: 0.5px; }
+            .crop-tl-v { top: 0; left: 3mm; width: 0.5px; height: 2.5mm; }
+            /* Top Right Ticks */
+            .crop-tr-h { top: 3mm; right: 0; width: 2.5mm; height: 0.5px; }
+            .crop-tr-v { top: 0; right: 3mm; width: 0.5px; height: 2.5mm; }
+            /* Bottom Left Ticks */
+            .crop-bl-h { bottom: 3mm; left: 0; width: 2.5mm; height: 0.5px; }
+            .crop-bl-v { bottom: 0; left: 3mm; width: 0.5px; height: 2.5mm; }
+            /* Bottom Right Ticks */
+            .crop-br-h { bottom: 3mm; right: 0; width: 2.5mm; height: 0.5px; }
+            .crop-br-v { bottom: 0; right: 3mm; width: 0.5px; height: 2.5mm; }
+
+            .glow-bg-1 {
+              position: absolute;
+              top: -50px;
+              right: -50px;
+              width: 180px;
+              height: 180px;
+              border-radius: 50%;
+              background: rgba(99, 102, 241, 0.15);
+              filter: blur(25px);
+              pointer-events: none;
+            }
+            .glow-bg-2 {
+              position: absolute;
+              bottom: -50px;
+              left: -50px;
+              width: 180px;
+              height: 180px;
+              border-radius: 50%;
+              background: rgba(14, 165, 233, 0.15);
+              filter: blur(25px);
+              pointer-events: none;
+            }
+            .content-layer {
+              z-index: 10;
+              position: relative;
+            }
+            .front-logo {
+              width: ${logoSize}px;
+              height: ${logoSize}px;
+              object-fit: contain;
+              margin-bottom: 8px;
+            }
+            .company-title {
+              font-size: ${companyFontSize}px;
+              font-weight: 900;
+              letter-spacing: -0.02em;
+              color: ${theme.hexTextColor};
+              opacity: ${companyOpacity / 100};
+              margin: 0;
+              line-height: 1.15;
+            }
+            .company-tagline {
+              font-size: ${taglineFontSize}px;
+              font-weight: 700;
+              color: ${theme.hexSubTextColor};
+              opacity: ${taglineOpacity / 100};
+              margin-top: 4px;
+              line-height: 1.15;
+            }
+            .avatar-img {
+              width: ${avatarSize}px;
+              height: ${avatarSize}px;
+              border-radius: 50%;
+              object-fit: cover;
+              border: 2px solid rgba(255,255,255,0.2);
+              box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+              flex-shrink: 0;
+            }
+            .person-name {
+              font-size: ${nameFontSize}px;
+              font-weight: 900;
+              color: ${theme.hexTextColor};
+              margin: 0;
+              line-height: 1.15;
+            }
+            .person-role {
+              font-size: ${roleFontSize}px;
+              font-weight: 700;
+              color: ${theme.hexSubTextColor};
+              margin: 2px 0 0 0;
+              line-height: 1.25;
+              word-break: break-word;
+            }
+            .contact-list {
+              margin-top: 8px;
+              font-size: ${contactFontSize}px;
+              font-weight: 500;
+              color: ${theme.hexTextColor};
+              opacity: 0.92;
+              display: flex;
+              flex-direction: column;
+              gap: 3.5px;
+            }
+            .contact-item {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              line-height: 1.25;
+              word-break: break-word;
+            }
+            .icon-svg {
+              width: 13px;
+              height: 13px;
+              flex-shrink: 0;
+              display: inline-block;
+              vertical-align: middle;
+            }
+            .qr-badge {
+              padding: 6px;
+              background: #ffffff;
+              border-radius: 16px;
+              box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+              border: 1px solid #e2e8f0;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              flex-shrink: 0;
+              z-index: 10;
+            }
+            .qr-img {
+              width: ${qrCodeSize}px;
+              height: ${qrCodeSize}px;
+              object-fit: contain;
+              display: block;
+            }
+          </style>
+        </head>
+        <body>
+          <!-- PAGE 1: FRONT SIDE (COMMERCIAL PRESS READY) -->
+          <div class="press-page">
+            <div class="bleed-bg"></div>
+            <div class="crop-tick crop-tl-h"></div>
+            <div class="crop-tick crop-tl-v"></div>
+            <div class="crop-tick crop-tr-h"></div>
+            <div class="crop-tick crop-tr-v"></div>
+            <div class="crop-tick crop-bl-h"></div>
+            <div class="crop-tick crop-bl-v"></div>
+            <div class="crop-tick crop-br-h"></div>
+            <div class="crop-tick crop-br-v"></div>
+
+            <div class="trim-box trim-front">
+              <div class="glow-bg-1"></div>
+              <div class="glow-bg-2"></div>
+              <div class="content-layer" style="display: flex; flex-direction: column; align-items: center;">
+                <img src="${cleanLogoUrl}" class="front-logo" />
+                <div>
+                  <div class="company-title">${company}</div>
+                  <div class="company-tagline">${tagline}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAGE 2: BACK SIDE (COMMERCIAL PRESS READY) -->
+          <div class="press-page">
+            <div class="bleed-bg"></div>
+            <div class="crop-tick crop-tl-h"></div>
+            <div class="crop-tick crop-tl-v"></div>
+            <div class="crop-tick crop-tr-h"></div>
+            <div class="crop-tick crop-tr-v"></div>
+            <div class="crop-tick crop-bl-h"></div>
+            <div class="crop-tick crop-bl-v"></div>
+            <div class="crop-tick crop-br-h"></div>
+            <div class="crop-tick crop-br-v"></div>
+
+            <div class="trim-box trim-back">
+              <div class="glow-bg-1"></div>
+              <div class="glow-bg-2"></div>
+              <div class="content-layer" style="flex: 1; padding-right: 10px; overflow: hidden; min-width: 0;">
+                <div style="display: flex; ${avatarLayout === 'col' ? 'flex-direction: column; align-items: flex-start; gap: 6px;' : 'align-items: center; gap: 10px;'} margin-bottom: 8px;">
+                  <img src="${cleanAvatarUrl}" class="avatar-img" />
+                  <div style="min-width: 0;">
+                    <div class="person-name">${fullName}</div>
+                    <div class="person-role">${role}</div>
+                  </div>
+                </div>
+
+                <div class="contact-list">
+                  <div class="contact-item">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    <span>${email}</span>
+                  </div>
+                  <div class="contact-item">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <span>${phone}</span>
+                  </div>
+                  <div class="contact-item">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                    <span>${website.replace(/^https?:\/\//, '')}</span>
+                  </div>
+                  <div class="contact-item">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span>${address}</span>
+                  </div>
+                </div>
+              </div>
+
+              ${activeQr ? `
+                <div class="qr-badge">
+                  <img src="${activeQr}" class="qr-img" />
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 750);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  // Digital Showcase A4 Sheet PDF Download Engine
   const downloadTwoSidedPdf = () => {
     const activeQr = qrSourceMode === 'upload' && uploadedQrUrl ? uploadedQrUrl : internalQrDataUrl;
     const theme = CARD_THEMES[cardTheme];
@@ -665,7 +982,7 @@ Generated via Toolip Premium Business Card Generator`;
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${fullName} — Business Card Export</title>
+          <title>${fullName} — Business Card Showcase PDF</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -805,7 +1122,7 @@ Generated via Toolip Premium Business Card Generator`;
             }
             .contact-item {
               display: flex;
-              align-items: flex-start;
+              align-items: center;
               gap: 6px;
               line-height: 1.25;
               word-break: break-word;
@@ -813,7 +1130,6 @@ Generated via Toolip Premium Business Card Generator`;
             .icon-svg {
               width: 13px;
               height: 13px;
-              margin-top: 2px;
               flex-shrink: 0;
               display: inline-block;
               vertical-align: middle;
@@ -954,11 +1270,19 @@ Generated via Toolip Premium Business Card Generator`;
           </button>
 
           <button
-            onClick={downloadTwoSidedPdf}
-            className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-400 hover:from-indigo-400 hover:to-sky-300 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/25 transition-all hover:scale-105"
+            onClick={downloadPressReadyPdf}
+            className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-400 hover:from-emerald-400 hover:to-sky-300 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all hover:scale-105"
           >
             <Printer className="h-4 w-4" />
-            <span>Export 2-Sided PDF</span>
+            <span>1-Click Press PDF (300 DPI + 3mm Bleed)</span>
+          </button>
+
+          <button
+            onClick={downloadTwoSidedPdf}
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-xs border border-slate-700 transition-all"
+          >
+            <Download className="h-3.5 w-3.5 text-sky-400" />
+            <span>A4 Showcase Sheet PDF</span>
           </button>
         </div>
       </div>
@@ -1281,21 +1605,19 @@ Generated via Toolip Premium Business Card Generator`;
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setAvatarLayout('col')}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                      avatarLayout === 'col'
-                        ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md scale-105'
-                        : 'bg-slate-950 border-slate-800 text-gray-400 hover:text-white'
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${avatarLayout === 'col'
+                      ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md scale-105'
+                      : 'bg-slate-950 border-slate-800 text-gray-400 hover:text-white'
+                      }`}
                   >
                     Column (Photo Top)
                   </button>
                   <button
                     onClick={() => setAvatarLayout('row')}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                      avatarLayout === 'row'
-                        ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md scale-105'
-                        : 'bg-slate-950 border-slate-800 text-gray-400 hover:text-white'
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${avatarLayout === 'row'
+                      ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md scale-105'
+                      : 'bg-slate-950 border-slate-800 text-gray-400 hover:text-white'
+                      }`}
                   >
                     Row (Photo Side)
                   </button>
@@ -1756,20 +2078,20 @@ Generated via Toolip Premium Business Card Generator`;
                   </div>
 
                   <div className="space-y-1 font-medium opacity-90 leading-tight" style={{ fontSize: `${contactFontSize}px` }}>
-                    <div className="flex items-start space-x-1.5">
-                      <Mail className="h-3.5 w-3.5 mt-0.5 text-sky-400 shrink-0" />
+                    <div className="flex items-center space-x-1.5">
+                      <Mail className="h-3.5 w-3.5 text-sky-400 shrink-0" />
                       <span className="break-all sm:break-words">{email}</span>
                     </div>
-                    <div className="flex items-start space-x-1.5">
-                      <Phone className="h-3.5 w-3.5 mt-0.5 text-emerald-400 shrink-0" />
+                    <div className="flex items-center space-x-1.5">
+                      <Phone className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                       <span className="break-words">{phone}</span>
                     </div>
-                    <div className="flex items-start space-x-1.5">
-                      <Globe className="h-3.5 w-3.5 mt-0.5 text-purple-400 shrink-0" />
+                    <div className="flex items-center space-x-1.5">
+                      <Globe className="h-3.5 w-3.5 text-purple-400 shrink-0" />
                       <span className="break-all sm:break-words">{website.replace(/^https?:\/\//, '')}</span>
                     </div>
-                    <div className="flex items-start space-x-1.5">
-                      <MapPin className="h-3.5 w-3.5 mt-0.5 text-amber-400 shrink-0" />
+                    <div className="flex items-center space-x-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                       <span className="break-words">{address}</span>
                     </div>
                   </div>
