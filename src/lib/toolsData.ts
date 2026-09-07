@@ -405,7 +405,7 @@ export const INITIAL_TOOLS: ToolItem[] = [
     seoKeywords: ['sleep calculator', 'sleep cycle calculator', 'rem sleep calculator'],
   },
   {
-    id: 'tip-calculator',
+    id: 'mindmap',
     title: 'Mind Map Editor',
     category: 'Document & File Utilities',
     description: 'Build, drag, and structure mind maps with root/secondary node toolbars, custom emojis, arrow colors, collapsibility, and .graphml save/load.',

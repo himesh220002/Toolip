@@ -186,6 +186,7 @@ function getUsefulToolTag(tool: ToolItem): { text: string; icon: React.ReactNode
       return { text: '1-CLICK PROFILE AUTOFILL', icon: <UserCheck className="h-2.5 w-2.5" /> };
     case 'sleep-calculator':
       return { text: '90-MIN REM CYCLES', icon: <Moon className="h-2.5 w-2.5" /> };
+    case 'mindmap':
     case 'tip-calculator':
       return { text: 'GRAPHML AUTO-SAVE', icon: <Network className="h-2.5 w-2.5" /> };
     default:
@@ -477,6 +478,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
           </div>
         );
 
+      case 'mindmap':
       case 'tip-calculator':
       case 'mind-map-editor':
         return (

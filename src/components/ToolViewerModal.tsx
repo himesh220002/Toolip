@@ -107,6 +107,7 @@ export const ToolViewerModal: React.FC<ToolViewerModalProps> = ({ tool, onClose 
         return <InvoiceGenerator />;
       case 'form-filler':
         return <FormFiller />;
+      case 'mindmap':
       case 'tip-calculator':
       case 'mind-map-editor':
         return <MindMapEditor />;

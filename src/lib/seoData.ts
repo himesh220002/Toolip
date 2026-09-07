@@ -310,8 +310,8 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoInfo> = {
       }
     ]
   },
-  'tip-calculator': {
-    id: 'tip-calculator',
+  'mindmap': {
+    id: 'mindmap',
     primaryKeyword: 'mind map editor online',
     supportingKeywords: [
       'graphml editor',

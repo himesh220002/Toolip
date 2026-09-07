@@ -1,19 +1,58 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useCurrentContext } from '@/context/CurrentContext';
-import { Search, Crosshair, Shield, Hexagon } from 'lucide-react';
+import { Search, Crosshair, Hexagon, LogOut, ChevronDown, UserCheck } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { searchQuery, setSearchQuery } = useCurrentContext();
+  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+
+  const syncUser = useCallback(() => {
+    try {
+      const userStr = localStorage.getItem('toolip_user_data');
+      if (userStr) {
+        const parsed = JSON.parse(userStr);
+        if (parsed && !parsed.isGuest) {
+          setUser(parsed);
+          return;
+        }
+      }
+      setUser(null);
+    } catch (e) {
+      setUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    syncUser();
+    window.addEventListener('toolip_auth_change', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('toolip_auth_change', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, [syncUser]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('toolip_auth_token');
+    localStorage.removeItem('toolip_user_data');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('toolip_auth_change'));
+      if (window.location.search.includes('room=')) {
+        window.history.pushState({ path: window.location.pathname }, '', window.location.pathname);
+        window.location.reload();
+      }
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      {/* Top hazard accent line - keep as subtle brand accent */}
+      {/* Top hazard accent line */}
       <div className="h-[2px] w-full bg-gradient-to-r from-halo-cyan via-vice-pink to-vice-orange opacity-80" />
 
-      <div className="relative bg-gunmetal-900/95 backdrop-blur-2xl border-b border-white/[0.07] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+      <div className="relative bg-gunmetal-900/95 backdrop-blur-2xl border-b border-white/[0.07] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-visible">
         <div className="absolute inset-0 hex-grid opacity-[0.03] pointer-events-none" />
 
         <div className="relative max-w-[1480px] mx-auto px-3 sm:px-6 lg:px-8">
@@ -34,7 +73,7 @@ export const Navbar: React.FC = () => {
                   </span>
                 </div>
                 <div className="font-mono text-[8px] tracking-[0.20em] font-bold text-white/40 mt-0.5 hidden sm:block">
-                  31 TOOLS • READY TO USE
+                  34 TOOLS • READY TO USE
                 </div>
               </div>
             </Link>
@@ -66,8 +105,8 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Mobile search + subtle status dot (lightweight) */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Right: Mobile search & User Profile Profile Dropdown */}
+            <div className="flex items-center gap-3 shrink-0">
               <div className="flex md:hidden items-center">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
@@ -80,11 +119,55 @@ export const Navbar: React.FC = () => {
                 </div>
               </div>
 
-              {/* Lightweight live dot - not a full tracker button */}
-              <div className="hidden sm:flex items-center gap-1.5 pl-3 border-l border-white/10">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" />
-                <span className="font-mono text-[9px] tracking-[0.16em] font-bold text-white/30">ONLINE</span>
-              </div>
+              {/* Logged-In User Profile with Hover Dropdown */}
+              {user ? (
+                <div className="relative group flex items-center pl-3 border-l border-white/10">
+                  <button className="flex items-center gap-2 py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/30 rounded-xl transition cursor-pointer shadow-md">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-xs shadow-sm">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-tech font-bold text-xs text-white max-w-[120px] truncate hidden sm:inline">
+                      {user.name}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform group-hover:rotate-180" />
+                  </button>
+
+                  {/* Hover Dropdown Menu */}
+                  <div className="absolute right-0 top-full pt-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 z-[99999] min-w-[220px]">
+                    <div className="bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl p-4 text-slate-100 space-y-3 backdrop-blur-xl">
+                      <div className="flex items-center space-x-3 pb-3 border-b border-slate-800">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-sm shadow-md">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-sm text-white truncate">{user.name}</div>
+                          <div className="text-xs text-slate-400 truncate">{user.email}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
+                        <span className="flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5" /> SIGNED IN
+                        </span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      </div>
+
+                      <button
+                        onClick={handleLogout}
+                        className="w-full py-2.5 px-3 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-rose-200 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign Out & Unload Session</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="hidden sm:flex items-center gap-1.5 pl-3 border-l border-white/10">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" />
+                  <span className="font-mono text-[9px] tracking-[0.16em] font-bold text-white/30">ONLINE</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

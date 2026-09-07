@@ -38,8 +38,13 @@ import {
   Strikethrough,
   List,
   ListOrdered,
-  MoreHorizontal
+  MoreHorizontal,
+  Share2,
+  Users,
+  LogOut
 } from 'lucide-react';
+import { useCollaborativeSession } from '../../hooks/useCollaborativeSession';
+import { ShareModal } from '../collaboration/ShareModal';
 
 export interface MindNode {
   id: string;
@@ -184,6 +189,62 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
   // Status & Notification
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Real-Time Collaboration Setup
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [urlRoomId, setUrlRoomId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const param = new URLSearchParams(window.location.search).get('room');
+      if (param) setUrlRoomId(param);
+    }
+  }, []);
+
+  const isRemoteUpdateRef = useRef(false);
+
+  const handleRemoteStateChange = useCallback((newState: any) => {
+    if (newState && Array.isArray(newState.nodes)) {
+      isRemoteUpdateRef.current = true;
+      setSelectedNodeId(null);
+      setSelectedEdgeId(null);
+      setNodes(newState.nodes);
+      setEdges(Array.isArray(newState.edges) ? newState.edges : []);
+    }
+  }, []);
+
+  const handleRemoteNodeChange = useCallback((updatedNode: any) => {
+    if (updatedNode && updatedNode.id) {
+      isRemoteUpdateRef.current = true;
+      setNodes((prev) => prev.map((n) => (n.id === updatedNode.id ? { ...n, ...updatedNode } : n)));
+    }
+  }, []);
+
+  const {
+    roomId,
+    isCollaborating,
+    isHydrating,
+    setIsHydrating,
+    activeUsers,
+    peerCursors,
+    userRooms,
+    authUser,
+    fetchUserRooms,
+    loginUser,
+    registerUser,
+    logoutUser,
+    unloadWorkspace,
+    broadcastStateUpdate,
+    broadcastNodeUpdate,
+    broadcastCursor,
+    createSharedRoom,
+    setRoomId,
+  } = useCollaborativeSession({
+    toolId: 'mindmap',
+    initialRoomId: urlRoomId,
+    onRemoteStateChange: handleRemoteStateChange,
+    onRemoteNodeChange: handleRemoteNodeChange,
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -683,6 +744,17 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
   // Initial Load from localStorage, backend API, or default sample
   useEffect(() => {
+    // If a room is active in URL query or local room key, skip overwriting canvas with local storage!
+    const urlParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('room') : null;
+    const savedActiveRoom = typeof window !== 'undefined' ? localStorage.getItem('toolip_active_room_mindmap') : null;
+    const targetRoom = urlParam || savedActiveRoom || urlRoomId;
+
+    if (targetRoom) {
+      // Cloud room is active; fetchRoomData will hydrate canvas from MongoDB Atlas
+      setIsInitialized(true);
+      return;
+    }
+
     try {
       const savedNodes = localStorage.getItem(STORAGE_KEY_NODES);
       const savedEdges = localStorage.getItem(STORAGE_KEY_EDGES);
@@ -715,11 +787,11 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         loadDefaultSampleMap();
         setIsInitialized(true);
       });
-  }, []);
+  }, [urlRoomId]);
 
-  // Sync state to localStorage whenever nodes or edges update (Debounced 400ms to eliminate drag lag)
+  // Sync state to localStorage whenever nodes or edges update (ONLY when working in private offline mode)
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || isHydrating || roomId) return;
     const timer = setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY_NODES, JSON.stringify(nodes));
@@ -730,7 +802,57 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [nodes, edges, isInitialized]);
+  }, [nodes, edges, isInitialized, isHydrating, roomId]);
+
+  // Broadcast updates to real-time WebSockets if in collaborative room
+  useEffect(() => {
+    if (!isCollaborating || !isInitialized || isHydrating) return;
+
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      broadcastStateUpdate({ nodes, edges });
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [nodes, edges, isCollaborating, isInitialized, isHydrating, broadcastStateUpdate]);
+
+  // Restore private local storage graph on unload
+  const restoreLocalGraph = useCallback(() => {
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+    try {
+      const savedNodes = localStorage.getItem(STORAGE_KEY_NODES);
+      const savedEdges = localStorage.getItem(STORAGE_KEY_EDGES);
+
+      if (savedNodes && savedEdges) {
+        const parsedNodes: MindNode[] = JSON.parse(savedNodes);
+        const parsedEdges: MindEdge[] = JSON.parse(savedEdges);
+
+        if (Array.isArray(parsedNodes) && parsedNodes.length > 0) {
+          setNodes(parsedNodes);
+          setEdges(Array.isArray(parsedEdges) ? parsedEdges : []);
+          setPan({ x: 400, y: 300 });
+          setZoom(1);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to restore mindmap state from localStorage', e);
+    }
+    loadDefaultSampleMap();
+    setPan({ x: 400, y: 300 });
+    setZoom(1);
+  }, []);
+
+  const handleUnloadWorkspace = useCallback(() => {
+    unloadWorkspace();
+    restoreLocalGraph();
+    showNotification('Unloaded room & restored private local canvas');
+  }, [unloadWorkspace, restoreLocalGraph]);
 
   // Reset to Default Sample Map & Clear Storage
   const handleResetToDefaultMap = () => {
@@ -936,6 +1058,11 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
     const clientX = e.clientX;
     const clientY = e.clientY;
+
+    if (isCollaborating && containerRef.current) {
+      const coords = getCanvasCoords(clientX, clientY);
+      broadcastCursor(coords.x, coords.y);
+    }
 
     // Only update mouse position state if connector mode is active (drawing line preview)
     if (connectorModeSourceId) {
@@ -1284,6 +1411,32 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               <Download className={isExpanded ? 'w-3 h-3 text-slate-950' : 'w-3.5 h-3.5 text-slate-950'} />
               Save mindmap.graphml
             </button>
+
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              className={`flex items-center gap-1.5 font-bold rounded-lg transition shadow-lg ${
+                isCollaborating
+                  ? 'bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 shadow-emerald-500/20'
+                  : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white shadow-indigo-500/20'
+              } ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'}`}
+              title="Share room & collaborate real-time with team members"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>{isCollaborating ? `Live (${activeUsers.length})` : 'Share & Team'}</span>
+            </button>
+
+            {isCollaborating && (
+              <button
+                onClick={handleUnloadWorkspace}
+                className={`flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold rounded-lg transition ${
+                  isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                }`}
+                title="Unload active room & return to local private canvas"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Unload
+              </button>
+            )}
           </div>
         </div>
 
@@ -1329,6 +1482,35 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
             {/* Transformed Group for Pan & Zoom */}
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+              {/* Render Real-Time Peer Cursors */}
+              {Array.from(peerCursors.values()).map((cursor) => (
+                <g key={cursor.socketId} transform={`translate(${cursor.x}, ${cursor.y})`} className="pointer-events-none z-50">
+                  <path
+                    d="M 0 0 L 12 18 L 8 13 L 14 11 L 12 8 L 6 10 Z"
+                    fill={cursor.color || '#00f2fe'}
+                    stroke="#000"
+                    strokeWidth="1"
+                  />
+                  <rect
+                    x="12"
+                    y="14"
+                    width={cursor.name.length * 7 + 10}
+                    height="18"
+                    rx="4"
+                    fill={cursor.color || '#00f2fe'}
+                  />
+                  <text
+                    x="17"
+                    y="26"
+                    fill="#0f172a"
+                    fontSize="10"
+                    fontWeight="bold"
+                  >
+                    {cursor.name}
+                  </text>
+                </g>
+              ))}
+
               {/* Render Connecting Edges */}
               {visibleEdges.map((e) => {
                 const srcNode = nodes.find((n) => n.id === e.source);
@@ -2610,6 +2792,46 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         </div>,
         document.body
       )}
+
+      {/* Real-Time Team Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        roomId={roomId}
+        activeUsers={activeUsers}
+        userRooms={userRooms}
+        authUser={authUser}
+        onStartShare={async (title?: string) => {
+          const newRoomId = await createSharedRoom({ nodes, edges }, title);
+          if (newRoomId && typeof window !== 'undefined') {
+            const newUrl = `${window.location.pathname}?room=${newRoomId}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+          }
+          return newRoomId;
+        }}
+        onStopShare={() => {
+          handleUnloadWorkspace();
+          setIsShareModalOpen(false);
+        }}
+        onSelectSavedRoom={(selectedRoomId: string) => {
+          setIsHydrating(true);
+          setRoomId(selectedRoomId);
+          if (typeof window !== 'undefined') {
+            const newUrl = `${window.location.pathname}?room=${selectedRoomId}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+          }
+        }}
+        onUnloadWorkspace={() => {
+          handleUnloadWorkspace();
+        }}
+        onRefreshRooms={fetchUserRooms}
+        onLogin={loginUser}
+        onRegister={registerUser}
+        onLogout={() => {
+          logoutUser();
+          handleUnloadWorkspace();
+        }}
+      />
 
       {/* Notification Banner */}
       {statusMessage && (

@@ -149,6 +149,7 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
       case 'invoice-generator': return <InvoiceGenerator />;
       case 'form-filler': return <FormFiller />;
       case 'sleep-calculator': return <SleepCalculator />;
+      case 'mindmap':
       case 'tip-calculator':
       case 'mind-map-editor': return <MindMapEditor isExpanded={isWorkspaceExpanded} />;
       case 'loan-calculator':
