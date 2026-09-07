@@ -41,10 +41,16 @@ import {
   MoreHorizontal,
   Share2,
   Users,
-  LogOut
+  LogOut,
+  FileClock,
+  Shield,
+  Lock,
+  GitCommit,
+  GitBranch
 } from 'lucide-react';
 import { useCollaborativeSession } from '../../hooks/useCollaborativeSession';
 import { ShareModal } from '../collaboration/ShareModal';
+import { LogTableModal } from '../collaboration/LogTableModal';
 
 export interface MindNode {
   id: string;
@@ -194,6 +200,15 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [urlRoomId, setUrlRoomId] = useState<string | null>(null);
 
+  // Audit Logs State (per-graph, login-gated)
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [roomLogs, setRoomLogs] = useState<any[]>([]);
+  const [isLogLoading, setIsLogLoading] = useState(false);
+  const [logTotal, setLogTotal] = useState(0);
+
+  // Reset confirmation state
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const param = new URLSearchParams(window.location.search).get('room');
@@ -204,13 +219,15 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const isRemoteUpdateRef = useRef(false);
 
   const handleRemoteStateChange = useCallback((newState: any) => {
-    if (newState && Array.isArray(newState.nodes)) {
-      isRemoteUpdateRef.current = true;
-      setSelectedNodeId(null);
-      setSelectedEdgeId(null);
-      setNodes(newState.nodes);
-      setEdges(Array.isArray(newState.edges) ? newState.edges : []);
+    // If collaborative room has no data yet (first load), keep current canvas (fallback to local/default) — prevents blank
+    if (!newState || !Array.isArray(newState.nodes) || newState.nodes.length === 0) {
+      return;
     }
+    isRemoteUpdateRef.current = true;
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+    setNodes(newState.nodes);
+    setEdges(Array.isArray(newState.edges) ? newState.edges : []);
   }, []);
 
   const handleRemoteNodeChange = useCallback((updatedNode: any) => {
@@ -229,7 +246,12 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     peerCursors,
     userRooms,
     authUser,
+    token,
+    canEdit,
+    roomOwnerId,
+    isRoomOwner,
     fetchUserRooms,
+    fetchRoomLogs,
     loginUser,
     registerUser,
     logoutUser,
@@ -238,6 +260,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     broadcastNodeUpdate,
     broadcastCursor,
     createSharedRoom,
+    commitRoomVersion,
     setRoomId,
   } = useCollaborativeSession({
     toolId: 'mindmap',
@@ -246,6 +269,11 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     onRemoteNodeChange: handleRemoteNodeChange,
   });
 
+  // Git Commit Version State
+  const [isCommitModalOpen, setIsCommitModalOpen] = useState(false);
+  const [commitMessage, setCommitMessage] = useState('');
+  const [isSubmittingCommit, setIsSubmittingCommit] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragRafRef = useRef<number | null>(null);
@@ -253,6 +281,131 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const showNotification = (msg: string) => {
     setStatusMessage(msg);
     setTimeout(() => setStatusMessage(null), 3000);
+  };
+
+  // Handle edit_denied from server (guest trying to edit collaborative graph)
+  useEffect(() => {
+    const handler = (e: any) => {
+      const detail = e.detail || {};
+      showNotification(detail.message || 'Please login to edit this collaborative graph');
+    };
+    window.addEventListener('toolip_edit_denied' as any, handler);
+    return () => window.removeEventListener('toolip_edit_denied' as any, handler);
+  }, []);
+
+  // Open share modal when ToolDetailClient header SHARE is clicked (for mindmap)
+  useEffect(() => {
+    const handler = () => setIsShareModalOpen(true);
+    window.addEventListener('openShareModal' as any, handler);
+    return () => window.removeEventListener('openShareModal' as any, handler);
+  }, []);
+
+  const handleOpenLogs = async () => {
+    if (!roomId || !isCollaborating) {
+      showNotification('No collaborative graph selected — create or load a shared workspace first');
+      return;
+    }
+    if (!authUser || (authUser as any).isGuest || !token) {
+      showNotification('Please login to view logs for this graph');
+      setIsShareModalOpen(true);
+      return;
+    }
+    setIsLogModalOpen(true);
+    setIsLogLoading(true);
+    try {
+      const res = await fetchRoomLogs(roomId, 50, 0);
+      setRoomLogs(res.logs || []);
+      setLogTotal(res.total || 0);
+    } catch (err: any) {
+      showNotification(err.message || 'Failed to load logs');
+      setRoomLogs([]);
+    } finally {
+      setIsLogLoading(false);
+    }
+  };
+
+  const handleRefreshLogs = async () => {
+    if (!roomId) return;
+    setIsLogLoading(true);
+    try {
+      const res = await fetchRoomLogs(roomId, 50, 0);
+      setRoomLogs(res.logs || []);
+      setLogTotal(res.total || 0);
+    } catch (err: any) {
+      showNotification(err.message || 'Failed to refresh logs');
+    } finally {
+      setIsLogLoading(false);
+    }
+  };
+
+  const handleOpenCommitModal = () => {
+    if (!roomId) {
+      showNotification('Please join or create a shared workspace room first');
+      setIsShareModalOpen(true);
+      return;
+    }
+    if (!authUser || (authUser as any).isGuest || !token) {
+      showNotification('Please login to save & commit version changes to Git history');
+      setIsShareModalOpen(true);
+      return;
+    }
+    setCommitMessage(`feat: updated mindmap architecture (${nodes.length} nodes)`);
+    setIsCommitModalOpen(true);
+  };
+
+  const handlePushCommit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!roomId) {
+      showNotification('Please join or create a shared room first');
+      return;
+    }
+    if (!commitMessage.trim()) {
+      showNotification('Please enter a commit message');
+      return;
+    }
+
+    try {
+      setIsSubmittingCommit(true);
+      const dataState = { nodes, edges };
+      const res = await commitRoomVersion(roomId, dataState, commitMessage.trim());
+
+      // Broadcast updated state to all connected room peers
+      broadcastStateUpdate(dataState);
+
+      showNotification(`Git Commit ${res.version ? `v${res.version}` : ''} saved & pushed to Atlas!`);
+      setIsCommitModalOpen(false);
+      setCommitMessage('');
+
+      if (isLogModalOpen) {
+        handleRefreshLogs();
+      }
+    } catch (err: any) {
+      console.error('Commit failed:', err);
+      showNotification(err.message || 'Failed to push version commit');
+    } finally {
+      setIsSubmittingCommit(false);
+    }
+  };
+
+  const handleRestoreCommitSnapshot = (snapshot: any, version?: number) => {
+    if (!snapshot || !Array.isArray(snapshot.nodes)) {
+      showNotification('Invalid snapshot state');
+      return;
+    }
+    handleRemoteStateChange(snapshot);
+    if (roomId) {
+      broadcastStateUpdate(snapshot);
+    }
+    showNotification(`Restored graph canvas to Git Version ${version ? `v${version}` : 'snapshot'}`);
+  };
+
+  const requireLoginForEdit = (): boolean => {
+    if (isCollaborating && (!authUser || (authUser as any).isGuest)) {
+      showNotification('🔒 Login to edit this collaborative graph — viewing is read-only');
+      setIsShareModalOpen(true);
+      return true;
+    }
+    return false;
   };
 
   // Lock background scroll when Emoji Modal is open
@@ -1426,16 +1579,40 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
             </button>
 
             {isCollaborating && (
-              <button
-                onClick={handleUnloadWorkspace}
-                className={`flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold rounded-lg transition ${
-                  isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
-                }`}
-                title="Unload active room & return to local private canvas"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                Unload
-              </button>
+              <>
+                <button
+                  onClick={handleOpenCommitModal}
+                  className={`flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg transition shadow-lg shadow-purple-500/20 cursor-pointer ${
+                    isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                  }`}
+                  title="Commit version snapshot Git-style with commit message"
+                >
+                  <GitCommit className="w-3.5 h-3.5" />
+                  <span>Git Commit</span>
+                </button>
+
+                <button
+                  onClick={handleOpenLogs}
+                  className={`flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold rounded-lg transition shadow-sm cursor-pointer ${
+                    isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                  }`}
+                  title="View Change Logs & Git Commit History for this room"
+                >
+                  <FileClock className="w-3.5 h-3.5" />
+                  <span>Audit Logs</span>
+                </button>
+
+                <button
+                  onClick={handleUnloadWorkspace}
+                  className={`flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold rounded-lg transition cursor-pointer ${
+                    isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                  }`}
+                  title="Unload active room & return to local private canvas"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Unload
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -2832,6 +3009,101 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           handleUnloadWorkspace();
         }}
       />
+
+      {/* Audit Logs & Change History Modal */}
+      <LogTableModal
+        isOpen={isLogModalOpen}
+        onClose={() => setIsLogModalOpen(false)}
+        roomId={roomId}
+        logs={roomLogs}
+        isLoading={isLogLoading}
+        total={logTotal}
+        onRefresh={handleRefreshLogs}
+        isLoggedIn={!!authUser && !authUser.isGuest}
+        onLoginClick={() => {
+          setIsLogModalOpen(false);
+          setIsShareModalOpen(true);
+        }}
+        onRestoreCommitSnapshot={handleRestoreCommitSnapshot}
+      />
+
+      {/* Git Commit Version Modal Portal */}
+      {isCommitModalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                    <GitCommit className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white tracking-tight">Git-Style Version Commit</h3>
+                    <p className="text-xs text-slate-400">Save a version snapshot with message to room audit log</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsCommitModalOpen(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handlePushCommit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                    <span>Commit Message</span>
+                    <span className="text-[11px] font-mono text-purple-400">Room: {roomId || 'Active'}</span>
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={commitMessage}
+                    onChange={(e) => setCommitMessage(e.target.value)}
+                    placeholder="e.g. feat: refactored root nodes and added API endpoints"
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 transition"
+                  />
+                </div>
+
+                <div className="p-3 bg-purple-950/30 border border-purple-800/40 rounded-xl text-xs text-purple-200 leading-relaxed flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                  <p>
+                    Committing saves a permanent version checkpoint in MongoDB Atlas. Collaborators can view commit messages and restore previous graph states anytime from Change Logs.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCommitModalOpen(false)}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingCommit}
+                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white font-black text-xs sm:text-sm rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmittingCommit ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Pushing Commit...</span>
+                      </>
+                    ) : (
+                      <>
+                        <GitCommit className="w-4 h-4" />
+                        <span>Push Commit</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Notification Banner */}
       {statusMessage && (

@@ -57,6 +57,7 @@ export function useCollaborativeSession({
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [peerCursors, setPeerCursors] = useState<Map<string, PeerCursor>>(new Map());
   const [roomTitle, setRoomTitle] = useState<string>('Shared Workspace');
+  const [roomOwnerId, setRoomOwnerId] = useState<string | null>(null);
   const [accessRole, setAccessRole] = useState<'public_edit' | 'public_view'>('public_edit');
   const [userRooms, setUserRooms] = useState<SavedRoom[]>([]);
 
@@ -104,6 +105,7 @@ export function useCollaborativeSession({
         const json = await res.json();
         if (json.room) {
           setRoomTitle(json.room.title || 'Shared Workspace');
+          setRoomOwnerId(json.room.ownerId || 'guest');
           setAccessRole(json.room.accessRole || 'public_edit');
           if (onRemoteStateChange) {
             onRemoteStateChange(json.room.dataState || null);
@@ -189,6 +191,9 @@ export function useCollaborativeSession({
     }
   }, [roomId, toolId]);
 
+  // Derived: canEdit collaborative graphs only when logged in (not guest)
+  const canEdit = !!authUser && !authUser.isGuest && !!token;
+
   // Connect socket and join room
   useEffect(() => {
     if (!roomId) {
@@ -204,7 +209,8 @@ export function useCollaborativeSession({
       socket.connect();
     }
 
-    socket.emit('join_room', { roomId, user: currentUser });
+    const joinToken = localStorage.getItem('toolip_auth_token');
+    socket.emit('join_room', { roomId, user: currentUser, token: joinToken });
     setIsCollaborating(true);
 
     fetchRoomData(roomId);
@@ -236,6 +242,14 @@ export function useCollaborativeSession({
       }
     };
 
+    const handleEditDenied = ({ reason, message }: { reason: string; message: string }) => {
+      // Surface to UI via custom event so MindMapEditor can toast
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('toolip_edit_denied', { detail: { reason, message } }));
+      }
+      console.warn('Edit denied:', message);
+    };
+
     const handleCursorUpdated = ({ socketId, name, color, x, y }: PeerCursor) => {
       if (socketId !== socket.id) {
         setPeerCursors((prev) => {
@@ -259,6 +273,7 @@ export function useCollaborativeSession({
     socket.on('node_updated', handleNodeUpdated);
     socket.on('cursor_updated', handleCursorUpdated);
     socket.on('peer_left', handlePeerLeft);
+    socket.on('edit_denied', handleEditDenied);
 
     return () => {
       socket.off('room_presence_update', handlePresenceUpdate);
@@ -266,15 +281,17 @@ export function useCollaborativeSession({
       socket.off('node_updated', handleNodeUpdated);
       socket.off('cursor_updated', handleCursorUpdated);
       socket.off('peer_left', handlePeerLeft);
+      socket.off('edit_denied', handleEditDenied);
     };
   }, [roomId, currentUser, fetchRoomData, onRemoteStateChange, onRemoteNodeChange]);
 
-  // Broadcast handlers
+  // Broadcast handlers (include token so server can verify login for collaborative edits)
   const broadcastStateUpdate = useCallback((dataState: any) => {
     if (!roomId) return;
     const socket = socketRef.current;
     if (socket.connected) {
-      socket.emit('state_update', { roomId, toolId, dataState });
+      const t = typeof window !== 'undefined' ? localStorage.getItem('toolip_auth_token') : null;
+      socket.emit('state_update', { roomId, toolId, dataState, token: t });
     }
   }, [roomId, toolId]);
 
@@ -282,7 +299,8 @@ export function useCollaborativeSession({
     if (!roomId) return;
     const socket = socketRef.current;
     if (socket.connected) {
-      socket.emit('node_update', { roomId, node });
+      const t = typeof window !== 'undefined' ? localStorage.getItem('toolip_auth_token') : null;
+      socket.emit('node_update', { roomId, node, token: t });
     }
   }, [roomId]);
 
@@ -328,6 +346,34 @@ export function useCollaborativeSession({
       throw err;
     }
   }, [toolId, authUser, fetchUserRooms]);
+
+  // Git-style Commit Version helper
+  const commitRoomVersion = useCallback(async (targetRoomId: string, dataState: any, commitMessage: string) => {
+    if (!token) {
+      throw new Error('Authentication required - please login to push a version commit');
+    }
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${backendUrl}/api/rooms/${targetRoomId}/commit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        dataState,
+        message: commitMessage,
+      }),
+    });
+
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    if (!isJson) {
+      throw new Error(`Server returned non-JSON response (${res.status} ${res.statusText}). Please ensure the Express backend is running.`);
+    }
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to push version commit');
+    return json;
+  }, [token]);
 
   const unloadWorkspace = useCallback(() => {
     setRoomId(null);
@@ -390,6 +436,7 @@ export function useCollaborativeSession({
   const logoutUser = useCallback(() => {
     setToken(null);
     setAuthUser(null);
+    setRoomOwnerId(null);
     localStorage.removeItem('toolip_auth_token');
     localStorage.removeItem('toolip_user_data');
     unloadWorkspace();
@@ -398,6 +445,26 @@ export function useCollaborativeSession({
     }
     fetchUserRooms('guest');
   }, [unloadWorkspace, fetchUserRooms]);
+
+  // Check if current auth user is owner of the active room
+  const isRoomOwner = !!authUser && !authUser.isGuest && roomOwnerId !== null && String(authUser.id) === String(roomOwnerId);
+
+  // Fetch logs for a specific room (per-graph, login-gated)
+  const fetchRoomLogs = useCallback(async (targetRoomId: string, limit = 50, skip = 0) => {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const t = typeof window !== 'undefined' ? localStorage.getItem('toolip_auth_token') : null;
+    if (!t) throw new Error('Please login to view logs');
+    const res = await fetch(`${backendUrl}/api/rooms/${targetRoomId}/logs?limit=${limit}&skip=${skip}`, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    if (!isJson) {
+      throw new Error(`Server returned non-JSON response (${res.status} ${res.statusText}). Please ensure the Express backend is running.`);
+    }
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch logs');
+    return json as { success: boolean; logs: any[]; total: number };
+  }, []);
 
   return {
     roomId,
@@ -408,12 +475,16 @@ export function useCollaborativeSession({
     activeUsers,
     peerCursors,
     roomTitle,
+    roomOwnerId,
+    isRoomOwner,
     accessRole,
     currentUser,
     userRooms,
     authUser,
     token,
+    canEdit,
     fetchUserRooms,
+    fetchRoomLogs,
     loginUser,
     registerUser,
     logoutUser,
@@ -422,5 +493,6 @@ export function useCollaborativeSession({
     broadcastNodeUpdate,
     broadcastCursor,
     createSharedRoom,
+    commitRoomVersion,
   };
 }

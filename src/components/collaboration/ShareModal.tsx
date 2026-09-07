@@ -69,12 +69,47 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
 
+  // Join Room by ID State
+  const [joinInputRoomId, setJoinInputRoomId] = useState('');
+  const [joinError, setJoinError] = useState<string | null>(null);
+
   // Auth Form State
   const [authName, setAuthName] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+
+  const extractRoomId = (input: string): string => {
+    const trimmed = input.trim();
+    if (!trimmed) return '';
+    if (trimmed.includes('room=')) {
+      try {
+        const urlObj = new URL(trimmed);
+        const param = urlObj.searchParams.get('room');
+        if (param) return param.trim();
+      } catch (e) {
+        const match = trimmed.match(/room=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) return match[1];
+      }
+    }
+    return trimmed;
+  };
+
+  const handleJoinRoomById = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setJoinError(null);
+    const cleanId = extractRoomId(joinInputRoomId);
+    if (!cleanId) {
+      setJoinError('Please enter a valid Room ID or Share Link URL');
+      return;
+    }
+    if (onSelectSavedRoom) {
+      onSelectSavedRoom(cleanId);
+      setActiveTab('share');
+      setJoinInputRoomId('');
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -273,6 +308,35 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     </>
                   )}
                 </button>
+
+                {/* Join Existing Workspace Group by Room ID / Share Link */}
+                <div className="pt-4 border-t border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs sm:text-sm font-bold text-slate-200 flex items-center space-x-2">
+                      <Users className="w-4 h-4 text-indigo-400" />
+                      <span>Or Join Group Workspace by Room ID</span>
+                    </label>
+                    <span className="text-[11px] text-slate-400">Pasted Link or ID</span>
+                  </div>
+
+                  <form onSubmit={handleJoinRoomById} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={joinInputRoomId}
+                      onChange={(e) => setJoinInputRoomId(e.target.value)}
+                      placeholder="Paste Room ID (e.g. room_mindmap_...) or full share URL"
+                      className="flex-1 px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                    />
+                    <button
+                      type="submit"
+                      className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center space-x-1.5 transition shrink-0 shadow-md cursor-pointer"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>Join Room</span>
+                    </button>
+                  </form>
+                  {joinError && <p className="text-xs text-rose-400">{joinError}</p>}
+                </div>
               </div>
             ) : (
               /* Active Room State */
@@ -297,6 +361,17 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     </button>
                   )}
                 </div>
+
+                {/* Guest read-only notice — collaborative graphs are login-gated for edits */}
+                {(!authUser || (authUser as any).isGuest) && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs">
+                    <Shield className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-amber-300">Login required to edit</p>
+                      <p className="text-slate-300 leading-relaxed">This collaborative graph is <span className="font-bold text-amber-300">read-only</span> for guests. You can view, pan and zoom, but changes are blocked until you login. Logs are also per-graph and visible only after login.</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Share Link Input */}
                 <div className="space-y-2">
@@ -415,6 +490,25 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                 <span>+ Create New Workspace</span>
               </button>
             </div>
+
+            {/* Quick Join by Room ID Form */}
+            <form onSubmit={handleJoinRoomById} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex gap-2">
+              <input
+                type="text"
+                value={joinInputRoomId}
+                onChange={(e) => setJoinInputRoomId(e.target.value)}
+                placeholder="Enter Room ID or Share URL to join..."
+                className="flex-1 px-3.5 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs flex items-center space-x-1 transition shrink-0 cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Join</span>
+              </button>
+            </form>
+            {joinError && <p className="text-xs text-rose-400 -mt-2">{joinError}</p>}
 
             {userRooms.length === 0 ? (
               <div className="text-center py-10 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">

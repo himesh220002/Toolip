@@ -1,7 +1,49 @@
 const SharedRoom = require('./models/SharedRoom');
+const RoomLog = require('./models/RoomLog');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'default_toolip_jwt_secret_key_2026';
 
 // In-memory debounced save cache
 const pendingSaves = new Map();
+
+// Helper to verify token and extract user
+function getUserFromToken(token) {
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return { id: decoded.userId, name: decoded.name, email: decoded.email, isGuest: !!decoded.isGuest };
+  } catch (e) {
+    return null;
+  }
+}
+
+function canEditRoom(roomId, userInfo) {
+  // Allow edits only if user is authenticated (not guest) when in a collaborative room
+  // Private offline mode (no roomId) is always editable
+  if (!roomId || !roomId.startsWith('room_')) return true;
+  if (!userInfo) return false;
+  if (userInfo.isGuest) return false;
+  if (!userInfo.userId || String(userInfo.userId).startsWith('guest_')) return false;
+  return true;
+}
+
+async function createLogEntry({ roomId, toolId, userInfo, action, summary, nodeId, version }) {
+  try {
+    await RoomLog.create({
+      roomId,
+      toolId: toolId || 'mindmap',
+      userId: String(userInfo?.userId || 'guest'),
+      userName: userInfo?.name || 'Guest',
+      userEmail: userInfo?.email || '',
+      action,
+      summary: summary || '',
+      nodeId: nodeId || null,
+      version: version || 1,
+    });
+  } catch (err) {
+    console.error('Failed to create RoomLog', err.message);
+  }
+}
 
 const setupSocketHandlers = (io) => {
   // Store active user sessions per room: roomId -> Map(socketId -> userInfo)
@@ -10,8 +52,8 @@ const setupSocketHandlers = (io) => {
   io.on('connection', (socket) => {
     console.log(`🔌 Client Connected to Socket: ${socket.id}`);
 
-    // Join room
-    socket.on('join_room', async ({ roomId, user }) => {
+    // Join room - now accepts token for auth
+    socket.on('join_room', async ({ roomId, user, token }) => {
       // 1) Clean up presence from previous room if socket switched rooms
       if (socket.currentRoomId && socket.currentRoomId !== roomId && roomUsers.has(socket.currentRoomId)) {
         const oldRoomMap = roomUsers.get(socket.currentRoomId);
@@ -28,17 +70,26 @@ const setupSocketHandlers = (io) => {
       socket.join(roomId);
       socket.currentRoomId = roomId;
 
-      const userId = user?.id || user?.email || user?.name || `user-${socket.id.slice(0, 4)}`;
+      // Try to verify token for real identity
+      const tokenUser = getUserFromToken(token);
+      const effectiveUser = tokenUser || user;
+
+      const userId = tokenUser?.id || user?.id || user?.email || user?.name || `user-${socket.id.slice(0, 4)}`;
+      const isGuest = !tokenUser || tokenUser.isGuest || String(userId).startsWith('guest_') || String(userId).startsWith('Guest');
       const userInfo = {
         socketId: socket.id,
         userId,
-        name: user?.name || `Collaborator-${socket.id.slice(0, 4)}`,
+        name: tokenUser?.name || user?.name || `Collaborator-${socket.id.slice(0, 4)}`,
+        email: tokenUser?.email || user?.email || '',
         avatar: user?.avatarUrl || '',
         color: user?.color || '#00f2fe',
         joinedAt: new Date().toISOString(),
+        isGuest,
+        isAuthenticated: !isGuest,
       };
 
       socket.userInfo = userInfo;
+      socket.authToken = token;
 
       if (!roomUsers.has(roomId)) {
         roomUsers.set(roomId, new Map());
@@ -65,18 +116,28 @@ const setupSocketHandlers = (io) => {
       io.to(roomId).emit('room_presence_update', { activeUsers });
       socket.to(roomId).emit('peer_joined', { user: userInfo });
 
-      console.log(`👤 ${userInfo.name} joined room ${roomId} (${activeUsers.length} online)`);
+      console.log(`👤 ${userInfo.name} joined room ${roomId} (${activeUsers.length} online) ${userInfo.isGuest ? '(guest)' : '(auth)'}`);
     });
 
     // Real-time graph state update event
-    socket.on('state_update', async ({ roomId, toolId, dataState }) => {
+    socket.on('state_update', async ({ roomId, toolId, dataState, token }) => {
       if (!roomId || !dataState) return;
+
+      // Gate: only authenticated users can mutate collaborative rooms
+      const tokenUser = token ? getUserFromToken(token) : null;
+      const effectiveUser = tokenUser || socket.userInfo;
+      const canEdit = canEditRoom(roomId, effectiveUser || socket.userInfo);
+      if (!canEdit) {
+        socket.emit('edit_denied', { reason: 'login_required', message: 'Please login to edit this collaborative graph' });
+        console.log(`🚫 Edit denied for ${socket.userInfo?.name} in ${roomId} (guest)`);
+        return;
+      }
 
       // Broadcast immediately to all other participants in the room
       socket.to(roomId).emit('state_updated', {
         dataState,
         senderSocketId: socket.id,
-        senderName: socket.userInfo?.name || 'Peer',
+        senderName: effectiveUser?.name || socket.userInfo?.name || 'Peer',
         timestamp: Date.now(),
       });
 
@@ -87,7 +148,7 @@ const setupSocketHandlers = (io) => {
 
       const timer = setTimeout(async () => {
         try {
-          await SharedRoom.findOneAndUpdate(
+          const updated = await SharedRoom.findOneAndUpdate(
             { roomId },
             {
               $set: {
@@ -97,9 +158,19 @@ const setupSocketHandlers = (io) => {
               },
               $inc: { version: 1 },
             },
-            { upsert: true, new: true }
+            { upsert: true, new: true, returnDocument: 'after' }
           );
           pendingSaves.delete(roomId);
+          // Create audit log for this save
+          const logUser = token ? getUserFromToken(token) || socket.userInfo : socket.userInfo;
+          await createLogEntry({
+            roomId,
+            toolId,
+            userInfo: logUser,
+            action: 'state_save',
+            summary: `Graph updated by ${logUser?.name || 'Unknown'}`,
+            version: updated?.version || 1,
+          });
         } catch (err) {
           console.error(`❌ Error saving room ${roomId} state to MongoDB:`, err.message);
         }
@@ -109,11 +180,26 @@ const setupSocketHandlers = (io) => {
     });
 
     // Node specific delta update (e.g. dragging a single node or editing text)
-    socket.on('node_update', ({ roomId, node }) => {
+    socket.on('node_update', ({ roomId, node, token }) => {
       if (!roomId || !node) return;
+      const tokenUser = token ? getUserFromToken(token) : null;
+      const effectiveUser = tokenUser || socket.userInfo;
+      if (!canEditRoom(roomId, effectiveUser)) {
+        socket.emit('edit_denied', { reason: 'login_required', message: 'Please login to edit this collaborative graph' });
+        return;
+      }
       socket.to(roomId).emit('node_updated', {
         node,
         senderSocketId: socket.id,
+      });
+      // Light log for node edits (throttled via client)
+      createLogEntry({
+        roomId,
+        toolId: 'mindmap',
+        userInfo: effectiveUser,
+        action: 'node_update',
+        summary: `Node "${node.text || node.id}" updated`,
+        nodeId: node.id,
       });
     });
 

@@ -14,6 +14,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const connectDB = require('./db');
 const User = require('./models/User');
 const SharedRoom = require('./models/SharedRoom');
+const RoomLog = require('./models/RoomLog');
 const setupSocketHandlers = require('./socketHandler');
 
 const app = express();
@@ -38,6 +39,20 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Connect to MongoDB Atlas asynchronously
 connectDB();
+
+// JWT auth middleware (used for protected routes like logs)
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required - please login to access this resource' });
+  }
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
+    req.user = user;
+    next();
+  });
+}
 
 // Express status endpoint
 app.get('/api/health', (req, res) => {
@@ -176,6 +191,76 @@ app.post('/api/rooms/create', async (req, res) => {
       success: true,
       roomId: newRoom.roomId,
       room: newRoom,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/rooms/:roomId/logs', authenticateToken, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const skip = parseInt(req.query.skip) || 0;
+
+    // Verify room exists and user has access (owner or collaborator - for now any authenticated user can view logs of a room they know)
+    const room = await SharedRoom.findOne({ roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    const logs = await RoomLog.find({ roomId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await RoomLog.countDocuments({ roomId });
+
+    res.json({ success: true, logs, total, roomId, toolId: room.toolId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/rooms/:roomId/commit', authenticateToken, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { dataState, message } = req.body;
+
+    const room = await SharedRoom.findOne({ roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    const nextVersion = (room.version || 1) + 1;
+    if (dataState) {
+      room.dataState = dataState;
+    }
+    room.version = nextVersion;
+    room.lastActiveAt = new Date();
+    await room.save();
+
+    const commitMessageStr = message?.trim() || `Git Commit v${nextVersion}`;
+
+    const commitLog = await RoomLog.create({
+      roomId,
+      toolId: room.toolId || 'mindmap',
+      userId: req.user.userId || req.user.id || 'user',
+      userName: req.user.name || 'User',
+      userEmail: req.user.email || '',
+      action: 'commit',
+      summary: `Git Commit: "${commitMessageStr}" (v${nextVersion})`,
+      commitMessage: commitMessageStr,
+      version: nextVersion,
+      snapshot: dataState || room.dataState,
+    });
+
+    res.json({
+      success: true,
+      message: `Committed version v${nextVersion}`,
+      version: nextVersion,
+      commit: commitLog,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

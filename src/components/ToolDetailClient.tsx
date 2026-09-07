@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useCurrentContext, ToolStatus, ToolItem } from '@/context/CurrentContext';
-import { ArrowLeft, Tag, Share2, Check, Crosshair, Shield, Hexagon, Activity, Zap, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Tag, Share2, Check, Crosshair, Shield, Hexagon, Activity, Zap, Maximize2, Minimize2, LogOut, UserCheck, ChevronDown } from 'lucide-react';
 import { ToolSeoSection } from '@/components/ToolSeoSection';
 import { getToolSeoData } from '@/lib/seoData';
 import { Footer } from '@/components/Footer';
@@ -64,6 +64,55 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
   const tool = tools.find((t) => t.id === toolId) || initialTool;
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState<boolean>(false);
+  const [headerUser, setHeaderUser] = useState<{ id: string; name: string; email: string } | null>(null);
+
+  const syncHeaderUser = useCallback(() => {
+    try {
+      const userStr = localStorage.getItem('toolip_user_data');
+      if (userStr) {
+        const parsed = JSON.parse(userStr);
+        if (parsed && !parsed.isGuest) {
+          setHeaderUser(parsed);
+          return;
+        }
+      }
+      setHeaderUser(null);
+    } catch {
+      setHeaderUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    syncHeaderUser();
+    window.addEventListener('toolip_auth_change', syncHeaderUser);
+    window.addEventListener('storage', syncHeaderUser);
+    return () => {
+      window.removeEventListener('toolip_auth_change', syncHeaderUser);
+      window.removeEventListener('storage', syncHeaderUser);
+    };
+  }, [syncHeaderUser]);
+
+  const handleHeaderLogout = () => {
+    localStorage.removeItem('toolip_auth_token');
+    localStorage.removeItem('toolip_user_data');
+    window.dispatchEvent(new Event('toolip_auth_change'));
+    if (window.location.search.includes('room=')) {
+      window.history.pushState({ path: window.location.pathname }, '', window.location.pathname);
+      window.location.reload();
+    } else {
+      syncHeaderUser();
+    }
+  };
+
+  const handleShareClick = () => {
+    // For mindmap, open the collaborative ShareModal instead of just copying link
+    const isMindmap = toolId === 'tip-calculator' || toolId === 'mind-map-editor' || toolId === 'mindmap' || tool?.id === 'mindmap' || tool?.id === 'tip-calculator';
+    if (isMindmap) {
+      window.dispatchEvent(new CustomEvent('openShareModal'));
+      return;
+    }
+    copyShareableUrl();
+  };
 
   // Lock document scroll when expanded
   React.useEffect(() => {
@@ -183,22 +232,53 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <div className="hidden sm:flex items-center gap-1.5">
-                <Tag className="h-3.5 w-3.5 text-white/30" />
-                <select
-                  value={tool.status}
-                  onChange={(e) => updateToolStatus(tool.id, e.target.value as ToolStatus)}
-                  className="bg-gunmetal-800 border border-white/10 clip-chamfer-sm px-2.5 py-1.5 font-mono text-xs font-bold tracking-[0.08em] text-white focus:outline-none focus:border-halo-cyan/40 cursor-pointer"
-                >
-                  {STATUS_TAGS.map((st) => (
-                    <option key={st.value} value={st.value} className="bg-gunmetal-900">{st.label.toUpperCase()}</option>
-                  ))}
-                </select>
-              </div>
+              {/* User avatar — replaces old progress dropdown (COMPLETED) */}
+              {headerUser ? (
+                <div className="relative group flex items-center">
+                  <button className="flex items-center gap-2 py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/30 rounded-xl transition cursor-pointer shadow-md">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-xs shadow-sm">
+                      {headerUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-tech font-bold text-xs text-white max-w-[110px] truncate hidden sm:inline">
+                      {headerUser.name}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform group-hover:rotate-180 hidden sm:block" />
+                  </button>
+                  {/* Hover dropdown */}
+                  <div className="absolute right-0 top-full pt-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 z-[99999] min-w-[200px]">
+                    <div className="bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl p-3 space-y-2">
+                      <div className="flex items-center gap-2.5 pb-2 border-b border-slate-800">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-xs">
+                          {headerUser.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-sm text-white truncate">{headerUser.name}</div>
+                          <div className="text-xs text-slate-400 truncate">{headerUser.email}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20">
+                        <UserCheck className="w-3.5 h-3.5" /> SIGNED IN
+                      </div>
+                      <button
+                        onClick={handleHeaderLogout}
+                        className="w-full py-2 px-3 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" /> Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-white/10">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" />
+                  <span className="font-mono text-[9px] tracking-[0.16em] font-bold text-white/30">ONLINE</span>
+                </div>
+              )}
 
               <button
-                onClick={copyShareableUrl}
+                onClick={handleShareClick}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gunmetal-800 hover:bg-vice-pink hover:text-white border border-white/10 hover:border-vice-pink clip-chamfer-sm font-mono text-xs font-bold tracking-[0.10em] text-white/70 transition-colors"
+                title={toolId === 'mindmap' || toolId === 'tip-calculator' ? 'Open Share & Team modal' : 'Copy share link'}
               >
                 {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Share2 className="h-3.5 w-3.5" />}
                 <span className="hidden sm:inline">{copiedLink ? 'COPIED' : 'SHARE'}</span>
