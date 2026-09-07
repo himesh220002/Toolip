@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Code2,
   Eye,
@@ -24,9 +25,21 @@ import {
   FileType,
   Scissors,
   Sliders,
-  FileDown
+  FileDown,
+  Lock,
+  X,
+  Trash2,
+  MessageSquare
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import {
+  NVIDIA_MODELS,
+  getNvidiaApiKey,
+  setNvidiaApiKey,
+  getNvidiaSelectedModel,
+  setNvidiaSelectedModel,
+  generateSvgWithNvidia
+} from '@/lib/nvidiaAi';
 
 const PRESET_SVGS: Record<string, string> = {
   Badge: `<svg width="240" height="240" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -72,6 +85,7 @@ interface SvgLayerItem {
   stroke: string;
   hidden: boolean;
   rawHtml: string;
+  lineNumber: number;
 }
 
 export const SvgCodeEditor: React.FC = () => {
@@ -84,6 +98,100 @@ export const SvgCodeEditor: React.FC = () => {
   const [canvasBg, setCanvasBg] = useState<'dark' | 'light' | 'checker'>('dark');
   const [noticeMsg, setNoticeMsg] = useState<string>('');
 
+  // Saved SVGs Gallery State
+  const [savedSvgs, setSavedSvgs] = useLocalStorage<{ id: string; name: string; code: string; createdAt: string }[]>(
+    'toolip_saved_svg_gallery_v1',
+    []
+  );
+
+  const handleSaveCurrentSvg = () => {
+    if (!svgCode.trim()) return;
+    const newEntry = {
+      id: `svg_${Date.now()}`,
+      name: `Vector ${savedSvgs.length + 1}`,
+      code: svgCode,
+      createdAt: new Date().toISOString(),
+    };
+    setSavedSvgs((prev) => [newEntry, ...prev]);
+    setNoticeMsg('✓ Saved SVG graphic to your gallery below!');
+    setTimeout(() => setNoticeMsg(''), 3000);
+  };
+
+  const handleLoadSavedSvg = (code: string) => {
+    setSvgCode(code);
+    setHoveredShapeIdx(null);
+    setCodeGlowLineIdx(null);
+    setSelectedLayerIdx(null);
+    setNoticeMsg('✓ Loaded saved SVG into editor!');
+    setTimeout(() => setNoticeMsg(''), 2500);
+  };
+
+  const handleDeleteSavedSvg = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSavedSvgs((prev) => prev.filter((item) => item.id !== id));
+    setNoticeMsg('Deleted SVG thumbnail from gallery');
+    setTimeout(() => setNoticeMsg(''), 2500);
+  };
+
+  // NVIDIA BYOK AI Logo Generator State
+  const [isNvidiaAiModalOpen, setIsNvidiaAiModalOpen] = useState(false);
+  const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState(() => getNvidiaApiKey());
+  const [selectedNvidiaModel, setSelectedNvidiaModel] = useState(() => getNvidiaSelectedModel());
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiErrorMsg, setAiErrorMsg] = useState<string | null>(null);
+
+  const handleSaveNvidiaKey = (key: string) => {
+    setNvidiaApiKey(key);
+    setNvidiaApiKeyInput(key);
+    setNoticeMsg(key.trim() ? '✓ Saved NVIDIA API Key to BYOK local storage' : 'Removed NVIDIA API Key');
+    setTimeout(() => setNoticeMsg(''), 3000);
+  };
+
+  const handleSelectNvidiaModel = (modelId: string) => {
+    setSelectedNvidiaModel(modelId);
+    setNvidiaSelectedModel(modelId);
+  };
+
+  const handleGenerateAiSvg = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!aiPrompt.trim()) {
+      setAiErrorMsg('Please enter a description or prompt for the vector graphic');
+      return;
+    }
+    if (!nvidiaApiKeyInput.trim()) {
+      setAiErrorMsg('NVIDIA API Key required. Please enter your BYOK key (nvapi-...).');
+      return;
+    }
+
+    setAiErrorMsg(null);
+    setIsAiGenerating(true);
+
+    try {
+      handleSaveNvidiaKey(nvidiaApiKeyInput);
+      const generatedSvg = await generateSvgWithNvidia(
+        aiPrompt.trim(),
+        nvidiaApiKeyInput.trim(),
+        selectedNvidiaModel
+      );
+
+      setSvgCode(generatedSvg);
+      setHoveredShapeIdx(null);
+      setCodeGlowLineIdx(null);
+      setSelectedLayerIdx(null);
+
+      setNoticeMsg('✨ AI Vector Logo & Graphic successfully generated with NVIDIA NIM!');
+      setTimeout(() => setNoticeMsg(''), 4000);
+      setIsNvidiaAiModalOpen(false);
+      setAiPrompt('');
+    } catch (err: any) {
+      console.error('NVIDIA AI Generation error:', err);
+      setAiErrorMsg(err.message || 'Failed to generate SVG with NVIDIA AI');
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
   // Pane Resizing & Drag Expand State
   const [editorHeight, setEditorHeight] = useLocalStorage<number>('toolip_svg_editor_height', 420);
   const [outputHeight, setOutputHeight] = useLocalStorage<number>('toolip_svg_output_height', 420);
@@ -93,9 +201,79 @@ export const SvgCodeEditor: React.FC = () => {
 
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const lineNumbersRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const codeLines = svgCode.split('\n');
+
+  // Helper: Find exact 1-based line number in codeLines where an SVG element is defined
+  const getElementLineNumber = useCallback((el: Element, lines: string[]): number => {
+    const tagName = el.tagName.toLowerCase();
+    const idAttr = el.getAttribute('id');
+    const dAttr = el.getAttribute('d');
+    const pointsAttr = el.getAttribute('points');
+    const fillAttr = el.getAttribute('fill');
+    const strokeAttr = el.getAttribute('stroke');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.includes(`<${tagName}`)) {
+        if (idAttr && line.includes(`id="${idAttr}"`)) return i + 1;
+        if (dAttr && line.includes(dAttr.substring(0, 12))) return i + 1;
+        if (pointsAttr && line.includes(pointsAttr.substring(0, 12))) return i + 1;
+        if (fillAttr && fillAttr !== 'none' && fillAttr !== 'inherited' && line.includes(fillAttr)) return i + 1;
+        if (strokeAttr && strokeAttr !== 'none' && strokeAttr !== 'inherited' && line.includes(strokeAttr)) return i + 1;
+      }
+    }
+
+    // Fallback: match by tag occurrence index
+    const doc = el.ownerDocument;
+    if (doc) {
+      const sameTags = Array.from(doc.querySelectorAll(`svg ${tagName}`));
+      const tagIdx = sameTags.indexOf(el);
+      let matchCount = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes(`<${tagName}`)) {
+          if (matchCount === tagIdx) return i + 1;
+          matchCount++;
+        }
+      }
+    }
+
+    return 1;
+  }, []);
+
+  // Synchronize line numbers container scroll position with code textarea
+  const handleScrollTextarea = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+  };
+
+  // Jump to exact line number, focus & scroll editor + highlight
+  const scrollToLine = useCallback((lineNum: number) => {
+    setCursorLine(lineNum);
+    setCodeGlowLineIdx(lineNum - 1);
+
+    if (textareaRef.current) {
+      const lines = svgCode.split('\n');
+      let pos = 0;
+      for (let i = 0; i < Math.min(lineNum - 1, lines.length); i++) {
+        pos += lines[i].length + 1;
+      }
+      textareaRef.current.selectionStart = pos;
+      textareaRef.current.selectionEnd = pos;
+      textareaRef.current.focus();
+
+      // Scroll editor (20px per line for leading-5)
+      const lineHeight = 20;
+      const scrollTopTarget = Math.max(0, (lineNum - 3) * lineHeight);
+      textareaRef.current.scrollTop = scrollTopTarget;
+      if (lineNumbersRef.current) {
+        lineNumbersRef.current.scrollTop = scrollTopTarget;
+      }
+    }
+  }, [svgCode]);
 
   // Mouse & Touch Drag Event Handlers
   const handleMouseDown = (e: React.MouseEvent, pane: 'input' | 'output') => {
@@ -155,7 +333,35 @@ export const SvgCodeEditor: React.FC = () => {
     window.addEventListener('touchend', onTouchEnd);
   };
 
-  // Re-bind shape interaction listeners whenever SVG code or hovered index updates
+  // Parse SVG Layers & Groups with exact line numbers
+  const layersList: SvgLayerItem[] = useMemo(() => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgCode, 'image/svg+xml');
+      const svgEl = doc.querySelector('svg');
+      if (!svgEl) return [];
+
+      const lines = svgCode.split('\n');
+      const elements = Array.from(svgEl.querySelectorAll('circle, rect, polygon, path, text, ellipse, line, g'));
+      return elements.map((el, idx) => {
+        const lineNum = getElementLineNumber(el, lines);
+        return {
+          id: idx,
+          tagName: el.tagName.toLowerCase(),
+          idAttr: el.getAttribute('id') || `${el.tagName.toLowerCase()}_${idx + 1}`,
+          fill: el.getAttribute('fill') || 'inherited',
+          stroke: el.getAttribute('stroke') || 'inherited',
+          hidden: el.getAttribute('display') === 'none' || el.getAttribute('visibility') === 'hidden',
+          rawHtml: el.outerHTML,
+          lineNumber: lineNum,
+        };
+      });
+    } catch (e) {
+      return [];
+    }
+  }, [svgCode, getElementLineNumber]);
+
+  // Re-bind shape interaction listeners with exact line number matching
   useEffect(() => {
     if (!previewContainerRef.current) return;
 
@@ -168,12 +374,19 @@ export const SvgCodeEditor: React.FC = () => {
 
     shapes.forEach((shape, idx) => {
       const el = shape as HTMLElement;
+      const shapeLineNum = getElementLineNumber(el, codeLines);
+
       el.style.cursor = 'pointer';
       el.style.transition = 'filter 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease';
 
-      // Apply hover / focus glow if code line corresponds to shape index or selected layer
-      if (hoveredShapeIdx === idx || cursorLine === idx + 1 || selectedLayerIdx === idx) {
-        el.style.filter = 'drop-shadow(0 0 14px #38bdf8) brightness(1.5)';
+      // Glow element if it matches active cursor line, hovered index, or selected layer
+      const isTargeted =
+        hoveredShapeIdx === idx ||
+        cursorLine === shapeLineNum ||
+        (selectedLayerIdx !== null && layersList[selectedLayerIdx]?.lineNumber === shapeLineNum);
+
+      if (isTargeted) {
+        el.style.filter = 'drop-shadow(0 0 16px #38bdf8) brightness(1.5)';
         el.style.stroke = '#38bdf8';
         el.style.strokeWidth = '3px';
       } else {
@@ -182,17 +395,16 @@ export const SvgCodeEditor: React.FC = () => {
         el.style.strokeWidth = '';
       }
 
-      // Handle Preview shape click -> trigger repeatable code glow
+      // Handle Preview shape click -> jump to exact line in code editor & glow
       el.onclick = (e) => {
         e.stopPropagation();
 
         el.style.filter = 'drop-shadow(0 0 25px #f43f5e) brightness(1.8)';
-        setCodeGlowLineIdx(idx);
         setSelectedLayerIdx(idx);
+        scrollToLine(shapeLineNum);
 
         setTimeout(() => {
           el.style.filter = '';
-          setCodeGlowLineIdx(null);
         }, 1200);
       };
 
@@ -204,30 +416,70 @@ export const SvgCodeEditor: React.FC = () => {
         setHoveredShapeIdx(null);
       };
     });
-  }, [svgCode, hoveredShapeIdx, cursorLine, selectedLayerIdx]);
+  }, [svgCode, hoveredShapeIdx, cursorLine, selectedLayerIdx, codeLines, getElementLineNumber, layersList, scrollToLine]);
 
-  // Parse SVG Layers & Groups
-  const layersList: SvgLayerItem[] = useMemo(() => {
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(svgCode, 'image/svg+xml');
-      const svgEl = doc.querySelector('svg');
-      if (!svgEl) return [];
+  // Toggle XML comment on current line or selection (Ctrl + / or Cmd + /)
+  const toggleXmlComment = useCallback(() => {
+    if (!textareaRef.current) return;
+    const textarea = textareaRef.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
 
-      const elements = Array.from(svgEl.querySelectorAll('circle, rect, polygon, path, text, ellipse, line, g'));
-      return elements.map((el, idx) => ({
-        id: idx,
-        tagName: el.tagName.toLowerCase(),
-        idAttr: el.getAttribute('id') || `${el.tagName.toLowerCase()}_${idx + 1}`,
-        fill: el.getAttribute('fill') || 'inherited',
-        stroke: el.getAttribute('stroke') || 'inherited',
-        hidden: el.getAttribute('display') === 'none' || el.getAttribute('visibility') === 'hidden',
-        rawHtml: el.outerHTML
-      }));
-    } catch (e) {
-      return [];
+    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    let lineEnd = text.indexOf('\n', end);
+    if (lineEnd === -1) lineEnd = text.length;
+
+    const selectedText = text.substring(lineStart, lineEnd);
+    const lines = selectedText.split('\n');
+
+    const allCommented = lines.every((l) => {
+      const trimmed = l.trim();
+      return trimmed.startsWith('<!--') && trimmed.endsWith('-->');
+    });
+
+    let newLines: string[] = [];
+
+    if (allCommented) {
+      newLines = lines.map((l) => {
+        return l.replace(/<!--\s?/, '').replace(/\s?-->/, '');
+      });
+    } else {
+      newLines = lines.map((l) => {
+        if (!l.trim()) return l;
+        const match = l.match(/^(\s*)(.*)$/);
+        if (!match) return `<!-- ${l} -->`;
+        const [, indent, content] = match;
+        if (content.startsWith('<!--') && content.endsWith('-->')) {
+          return l;
+        }
+        return `${indent}<!-- ${content} -->`;
+      });
     }
-  }, [svgCode]);
+
+    const newSelectedText = newLines.join('\n');
+    const newFullText = text.substring(0, lineStart) + newSelectedText + text.substring(lineEnd);
+
+    setSvgCode(newFullText);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.selectionStart = lineStart;
+        textareaRef.current.selectionEnd = lineStart + newSelectedText.length;
+        textareaRef.current.focus();
+      }
+    }, 10);
+
+    setNoticeMsg(allCommented ? '✓ Removed XML comments' : '✓ Added XML comments (<!-- ... -->)');
+    setTimeout(() => setNoticeMsg(''), 2500);
+  }, [setSvgCode]);
+
+  const handleKeyDownTextarea = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+      e.preventDefault();
+      toggleXmlComment();
+    }
+  };
 
   // Track cursor position in code editor to glow shape
   const handleTextareaSelection = () => {
@@ -449,6 +701,27 @@ export const SvgCodeEditor: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
+          {/* NVIDIA BYOK AI Logo Generator */}
+          <button
+            onClick={() => setIsNvidiaAiModalOpen(true)}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black shadow-lg shadow-emerald-500/20 transition cursor-pointer"
+            title="Generate custom vector logos and SVG graphics with NVIDIA BYOK AI"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-slate-950 animate-pulse fill-current" />
+            <span>NVIDIA AI Logo</span>
+            <span className="px-1 py-0.2 text-[9px] bg-slate-950/20 text-slate-950 font-mono rounded font-black">BYOK</span>
+          </button>
+
+          {/* XML Comment Toggle (Ctrl + /) */}
+          <button
+            onClick={toggleXmlComment}
+            title="Toggle XML Block Comment (Ctrl + /)"
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-300 font-semibold transition-colors cursor-pointer"
+          >
+            <MessageSquare className="h-3.5 w-3.5 text-amber-400" />
+            <span>Comment (Ctrl+/)</span>
+          </button>
+
           {/* Minify / Expand Back Formatting Toggle */}
           <button
             onClick={minifySvg}
@@ -492,6 +765,16 @@ export const SvgCodeEditor: React.FC = () => {
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>Reset</span>
+          </button>
+
+          {/* Save to Gallery Button */}
+          <button
+            onClick={handleSaveCurrentSvg}
+            title="Save current SVG to local 40x40px gallery thumbnails below"
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 font-bold transition-colors cursor-pointer"
+          >
+            <Download className="h-3.5 w-3.5 text-emerald-400 rotate-180" />
+            <span>Save SVG</span>
           </button>
 
           {/* Multi-Format Export Dropdown Menu */}
@@ -577,6 +860,97 @@ export const SvgCodeEditor: React.FC = () => {
         </div>
       </div>
 
+      {/* Inline NVIDIA AI Prompt & Model Control Bar (Right Below Pane Height) */}
+      <div className="p-3 bg-gradient-to-r from-emerald-950/40 via-gray-900 to-slate-900 border border-emerald-500/30 rounded-2xl space-y-2 text-xs shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center space-x-2">
+            <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
+              <Sparkles className="h-4 w-4 animate-pulse fill-current" />
+            </div>
+            <span className="font-extrabold text-white text-xs tracking-tight flex items-center gap-1.5">
+              NVIDIA AI Generator
+              <span className="text-[9px] font-mono font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded">BYOK</span>
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {/* Model Selector Dropdown */}
+            <div className="flex items-center bg-gray-950 border border-gray-800 rounded-xl px-2 py-1 space-x-1">
+              <span className="text-[10px] text-gray-400 font-bold">Model:</span>
+              <select
+                value={selectedNvidiaModel}
+                onChange={(e) => handleSelectNvidiaModel(e.target.value)}
+                className="bg-transparent text-emerald-300 text-xs font-semibold focus:outline-none cursor-pointer"
+              >
+                {NVIDIA_MODELS.map((m) => (
+                  <option key={m.id} value={m.id} className="bg-gray-900 text-white">
+                    {m.name} ({m.badge})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Key Status & Edit Button */}
+            <button
+              onClick={() => setIsNvidiaAiModalOpen(true)}
+              className="px-2.5 py-1 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 text-[11px] font-medium flex items-center space-x-1 cursor-pointer transition"
+              title="Configure NVIDIA BYOK API Key"
+            >
+              <Lock className="h-3 w-3 text-emerald-400" />
+              <span>{nvidiaApiKeyInput ? 'Key Saved ⚙️' : 'Set Key 🔑'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Prompt Input & Generate Action */}
+        <form onSubmit={handleGenerateAiSvg} className="flex items-center gap-2">
+          <input
+            type="text"
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder="Type prompt for AI vector logo (e.g. 'Futuristic neon rocket emblem with blue gradient')..."
+            className="flex-1 px-3.5 py-2 bg-gray-950 border border-gray-800 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400 transition"
+          />
+          <button
+            type="submit"
+            disabled={isAiGenerating}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {isAiGenerating ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5 text-slate-950 fill-current" />
+                <span>Generate SVG</span>
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Quick Suggestion Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 text-[10px] pt-0.5">
+          <span className="text-gray-500 font-semibold">Quick Prompts:</span>
+          {[
+            '🚀 Futuristic Rocket Emblem',
+            '💡 Glowing Tech Startup Badge',
+            '🛡️ Cyber Security Shield',
+            '⚡ Neon Geometry Spinner',
+          ].map((pill) => (
+            <button
+              key={pill}
+              type="button"
+              onClick={() => setAiPrompt(pill)}
+              className="px-2 py-0.5 rounded-md bg-gray-900/80 hover:bg-gray-800 text-emerald-300 border border-gray-800 transition cursor-pointer"
+            >
+              {pill}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Notice Banner */}
       {noticeMsg && (
         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center space-x-2">
@@ -629,7 +1003,10 @@ export const SvgCodeEditor: React.FC = () => {
                 layersList.map((layer) => (
                   <div
                     key={layer.id}
-                    onClick={() => setSelectedLayerIdx(layer.id)}
+                    onClick={() => {
+                      setSelectedLayerIdx(layer.id);
+                      scrollToLine(layer.lineNumber);
+                    }}
                     className={`p-2 rounded-lg text-xs font-mono flex items-center justify-between cursor-pointer border transition-all ${
                       selectedLayerIdx === layer.id
                         ? 'bg-purple-950/80 border-purple-500/60 text-purple-200 font-bold shadow-md'
@@ -644,6 +1021,7 @@ export const SvgCodeEditor: React.FC = () => {
                     </div>
 
                     <div className="flex items-center space-x-1 shrink-0">
+                      <span className="text-[9px] font-mono text-gray-500 mr-1">L{layer.lineNumber}</span>
                       {layer.fill !== 'inherited' && (
                         <span
                           className="h-2.5 w-2.5 rounded-full border border-gray-600"
@@ -673,27 +1051,32 @@ export const SvgCodeEditor: React.FC = () => {
               style={{ height: `${editorHeight}px` }}
               className="w-full bg-gray-950 border border-gray-800 rounded-xl overflow-hidden font-mono text-xs flex shadow-inner"
             >
-              {/* Code Line numbers */}
-              <div className="w-10 bg-gray-900 border-r border-gray-800 text-gray-600 text-right pr-2 py-3 select-none flex flex-col shrink-0">
+              {/* Code Line numbers (Synchronized Scroll via Ref) */}
+              <div
+                ref={lineNumbersRef}
+                className="w-10 bg-gray-900 border-r border-gray-800 text-gray-600 text-right pr-2 py-3 select-none flex flex-col shrink-0 overflow-hidden font-mono leading-5"
+              >
                 {codeLines.map((_, idx) => {
-                  const isGlowing = codeGlowLineIdx === idx || hoveredShapeIdx === idx || cursorLine === idx + 1;
+                  const lineNum = idx + 1;
+                  const isGlowing =
+                    codeGlowLineIdx === idx ||
+                    cursorLine === lineNum ||
+                    (selectedLayerIdx !== null && layersList[selectedLayerIdx]?.lineNumber === lineNum);
+
                   return (
                     <div
                       key={idx}
                       onMouseEnter={() => setHoveredShapeIdx(idx)}
                       onMouseLeave={() => setHoveredShapeIdx(null)}
-                      onClick={() => {
-                        setHoveredShapeIdx(idx);
-                        setCodeGlowLineIdx(idx);
-                        setTimeout(() => setCodeGlowLineIdx(null), 1200);
-                      }}
-                      className={`h-5 cursor-pointer text-[10px] transition-all ${
+                      onClick={() => scrollToLine(lineNum)}
+                      className={`h-5 cursor-pointer text-[10px] transition-all flex items-center justify-end ${
                         isGlowing
                           ? 'text-rose-400 font-bold bg-rose-500/20 scale-105 border-l-2 border-rose-400'
                           : 'hover:text-sky-400'
                       }`}
+                      title={`Click to jump to line ${lineNum}`}
                     >
-                      {idx + 1}
+                      {lineNum}
                     </div>
                   );
                 })}
@@ -706,6 +1089,8 @@ export const SvgCodeEditor: React.FC = () => {
                 onChange={(e) => setSvgCode(e.target.value)}
                 onKeyUp={handleTextareaSelection}
                 onClick={handleTextareaSelection}
+                onKeyDown={handleKeyDownTextarea}
+                onScroll={handleScrollTextarea}
                 className="flex-1 h-full p-3 bg-transparent text-emerald-300 focus:outline-none resize-none leading-5 overflow-auto whitespace-pre font-mono"
               />
             </div>
@@ -773,6 +1158,230 @@ export const SvgCodeEditor: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Saved SVGs Gallery Section (40x40px Flex Row Wrap Tiles) */}
+      <div className="p-4 bg-gray-900/90 border border-gray-800 rounded-2xl space-y-2.5 text-xs shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <ImageIcon className="h-4 w-4 text-emerald-400" />
+            <span className="font-extrabold text-white text-xs tracking-tight">
+              Saved SVGs Gallery ({savedSvgs.length})
+            </span>
+            <span className="text-[10px] text-gray-500 font-mono">Click 40×40px tile to load SVG code into editor</span>
+          </div>
+
+          <button
+            onClick={handleSaveCurrentSvg}
+            className="px-3 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold rounded-lg text-xs transition cursor-pointer flex items-center space-x-1"
+          >
+            <span>+ Save Current SVG</span>
+          </button>
+        </div>
+
+        {savedSvgs.length === 0 ? (
+          <div className="py-3 text-center text-gray-500 text-xs border border-dashed border-gray-800 rounded-xl">
+            No saved SVGs yet. Click "+ Save Current SVG" or "Save SVG" above to store 40×40px thumbnail tiles here!
+          </div>
+        ) : (
+          <div className="flex flex-row flex-wrap gap-2.5 pt-1">
+            {savedSvgs.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleLoadSavedSvg(item.code)}
+                className="group relative w-[40px] h-[40px] min-w-[40px] min-h-[40px] rounded-lg bg-gray-950 border border-gray-700 hover:border-emerald-400 hover:scale-105 shadow-md transition-all cursor-pointer overflow-visible flex items-center justify-center p-1 shrink-0"
+                title={`${item.name} - Click to load into editor`}
+              >
+                {/* SVG Mini Preview Render inside 40x40px tile */}
+                <div
+                  className="w-full h-full flex items-center justify-center pointer-events-none overflow-hidden [&_svg]:max-w-full [&_svg]:max-h-full [&_svg]:w-full [&_svg]:h-full"
+                  dangerouslySetInnerHTML={{ __html: item.code }}
+                />
+
+                {/* Top-Right Corner Delete Trash Badge */}
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteSavedSvg(item.id, e)}
+                  title="Delete saved SVG"
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer"
+                >
+                  <Trash2 className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* NVIDIA BYOK AI Logo Generator Modal Portal */}
+      {isNvidiaAiModalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="relative w-full max-w-2xl bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5 max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-500 to-cyan-500 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
+                    <Sparkles className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+                      NVIDIA NIM AI Logo & Graphic Generator
+                      <span className="text-[10px] font-mono font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 rounded-lg">BYOK</span>
+                    </h3>
+                    <p className="text-xs text-slate-400">Generate clean SVG vector logos & graphics with 3 NVIDIA NIM models</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsNvidiaAiModalOpen(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                {/* NVIDIA BYOK API Key Section */}
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>NVIDIA API Key (BYOK)</span>
+                    </label>
+                    <a
+                      href="https://build.nvidia.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-emerald-400 hover:underline flex items-center gap-1"
+                    >
+                      Get Key from build.nvidia.com ↗
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="password"
+                      value={nvidiaApiKeyInput}
+                      onChange={(e) => setNvidiaApiKeyInput(e.target.value)}
+                      placeholder="nvapi-..."
+                      className="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-emerald-400 transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSaveNvidiaKey(nvidiaApiKeyInput)}
+                      className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer shrink-0"
+                    >
+                      Save Key
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3 Models Dropdown Switch */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                    <span>NVIDIA Model Selector (3 Models Supported)</span>
+                    <span className="text-[10px] font-mono text-cyan-400">Selected: {selectedNvidiaModel}</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {NVIDIA_MODELS.map((model) => {
+                      const isSelected = selectedNvidiaModel === model.id;
+                      return (
+                        <button
+                          key={model.id}
+                          type="button"
+                          onClick={() => handleSelectNvidiaModel(model.id)}
+                          className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${
+                            isSelected
+                              ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                          }`}
+                        >
+                          <div>
+                            <span className="text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 inline-block mb-1">
+                              {model.badge}
+                            </span>
+                            <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                          </div>
+                          <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Prompt Text Area */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-200">
+                    Logo / Graphic Prompt
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="e.g. Minimalist futuristic neon dragon logo with cyan and magenta gradients inside a dark circular emblem..."
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
+                  />
+
+                  {/* Quick Suggestion Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span className="text-slate-400 text-[10px]">Quick Prompts:</span>
+                    {[
+                      '🚀 Futuristic Rocket Emblem',
+                      '💡 Glowing Tech Startup Badge',
+                      '🛡️ Modern Cyber Security Shield',
+                      '⚡ Neon Geometry Loading Spinner',
+                    ].map((pill) => (
+                      <button
+                        key={pill}
+                        type="button"
+                        onClick={() => setAiPrompt(pill)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-[10px] font-semibold transition cursor-pointer"
+                      >
+                        {pill}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Error Banner */}
+                {aiErrorMsg && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                    <X className="w-4 h-4 shrink-0" />
+                    <span>{aiErrorMsg}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsNvidiaAiModalOpen(false)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateAiSvg}
+                  disabled={isAiGenerating}
+                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isAiGenerating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                      <span>Generating SVG Graphic with NVIDIA AI...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-slate-950 fill-current" />
+                      <span>Generate SVG Graphic</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

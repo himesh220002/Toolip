@@ -51,6 +51,14 @@ import {
 import { useCollaborativeSession } from '../../hooks/useCollaborativeSession';
 import { ShareModal } from '../collaboration/ShareModal';
 import { LogTableModal } from '../collaboration/LogTableModal';
+import {
+  NVIDIA_MODELS,
+  getNvidiaApiKey,
+  setNvidiaApiKey,
+  getNvidiaSelectedModel,
+  setNvidiaSelectedModel,
+  generateMindMapWithNvidia
+} from '../../lib/nvidiaAi';
 
 export interface MindNode {
   id: string;
@@ -208,6 +216,67 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
   // Reset confirmation state
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+
+  // NVIDIA BYOK AI Generator State
+  const [isNvidiaAiModalOpen, setIsNvidiaAiModalOpen] = useState(false);
+  const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState(() => getNvidiaApiKey());
+  const [selectedNvidiaModel, setSelectedNvidiaModel] = useState(() => getNvidiaSelectedModel());
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiErrorMsg, setAiErrorMsg] = useState<string | null>(null);
+
+  const handleSaveNvidiaKey = (key: string) => {
+    setNvidiaApiKey(key);
+    setNvidiaApiKeyInput(key);
+    showNotification(key.trim() ? '✓ Saved NVIDIA API Key to BYOK local storage' : 'Removed NVIDIA API Key');
+  };
+
+  const handleSelectNvidiaModel = (modelId: string) => {
+    setSelectedNvidiaModel(modelId);
+    setNvidiaSelectedModel(modelId);
+  };
+
+  const handleGenerateAiMindMap = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!aiPrompt.trim()) {
+      setAiErrorMsg('Please enter a topic or prompt for AI generation');
+      return;
+    }
+    if (!nvidiaApiKeyInput.trim()) {
+      setAiErrorMsg('NVIDIA API Key required. Please enter your BYOK key (nvapi-...).');
+      return;
+    }
+
+    setAiErrorMsg(null);
+    setIsAiGenerating(true);
+
+    try {
+      handleSaveNvidiaKey(nvidiaApiKeyInput);
+      const { nodes: newNodes, edges: newEdges } = await generateMindMapWithNvidia(
+        aiPrompt.trim(),
+        nvidiaApiKeyInput.trim(),
+        selectedNvidiaModel
+      );
+
+      setSelectedNodeId(null);
+      setSelectedEdgeId(null);
+      setNodes(newNodes);
+      setEdges(newEdges);
+
+      if (roomId) {
+        broadcastStateUpdate({ nodes: newNodes, edges: newEdges });
+      }
+
+      showNotification('✨ AI MindMap successfully generated with NVIDIA NIM!');
+      setIsNvidiaAiModalOpen(false);
+      setAiPrompt('');
+    } catch (err: any) {
+      console.error('NVIDIA AI Generation error:', err);
+      setAiErrorMsg(err.message || 'Failed to generate mindmap with NVIDIA AI');
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1556,6 +1625,18 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
             />
 
             <button
+              onClick={() => setIsNvidiaAiModalOpen(true)}
+              className={`flex items-center gap-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black rounded-lg transition shadow-lg shadow-emerald-500/25 cursor-pointer ${
+                isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'
+              }`}
+              title="Brainstorm & Auto-Generate Mind Map with NVIDIA BYOK AI"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-slate-950 animate-pulse" />
+              <span>NVIDIA AI</span>
+              <span className="px-1 py-0.2 text-[9px] bg-slate-950/20 text-slate-950 font-mono rounded font-black">BYOK</span>
+            </button>
+
+            <button
               onClick={handleSaveGraphML}
               className={`flex items-center gap-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-lg shadow-lg shadow-cyan-500/25 transition ${
                 isExpanded ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
@@ -1614,6 +1695,97 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 </button>
               </>
             )}
+          </div>
+        </div>
+
+        {/* Inline NVIDIA AI Prompt & Model Control Bar (Right Below Header Controls) */}
+        <div className="mx-4 my-2 p-3 bg-slate-900/90 border border-emerald-500/30 rounded-2xl space-y-2 text-xs backdrop-blur-md shadow-xl shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center space-x-2">
+              <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
+                <Sparkles className="h-4 w-4 animate-pulse fill-current" />
+              </div>
+              <span className="font-extrabold text-white text-xs tracking-tight flex items-center gap-1.5">
+                NVIDIA AI MindMap Generator
+                <span className="text-[9px] font-mono font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded">BYOK</span>
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              {/* Model Selector Dropdown */}
+              <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1 space-x-1.5">
+                <span className="text-[10px] text-slate-400 font-bold">Model:</span>
+                <select
+                  value={selectedNvidiaModel}
+                  onChange={(e) => handleSelectNvidiaModel(e.target.value)}
+                  className="bg-transparent text-emerald-300 text-xs font-semibold focus:outline-none cursor-pointer"
+                >
+                  {NVIDIA_MODELS.map((m) => (
+                    <option key={m.id} value={m.id} className="bg-slate-900 text-white">
+                      {m.name} ({m.badge})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Key Status & Settings Trigger */}
+              <button
+                onClick={() => setIsNvidiaAiModalOpen(true)}
+                className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium flex items-center space-x-1 cursor-pointer transition"
+                title="Configure NVIDIA BYOK API Key"
+              >
+                <Lock className="h-3 w-3 text-emerald-400" />
+                <span>{nvidiaApiKeyInput ? 'Key Saved ⚙️' : 'Set Key 🔑'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Prompt Form */}
+          <form onSubmit={handleGenerateAiMindMap} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Type topic for AI MindMap (e.g. 'Microservices e-commerce architecture with payment and analytics')..."
+              className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
+            />
+            <button
+              type="submit"
+              disabled={isAiGenerating}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              {isAiGenerating ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 text-slate-950 fill-current" />
+                  <span>Generate MindMap</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Quick Suggestion Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px] pt-0.5">
+            <span className="text-slate-500 font-semibold">Quick Prompts:</span>
+            {[
+              '🚀 SaaS Product Launch Roadmap',
+              '💻 Microservices Architecture',
+              '🎨 Content Marketing Funnel',
+              '🎯 Q4 OKRs & Growth Strategy',
+            ].map((pill) => (
+              <button
+                key={pill}
+                type="button"
+                onClick={() => setAiPrompt(pill)}
+                className="px-2 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-slate-800 transition cursor-pointer"
+              >
+                {pill}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -3100,6 +3272,177 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   </button>
                 </div>
               </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* NVIDIA BYOK AI Generator Modal Portal */}
+      {isNvidiaAiModalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="relative w-full max-w-2xl bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5 max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-500 to-cyan-500 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
+                    <Sparkles className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+                      NVIDIA NIM AI Brainstorm
+                      <span className="text-[10px] font-mono font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 rounded-lg">BYOK</span>
+                    </h3>
+                    <p className="text-xs text-slate-400">Generate structured mind map architecture with 3 NVIDIA NIM models</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsNvidiaAiModalOpen(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                {/* NVIDIA BYOK API Key Section */}
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>NVIDIA API Key (BYOK)</span>
+                    </label>
+                    <a
+                      href="https://build.nvidia.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-emerald-400 hover:underline flex items-center gap-1"
+                    >
+                      Get Key from build.nvidia.com ↗
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="password"
+                      value={nvidiaApiKeyInput}
+                      onChange={(e) => setNvidiaApiKeyInput(e.target.value)}
+                      placeholder="nvapi-..."
+                      className="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-emerald-400 transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSaveNvidiaKey(nvidiaApiKeyInput)}
+                      className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer shrink-0"
+                    >
+                      Save Key
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3 Models Dropdown Switch */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                    <span>NVIDIA Model Selector (3 Models Supported)</span>
+                    <span className="text-[10px] font-mono text-cyan-400">Selected: {selectedNvidiaModel}</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {NVIDIA_MODELS.map((model) => {
+                      const isSelected = selectedNvidiaModel === model.id;
+                      return (
+                        <button
+                          key={model.id}
+                          type="button"
+                          onClick={() => handleSelectNvidiaModel(model.id)}
+                          className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${
+                            isSelected
+                              ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                          }`}
+                        >
+                          <div>
+                            <span className="text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 inline-block mb-1">
+                              {model.badge}
+                            </span>
+                            <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                          </div>
+                          <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Prompt Text Area */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-200">
+                    Brainstorm Prompt / Topic
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="e.g. Brainstorm a microservices architecture for an automated trading platform with data ingestion, ML models, and notification services..."
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
+                  />
+
+                  {/* Quick Suggestion Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span className="text-slate-400 text-[10px]">Quick Prompts:</span>
+                    {[
+                      '🚀 SaaS Product Launch Roadmap',
+                      '💻 Microservices Architecture',
+                      '🎨 Content Marketing Funnel',
+                      '🎯 Q4 OKRs & Growth Strategy',
+                    ].map((pill) => (
+                      <button
+                        key={pill}
+                        type="button"
+                        onClick={() => setAiPrompt(pill)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-[10px] font-semibold transition cursor-pointer"
+                      >
+                        {pill}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Error Banner */}
+                {aiErrorMsg && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                    <X className="w-4 h-4 shrink-0" />
+                    <span>{aiErrorMsg}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsNvidiaAiModalOpen(false)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateAiMindMap}
+                  disabled={isAiGenerating}
+                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isAiGenerating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                      <span>Generating Mind Map with NVIDIA AI...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-slate-950 fill-current" />
+                      <span>Generate Mind Map</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>,
           document.body

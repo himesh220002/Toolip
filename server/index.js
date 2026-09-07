@@ -350,6 +350,40 @@ app.post('/api/mindmap/save', (req, res) => {
   }
 });
 
+app.post('/api/nvidia/generate', async (req, res) => {
+  try {
+    const { apiKey, model, messages, temperature, max_tokens } = req.body;
+    if (!apiKey || typeof apiKey !== 'string' || !apiKey.trim()) {
+      return res.status(400).json({ error: 'NVIDIA API key required (BYOK nvapi-...)' });
+    }
+
+    const fetchRes = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey.trim()}`,
+      },
+      body: JSON.stringify({
+        model: model || 'meta/llama-3.1-8b-instruct',
+        messages,
+        temperature: temperature ?? 0.7,
+        max_tokens: max_tokens ?? 2048,
+      }),
+    });
+
+    const data = await fetchRes.json();
+    if (!fetchRes.ok) {
+      return res.status(fetchRes.status).json({
+        error: data.detail || data.error?.message || `NVIDIA API Error (${fetchRes.status})`,
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Error proxying request to NVIDIA API' });
+  }
+});
+
 httpServer.listen(PORT, () => {
   console.log(`🚀 Express & Socket.io server running on http://localhost:${PORT}`);
 });
