@@ -1,3 +1,5 @@
+import { mergeIncrementalMindMap } from './mindMapMerger';
+
 export interface AiModelItem {
   id: string;
   name: string;
@@ -559,7 +561,9 @@ export async function generateMindMapWithNvidia(
   modelId?: string,
   existingNodes?: any[],
   signal?: AbortSignal,
-  onLog?: (msg: string) => void
+  onLog?: (msg: string) => void,
+  existingEdges?: any[],
+  targetNodeId?: string | null
 ): Promise<{ nodes: any[]; edges: any[] }> {
   if (signal?.aborted) {
     throw new Error('AI generation was cancelled by user.');
@@ -620,7 +624,7 @@ JSON Schema:
 
 Rules:
 1. Always keep exactly ONE main root node (isRoot: true, depth: 0, parentId: null).
-2. IF "CURRENT EXISTING MINDMAP STRUCTURE" IS PROVIDED: READ IT CAREFULLY. Each node has a "nodeNumber" (1, 2, 3...) matching the UI label. When the user instruction specifies "upgrade node N", "node #N", or names a specific topic, attach the new sub-nodes directly under that node's "id" (by setting parentId to that node's "id"). Preserve all existing node IDs, titles, and hierarchy. Return the full updated node list.
+2. IF "CURRENT EXISTING MINDMAP STRUCTURE" IS PROVIDED: You MUST PRESERVE all existing node IDs and structure. When the user asks to upgrade or expand a node, create NEW nodes with unique "id" strings and set their "parentId" to the target node's "id". Do NOT delete or replace existing nodes from other branches.
 3. IF NO EXISTING STRUCTURE IS PROVIDED: Create a fresh mind map with 3 to 6 main sub-branches (depth: 1) and sub-items (depth: 2). Keep overall node count between 8 to 16 nodes to ensure complete responses without hitting output limits.
 4. Assign appropriate emojis (e.g. 🧠, 💡, 🚀, 🎯, 🎨, 💻, ⚡, 🔥, 🏆, 📌) to every node.
 5. Assign vibrant hex colors from this palette (#00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6, #ff5722) based on branch themes.
@@ -628,7 +632,7 @@ Rules:
 7. CRITICAL JSON RULES: Use double quotes for all JSON keys/strings. Never include trailing commas before closing braces/brackets. Return ONLY the raw JSON string matching the schema.`;
 
   const userPromptText = hasExistingMap
-    ? `${existingContext}USER INSTRUCTION TO MODIFY/EXPAND MAP:\n"${prompt}"\n\nTask: Modify/upgrade the existing mindmap above based on the user's instruction. If node N is specified, attach new nodes under node N. Return the full updated array of nodes.`
+    ? `${existingContext}USER INSTRUCTION TO MODIFY/EXPAND MAP:\n"${prompt}"\n\nTask: Expand/upgrade the mind map according to the user request. Attach new nodes under the specified target node ID (or relevant node). PRESERVE ALL EXISTING NODES. Output the nodes JSON array.`
     : `Generate a mindmap for: ${prompt}`;
 
   const isOllamaModel = selectedModel.startsWith('ollama/');
@@ -671,182 +675,16 @@ Rules:
     throw new Error('AI returned invalid mindmap node structure.');
   }
 
-  onLog?.(`⚙️ Successfully parsed ${parsed.nodes.length} nodes from AI JSON response. Computing 2D graph layout...`);
+  onLog?.(`⚙️ Successfully parsed ${parsed.nodes.length} nodes from AI JSON response. Performing incremental graph preservation & layout...`);
 
-  // Calculate layout coordinates for nodes (radial / tree layout)
-  const nodes: any[] = [];
-  const edges: any[] = [];
+  const { nodes: finalNodes, edges: finalEdges } = mergeIncrementalMindMap(
+    existingNodes || [],
+    existingEdges || [],
+    parsed.nodes,
+    targetNodeId
+  );
 
-  const rawNodes = parsed.nodes;
-
-  // Pre-process rawNodes to ensure unique IDs across all nodes returned by AI
-  const rawSeenIds = new Set<string>();
-  rawNodes.forEach((n: any, idx: number) => {
-    let origId = n.id ? String(n.id).trim() : `node_${idx + 1}`;
-    let uniqueId = origId;
-    let count = 1;
-    while (rawSeenIds.has(uniqueId)) {
-      uniqueId = `${origId}_${count++}`;
-    }
-    rawSeenIds.add(uniqueId);
-    n.id = uniqueId;
-  });
-
-  const rootNode = rawNodes.find((n: any) => n.isRoot || n.depth === 0) || rawNodes[0];
-
-  const rootId = rootNode.id || 'root_main';
-  const rootX = 400;
-  const rootY = 300;
-
-  nodes.push({
-    ...rootNode,
-    id: rootId,
-    isRoot: true,
-    depth: 0,
-    parentId: null,
-    x: rootNode.x !== undefined ? rootNode.x : rootX,
-    y: rootNode.y !== undefined ? rootNode.y : rootY,
-    width: rootNode.width || 220,
-    height: rootNode.height || 64,
-    color: rootNode.color || '#00f2fe',
-    emoji: rootNode.emoji || '🧠',
-    details: rootNode.details || '',
-    note: rootNode.note || '',
-  });
-
-  const level1Nodes = rawNodes.filter((n: any) => n !== rootNode && (n.parentId === rootId || n.depth === 1));
-  const otherNodes = rawNodes.filter((n: any) => n !== rootNode && !level1Nodes.includes(n));
-
-  const totalL1 = level1Nodes.length || 1;
-  const angleStep = (2 * Math.PI) / totalL1;
-  const radius1 = 280;
-
-  level1Nodes.forEach((node: any, idx: number) => {
-    const angle = idx * angleStep - Math.PI / 2;
-    const x = node.x !== undefined ? node.x : Math.round(rootX + radius1 * Math.cos(angle));
-    const y = node.y !== undefined ? node.y : Math.round(rootY + radius1 * Math.sin(angle));
-
-    const nodeId = node.id || `node_l1_${idx}`;
-
-    nodes.push({
-      ...node,
-      id: nodeId,
-      isRoot: false,
-      depth: 1,
-      parentId: rootId,
-      x,
-      y,
-      width: node.width || 180,
-      height: node.height || 56,
-      color: node.color || '#ff007f',
-      emoji: node.emoji || '🚀',
-      details: node.details || '',
-      note: node.note || '',
-    });
-
-    edges.push({
-      id: `e_${rootId}_${nodeId}`,
-      source: rootId,
-      target: nodeId,
-      color: node.color || '#ff007f',
-    });
-
-    // Find children of this level 1 node
-    const children = otherNodes.filter((cn: any) => cn.parentId === node.id || cn.parentId === nodeId);
-    const totalChild = children.length;
-    if (totalChild > 0) {
-      const childRadius = 180;
-      const spreadAngle = Math.PI / 3; // 60 deg spread
-      const startAngle = angle - spreadAngle / 2;
-      const childStep = totalChild > 1 ? spreadAngle / (totalChild - 1) : 0;
-
-      children.forEach((child: any, cIdx: number) => {
-        const cAngle = totalChild > 1 ? startAngle + cIdx * childStep : angle;
-        const cx = child.x !== undefined ? child.x : Math.round(x + childRadius * Math.cos(cAngle));
-        const cy = child.y !== undefined ? child.y : Math.round(y + childRadius * Math.sin(cAngle));
-
-        const childId = child.id || `node_l2_${idx}_${cIdx}`;
-        nodes.push({
-          ...child,
-          id: childId,
-          isRoot: false,
-          depth: 2,
-          parentId: nodeId,
-          x: cx,
-          y: cy,
-          width: child.width || 160,
-          height: child.height || 50,
-          color: child.color || node.color || '#10b981',
-          emoji: child.emoji || '📌',
-          details: child.details || '',
-          note: child.note || '',
-        });
-
-        edges.push({
-          id: `e_${nodeId}_${childId}`,
-          source: nodeId,
-          target: childId,
-          color: child.color || node.color || '#10b981',
-        });
-      });
-    }
-  });
-
-  // Attach any orphaned nodes
-  const addedIds = new Set(nodes.map((n) => n.id));
-  rawNodes.forEach((n: any, idx: number) => {
-    if (!addedIds.has(n.id)) {
-      const orphanId = n.id || `orphan_${idx}`;
-      nodes.push({
-        ...n,
-        id: orphanId,
-        isRoot: false,
-        depth: n.depth || 2,
-        parentId: n.parentId || rootId,
-        x: n.x !== undefined ? n.x : 500,
-        y: n.y !== undefined ? n.y : 500,
-        width: n.width || 160,
-        height: n.height || 50,
-        color: n.color || '#8b5cf6',
-        emoji: n.emoji || '📌',
-      });
-      if (n.parentId && addedIds.has(n.parentId)) {
-        edges.push({
-          id: `e_${n.parentId}_${orphanId}`,
-          source: n.parentId,
-          target: orphanId,
-          color: n.color || '#8b5cf6',
-        });
-      }
-    }
-  });
-
-  // Final strict deduplication of node and edge IDs
-  const finalNodes: any[] = [];
-  const seenNodeIds = new Set<string>();
-  nodes.forEach((n, idx) => {
-    let nid = n.id ? String(n.id).trim() : `node_${idx}`;
-    let count = 1;
-    while (seenNodeIds.has(nid)) {
-      nid = `${n.id || 'node'}_dup_${count++}`;
-    }
-    seenNodeIds.add(nid);
-    finalNodes.push({ ...n, id: nid });
-  });
-
-  const finalEdges: any[] = [];
-  const seenEdgeIds = new Set<string>();
-  edges.forEach((e, idx) => {
-    let eid = e.id ? String(e.id).trim() : `e_${e.source}_${e.target}`;
-    let count = 1;
-    while (seenEdgeIds.has(eid)) {
-      eid = `${e.id || 'edge'}_dup_${count++}`;
-    }
-    seenEdgeIds.add(eid);
-    finalEdges.push({ ...e, id: eid });
-  });
-
-  onLog?.(`✨ MindMap graph generated successfully with ${finalNodes.length} nodes and ${finalEdges.length} connections!`);
+  onLog?.(`✨ MindMap graph updated successfully with ${finalNodes.length} nodes and ${finalEdges.length} connections!`);
   return { nodes: finalNodes, edges: finalEdges };
 }
 

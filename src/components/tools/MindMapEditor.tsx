@@ -465,6 +465,14 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
             targetId = nodes[num - 1].id;
           }
         }
+        if (!targetId) {
+          const promptLower = aiPrompt.trim().toLowerCase();
+          const sortedNodes = [...nodes].sort((a, b) => b.text.length - a.text.length);
+          const matched = sortedNodes.find((n) => promptLower.includes(n.text.toLowerCase().trim()));
+          if (matched) {
+            targetId = matched.id;
+          }
+        }
       }
       setActiveBuildingTargetId(targetId);
 
@@ -487,7 +495,9 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           controller.signal,
           (msg: string) => {
             addAiLog(msg, 'info');
-          }
+          },
+          edges,
+          targetId
         );
       } else {
         newGraph = await generateMindMapWithNvidia(
@@ -498,7 +508,9 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           controller.signal,
           (msg: string) => {
             addAiLog(msg, 'info');
-          }
+          },
+          edges,
+          targetId
         );
       }
 

@@ -1,4 +1,5 @@
 import { robustParseJson } from './nvidiaAi';
+import { mergeIncrementalMindMap } from './mindMapMerger';
 
 export const getGeminiApiKey = (): string => {
   if (typeof window === 'undefined') return '';
@@ -156,16 +157,19 @@ export async function generateMindMapWithGemini(
   modelId: string = 'gemini-3.8-flash',
   existingNodes: any[] = [],
   signal?: AbortSignal,
-  onLog?: (msg: string) => void
+  onLog?: (msg: string) => void,
+  existingEdges: any[] = [],
+  targetNodeId?: string | null
 ): Promise<{ nodes: any[]; edges: any[] }> {
   onLog?.(`⚡ Preparing request for Direct Google Gemini API (${modelId})...`);
 
   const systemPrompt = `You are a world-class AI Mind Map Architect.
 Your task is to take a prompt (and optional existing mindmap structure) and generate or expand a comprehensive, highly detailed hierarchical JSON mindmap graph.
 
-MANDATORY RULES:
+MANDATORY RULES FOR MAP UPGRADES & EXPANSIONS:
 1. Return ONLY a single valid JSON object. No intro, no trailing text, no markdown code blocks if possible.
-2. The JSON schema MUST be:
+2. IF AN EXISTING MINDMAP STRUCTURE IS PROVIDED: You MUST PRESERVE all existing node IDs and structure. To add new branches or expand a node, create NEW nodes with unique "id" strings and set their "parentId" to the target node's "id". Do NOT delete or rewrite existing branches.
+3. The JSON schema MUST be:
 {
   "nodes": [
     {
@@ -193,27 +197,23 @@ MANDATORY RULES:
   ]
 }
 
-3. Ensure EVERY node has a unique string "id" (e.g. node_1, node_2, node_3...).
-4. "parentId" of root node is null.
-5. Create at least 1 Root Node, 4 to 8 Level-1 Nodes, and 2 to 4 Level-2 children for each Level-1 node.
+4. Ensure EVERY node has a unique string "id" (e.g. node_1, node_2, node_3...).
+5. "parentId" of root node is null.
 6. Provide rich descriptions in "details" and bullet points in "note".
 7. Use harmonious hex color codes (e.g. #00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6).`;
 
   let userPromptText = `Generate a complete, deeply detailed mind map for topic: "${prompt}"`;
 
   if (existingNodes.length > 0) {
-    const compactNodes = existingNodes.map((n) => ({
+    const compactNodes = existingNodes.map((n, idx) => ({
+      nodeNumber: idx + 1,
       id: n.id,
       text: n.text,
       depth: n.depth,
-      parentId: n.parentId,
+      parentId: n.parentId || null,
+      isRoot: !!n.isRoot,
     }));
-    userPromptText = `Existing MindMap structure:
-${JSON.stringify(compactNodes, null, 2)}
-
-User request: "${prompt}"
-
-Upgrade, expand, and refine this mind map based on the user request. Add missing branches, improve details, and output the complete upgraded mind map JSON.`;
+    userPromptText = `EXISTING MINDMAP STRUCTURE:\n${JSON.stringify({ nodes: compactNodes }, null, 2)}\n\nUSER REQUEST: "${prompt}"\n\nTask: Expand/upgrade the mind map according to the user request. Attach new nodes under the specified target node ID (or relevant node). PRESERVE ALL EXISTING NODES. Output the nodes JSON array.`;
   }
 
   onLog?.(`📡 Dispatching request to Google Gemini API endpoint...`);
@@ -239,176 +239,15 @@ Upgrade, expand, and refine this mind map based on the user request. Add missing
     throw new Error('Google Gemini returned an invalid JSON mindmap structure.');
   }
 
-  onLog?.(`⚙️ Successfully parsed ${parsed.nodes.length} nodes from Gemini. Computing layout...`);
+  onLog?.(`⚙️ Successfully parsed ${parsed.nodes.length} nodes from Gemini. Performing incremental graph preservation & layout...`);
 
-  const nodes: any[] = [];
-  const edges: any[] = [];
-  const rawNodes = parsed.nodes;
+  const { nodes: finalNodes, edges: finalEdges } = mergeIncrementalMindMap(
+    existingNodes,
+    existingEdges,
+    parsed.nodes,
+    targetNodeId
+  );
 
-  // Pre-process rawNodes to ensure unique IDs
-  const rawSeenIds = new Set<string>();
-  rawNodes.forEach((n: any, idx: number) => {
-    let origId = n.id ? String(n.id).trim() : `node_${idx + 1}`;
-    let uniqueId = origId;
-    let count = 1;
-    while (rawSeenIds.has(uniqueId)) {
-      uniqueId = `${origId}_${count++}`;
-    }
-    rawSeenIds.add(uniqueId);
-    n.id = uniqueId;
-  });
-
-  const rootNode = rawNodes.find((n: any) => n.isRoot || n.depth === 0) || rawNodes[0];
-  const rootId = rootNode.id || 'root_main';
-  const rootX = 400;
-  const rootY = 300;
-
-  nodes.push({
-    ...rootNode,
-    id: rootId,
-    isRoot: true,
-    depth: 0,
-    parentId: null,
-    x: rootNode.x !== undefined ? rootNode.x : rootX,
-    y: rootNode.y !== undefined ? rootNode.y : rootY,
-    width: rootNode.width || 220,
-    height: rootNode.height || 64,
-    color: rootNode.color || '#00f2fe',
-    emoji: rootNode.emoji || '🧠',
-    details: rootNode.details || '',
-    note: rootNode.note || '',
-  });
-
-  const level1Nodes = rawNodes.filter((n: any) => n !== rootNode && (n.parentId === rootId || n.depth === 1));
-  const otherNodes = rawNodes.filter((n: any) => n !== rootNode && !level1Nodes.includes(n));
-
-  const totalL1 = level1Nodes.length || 1;
-  const angleStep = (2 * Math.PI) / totalL1;
-  const radius1 = 280;
-
-  level1Nodes.forEach((node: any, idx: number) => {
-    const angle = idx * angleStep - Math.PI / 2;
-    const x = node.x !== undefined ? node.x : Math.round(rootX + radius1 * Math.cos(angle));
-    const y = node.y !== undefined ? node.y : Math.round(rootY + radius1 * Math.sin(angle));
-    const nodeId = node.id || `node_l1_${idx}`;
-
-    nodes.push({
-      ...node,
-      id: nodeId,
-      isRoot: false,
-      depth: 1,
-      parentId: rootId,
-      x,
-      y,
-      width: node.width || 180,
-      height: node.height || 56,
-      color: node.color || '#ff007f',
-      emoji: node.emoji || '🚀',
-      details: node.details || '',
-      note: node.note || '',
-    });
-
-    edges.push({
-      id: `e_${rootId}_${nodeId}`,
-      source: rootId,
-      target: nodeId,
-      color: node.color || '#ff007f',
-    });
-
-    const children = otherNodes.filter((cn: any) => cn.parentId === node.id || cn.parentId === nodeId);
-    const totalChild = children.length;
-    if (totalChild > 0) {
-      const childRadius = 180;
-      const spreadAngle = Math.PI / 3;
-      const startAngle = angle - spreadAngle / 2;
-      const childStep = totalChild > 1 ? spreadAngle / (totalChild - 1) : 0;
-
-      children.forEach((child: any, cIdx: number) => {
-        const cAngle = totalChild > 1 ? startAngle + cIdx * childStep : angle;
-        const cx = child.x !== undefined ? child.x : Math.round(x + childRadius * Math.cos(cAngle));
-        const cy = child.y !== undefined ? child.y : Math.round(y + childRadius * Math.sin(cAngle));
-        const childId = child.id || `node_l2_${idx}_${cIdx}`;
-
-        nodes.push({
-          ...child,
-          id: childId,
-          isRoot: false,
-          depth: 2,
-          parentId: nodeId,
-          x: cx,
-          y: cy,
-          width: child.width || 160,
-          height: child.height || 50,
-          color: child.color || node.color || '#10b981',
-          emoji: child.emoji || '📌',
-          details: child.details || '',
-          note: child.note || '',
-        });
-
-        edges.push({
-          id: `e_${nodeId}_${childId}`,
-          source: nodeId,
-          target: childId,
-          color: child.color || node.color || '#10b981',
-        });
-      });
-    }
-  });
-
-  // Attach orphaned nodes
-  const addedIds = new Set(nodes.map((n) => n.id));
-  rawNodes.forEach((n: any, idx: number) => {
-    if (!addedIds.has(n.id)) {
-      const orphanId = n.id || `orphan_${idx}`;
-      nodes.push({
-        ...n,
-        id: orphanId,
-        isRoot: false,
-        depth: n.depth || 2,
-        parentId: n.parentId || rootId,
-        x: n.x !== undefined ? n.x : 500,
-        y: n.y !== undefined ? n.y : 500,
-        width: n.width || 160,
-        height: n.height || 50,
-        color: n.color || '#8b5cf6',
-        emoji: n.emoji || '📌',
-      });
-      if (n.parentId && addedIds.has(n.parentId)) {
-        edges.push({
-          id: `e_${n.parentId}_${orphanId}`,
-          source: n.parentId,
-          target: orphanId,
-          color: n.color || '#8b5cf6',
-        });
-      }
-    }
-  });
-
-  // Final deduplication
-  const finalNodes: any[] = [];
-  const seenNodeIds = new Set<string>();
-  nodes.forEach((n, idx) => {
-    let nid = n.id ? String(n.id).trim() : `node_${idx}`;
-    let count = 1;
-    while (seenNodeIds.has(nid)) {
-      nid = `${n.id || 'node'}_dup_${count++}`;
-    }
-    seenNodeIds.add(nid);
-    finalNodes.push({ ...n, id: nid });
-  });
-
-  const finalEdges: any[] = [];
-  const seenEdgeIds = new Set<string>();
-  edges.forEach((e, idx) => {
-    let eid = e.id ? String(e.id).trim() : `e_${e.source}_${e.target}`;
-    let count = 1;
-    while (seenEdgeIds.has(eid)) {
-      eid = `${e.id || 'edge'}_dup_${count++}`;
-    }
-    seenEdgeIds.add(eid);
-    finalEdges.push({ ...e, id: eid });
-  });
-
-  onLog?.(`✨ Google Gemini MindMap generated successfully with ${finalNodes.length} nodes & ${finalEdges.length} connections!`);
+  onLog?.(`✨ Google Gemini MindMap updated successfully with ${finalNodes.length} nodes & ${finalEdges.length} connections!`);
   return { nodes: finalNodes, edges: finalEdges };
 }
