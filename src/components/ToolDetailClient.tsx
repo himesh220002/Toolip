@@ -356,8 +356,8 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
         {/* Workspace - Halo terminal */}
         {mounted && isWorkspaceExpanded
           ? createPortal(
-            <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] bg-[#0A0F1F] flex flex-col m-0 p-0 rounded-none border-none shadow-2xl overflow-hidden">
-              <div className="relative bg-[#0A0F1F] overflow-hidden flex flex-col h-full w-full rounded-none flex-1 min-h-0">
+            <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] bg-[#0A0F1F] flex flex-col m-0 p-0 rounded-none border-none shadow-2xl overflow-y-auto">
+              <div className="relative bg-[#0A0F1F] flex flex-col min-h-screen w-full rounded-none flex-1 overflow-y-auto">
                 {/* Terminal header */}
                 <div className="flex items-center justify-between bg-gunmetal-900 border-b border-white/10 shrink-0 transition-all px-4 sm:px-10 lg:px-20 py-2 min-h-[38px]">
                   <div className="flex items-center gap-3">
@@ -390,7 +390,7 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
                 </div>
 
                 {/* Actual tool — dark armor surface so selectors stay visible */}
-                <div className="bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_textarea]:bg-[#060913] [&_textarea]:text-white [&_textarea]:border-white/10 [&_label]:text-white/60 flex-1 overflow-hidden px-4 sm:px-10 lg:px-20 py-3 flex flex-col min-h-0 h-full w-full">
+                <div className="bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_textarea]:bg-[#060913] [&_textarea]:text-white [&_textarea]:border-white/10 [&_label]:text-white/60 flex-1 overflow-y-auto px-4 sm:px-10 lg:px-20 py-3 flex flex-col min-h-0 h-full w-full">
                   <div className="max-w-none text-[15px] leading-relaxed [&_p]:text-[15px] [&_h3]:text-lg [&_h2]:text-xl flex-1 flex flex-col min-h-0 h-full w-full">
                     {renderComponent()}
                   </div>

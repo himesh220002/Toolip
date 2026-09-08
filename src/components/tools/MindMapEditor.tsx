@@ -2232,11 +2232,41 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     setDraggedNodeId(null);
   };
 
-  // Mouse Wheel Zoom & Pan Handler for Canvas Draw Area
+  // Native non-passive Wheel Zoom & Pan Handler for Canvas Draw Area
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onNativeWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('.scrollable-note, textarea, input, [contenteditable="true"], .custom-scrollbar, .note-modal-scroll')) {
+        return; // Allow mouse scrolling inside note card text containers!
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.shiftKey) {
+        setPan((p) => ({
+          x: p.x - e.deltaY,
+          y: p.y,
+        }));
+      } else {
+        const delta = e.deltaY < 0 ? 1.1 : 0.9;
+        setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+      }
+    };
+
+    container.addEventListener('wheel', onNativeWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onNativeWheel);
+    };
+  }, []);
+
   const handleCanvasWheel = (e: React.WheelEvent) => {
     const target = e.target as HTMLElement | null;
-    if (target && target.closest('.scrollable-note, textarea, .overflow-y-auto, [contenteditable="true"]')) {
-      return; // Allow mouse scrolling inside note card text containers!
+    if (target && target.closest('.scrollable-note, textarea, input, [contenteditable="true"], .custom-scrollbar, .note-modal-scroll')) {
+      return;
     }
 
     e.preventDefault();
@@ -2245,7 +2275,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     if (e.shiftKey) {
       setPan((p) => ({
         x: p.x - e.deltaY,
-        y: p.y
+        y: p.y,
       }));
     } else {
       const delta = e.deltaY < 0 ? 1.1 : 0.9;
