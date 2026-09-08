@@ -213,17 +213,17 @@ MANDATORY RULES FOR MAP UPGRADES & EXPANSIONS:
       .filter((n) => n.parentId === targetNode.id)
       .map((n) => n.text);
 
-    userPromptText = `MAP UPGRADE REQUEST:
-- TARGET PARENT NODE TO EXPAND: "${targetNode.text}" (ID: "${targetNode.id}")
+    userPromptText = `MAP UPGRADE / NOTE EDIT REQUEST:
+- TARGET NODE TO MODIFY: "${targetNode.text}" (ID: "${targetNode.id}")
 - Current Sub-Items under Target Node: ${JSON.stringify(targetChildrenTitles)}
 
 USER PROMPT: "${prompt}"
 
 CRITICAL GENERATION RULES:
-1. Generate ONLY 4 to 8 BRAND NEW sub-nodes to extend the target parent node "${targetNode.text}".
-2. Set "parentId": "${targetNode.id}" on every new node (or set parentId to one of your newly generated node IDs if creating multi-level sub-branches).
-3. DO NOT INCLUDE OR REPEAT EXISTING NODES (${JSON.stringify(targetChildrenTitles)}). Do NOT output root or ancestor nodes. Output ONLY the new nodes array.
-4. Each new node MUST have: unique string "id" (e.g. "new_1", "new_2"), "text" (specific title), "parentId" ("${targetNode.id}"), "emoji", "color", "details", and "note".
+1. IF USER ASKS TO EXPAND THE NODE: Generate 4 to 8 BRAND NEW sub-nodes attached under parentId: "${targetNode.id}".
+2. IF USER ASKS TO WRITE/EDIT NOTES, DETAILS, OR ACCEPTANCE CRITERIA FOR "${targetNode.text}": Include a node entry for "${targetNode.text}" (id: "${targetNode.id}") with comprehensive, rich "details" breakdown and bullet points in "note" (or "notes" array). You may also generate sub-nodes if requested.
+3. DO NOT INCLUDE OR REPEAT UNCHANGED EXISTING NODES. Output ONLY the target node or new sub-nodes array.
+4. Each node MUST have: unique string "id", "text", "parentId", "emoji", "color", "details", and "note".
 5. Return ONLY a valid JSON object matching: {"nodes": [...]}.`;
   }
 

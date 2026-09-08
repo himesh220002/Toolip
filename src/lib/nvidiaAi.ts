@@ -599,30 +599,29 @@ JSON Schema:
 {
   "nodes": [
     {
-      "id": "new_1",
-      "text": "Subtopic Title",
+      "id": "node_1",
+      "text": "Node Title",
       "parentId": "target_id",
       "emoji": "🚀",
       "color": "#ff007f",
       "depth": 1,
-      "details": "Details about subtopic",
-      "note": "Notes about subtopic"
+      "details": "Comprehensive details, breakdown, acceptance criteria, or technical specs",
+      "note": "Sub-notes or bullet point specs"
     }
   ]
 }
 
 Rules:
-1. IF EXPANDING AN EXISTING TARGET NODE:
-   - Generate ONLY 4 to 8 BRAND NEW, highly detailed sub-nodes with "parentId" set to the target node's "id" (or a new sub-item's id).
-   - Do NOT output existing ancestor nodes, root nodes, or existing sub-items. Output ONLY the array of new nodes being added.
-2. IF NO EXISTING STRUCTURE IS PROVIDED: Create a fresh mind map with 1 root node and 3 to 6 main sub-branches (depth: 1) and sub-items (depth: 2).
-3. Assign appropriate emojis (e.g. 🧠, 💡, 🚀, 🎯, 🎨, 💻, ⚡, 🔥, 🏆, 📌) to every node.
-4. Assign vibrant hex colors from this palette (#00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6, #ff5722) based on branch themes.
-5. Provide informative "details" and "note" content for each node.
-6. CRITICAL JSON RULES: Use double quotes for all JSON keys/strings. Never include trailing commas before closing braces/brackets. Return ONLY the raw JSON string matching the schema.`;
+1. IF EXPANDING AN EXISTING TARGET NODE: Generate 4 to 8 BRAND NEW, highly detailed sub-nodes with "parentId" set to the target node's "id" (or a new sub-item's id).
+2. IF WRITING/EDITING NOTES OR DETAILS FOR A SPECIFIC NODE: Return an entry for that node with updated "details" and "note" content (and optional new sub-nodes if requested).
+3. Do NOT output existing unchanged ancestor nodes or root nodes.
+4. Assign appropriate emojis (e.g. 🧠, 💡, 🚀, 🎯, 🎨, 💻, ⚡, 🔥, 🏆, 📌) to every node.
+5. Assign vibrant hex colors from this palette (#00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6, #ff5722) based on branch themes.
+6. Provide informative "details" and "note" content for each node.
+7. CRITICAL JSON RULES: Use double quotes for all JSON keys/strings. Never include trailing commas before closing braces/brackets. Return ONLY the raw JSON string matching the schema.`;
 
   const userPromptText = hasExistingMap
-    ? `${existingContext}USER PROMPT: "${prompt}"\n\nTask: Generate ONLY 4 to 8 BRAND NEW sub-nodes attaching under parentId specified above. Do NOT include existing nodes. Output the nodes JSON array.`
+    ? `${existingContext}USER PROMPT: "${prompt}"\n\nTask: Fulfill user prompt by generating new sub-nodes OR updating "details" and "note" on target node. Do NOT include unchanged existing nodes. Output the nodes JSON array.`
     : `Generate a mindmap for: ${prompt}`;
 
   const isOllamaModel = selectedModel.startsWith('ollama/');
