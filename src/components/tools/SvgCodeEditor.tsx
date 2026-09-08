@@ -133,6 +133,12 @@ export const SvgCodeEditor: React.FC = () => {
     setTimeout(() => setNoticeMsg(''), 2500);
   };
 
+  // Hydration state tracking
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // NVIDIA BYOK AI Logo Generator State
   const [isNvidiaAiModalOpen, setIsNvidiaAiModalOpen] = useState(false);
   const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState(() => getNvidiaApiKey());
@@ -897,7 +903,7 @@ export const SvgCodeEditor: React.FC = () => {
               title="Configure NVIDIA BYOK API Key"
             >
               <Lock className="h-3 w-3 text-emerald-400" />
-              <span>{nvidiaApiKeyInput ? 'Key Saved ⚙️' : 'Set Key 🔑'}</span>
+              <span>{mounted && nvidiaApiKeyInput ? 'Key Saved ⚙️' : 'Set Key 🔑'}</span>
             </button>
           </div>
         </div>

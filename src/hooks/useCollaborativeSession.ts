@@ -100,8 +100,8 @@ export function useCollaborativeSession({
     setIsHydrating(true);
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/rooms/${targetRoomId}`);
-      if (res.ok) {
+      const res = await fetch(`${backendUrl}/api/rooms/${targetRoomId}`).catch(() => null);
+      if (res && res.ok) {
         const json = await res.json();
         if (json.room) {
           setRoomTitle(json.room.title || 'Shared Workspace');
@@ -113,7 +113,7 @@ export function useCollaborativeSession({
         }
       }
     } catch (e) {
-      console.warn('Failed to fetch room state from backend server', e);
+      // Quiet fallback when server is starting up
     } finally {
       setIsHydrating(false);
     }
@@ -150,15 +150,15 @@ export function useCollaborativeSession({
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const url = `${backendUrl}/api/rooms/user/my-rooms?ownerId=${targetOwner}&toolId=${toolId}&roomIds=${localRoomIdsStr}`;
-      const res = await fetch(url);
-      if (res.ok) {
+      const res = await fetch(url).catch(() => null);
+      if (res && res.ok) {
         const json = await res.json();
         if (Array.isArray(json.rooms)) {
           setUserRooms(json.rooms);
         }
       }
     } catch (e) {
-      console.warn('Failed to fetch user rooms', e);
+      // Quiet fallback when server is offline
     }
   }, [authUser, toolId]);
 

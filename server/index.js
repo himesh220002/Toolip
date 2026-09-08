@@ -384,6 +384,18 @@ app.post('/api/nvidia/generate', async (req, res) => {
   }
 });
 
+httpServer.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    const fallbackPort = Number(PORT) + 1;
+    console.warn(`⚠️ Port ${PORT} is in use. Falling back to port ${fallbackPort}...`);
+    httpServer.listen(fallbackPort, () => {
+      console.log(`🚀 Express & Socket.io server running on http://localhost:${fallbackPort}`);
+    });
+  } else {
+    console.error('Server error:', err);
+  }
+});
+
 httpServer.listen(PORT, () => {
   console.log(`🚀 Express & Socket.io server running on http://localhost:${PORT}`);
 });

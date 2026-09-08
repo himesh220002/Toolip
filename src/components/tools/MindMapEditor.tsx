@@ -46,13 +46,20 @@ import {
   Shield,
   Lock,
   GitCommit,
-  GitBranch
+  GitBranch,
+  User,
+  Globe,
+  Square,
+  Terminal
 } from 'lucide-react';
 import { useCollaborativeSession } from '../../hooks/useCollaborativeSession';
 import { ShareModal } from '../collaboration/ShareModal';
 import { LogTableModal } from '../collaboration/LogTableModal';
 import {
   NVIDIA_MODELS,
+  CLOUD_NVIDIA_MODELS,
+  LOCAL_OLLAMA_MODELS,
+  checkOllamaHealth,
   getNvidiaApiKey,
   setNvidiaApiKey,
   getNvidiaSelectedModel,
@@ -217,12 +224,42 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   // Reset confirmation state
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
+  // SSR Hydration state tracking
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    const key = getNvidiaApiKey();
+    if (key) {
+      setNvidiaApiKeyInput(key);
+    }
+    const savedModel = getNvidiaSelectedModel();
+    if (savedModel) {
+      setSelectedNvidiaModel(savedModel);
+    }
+  }, []);
+
+  // Local Ollama Service Health & Installed Models State
+  const [isOllamaActive, setIsOllamaActive] = useState(false);
+  const [installedOllamaModels, setInstalledOllamaModels] = useState<string[]>([]);
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      const { active, models } = await checkOllamaHealth();
+      setIsOllamaActive(active);
+      setInstalledOllamaModels(models);
+    };
+    checkHealth();
+    const interval = setInterval(checkHealth, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
   // NVIDIA BYOK AI Generator State
   const [isNvidiaAiModalOpen, setIsNvidiaAiModalOpen] = useState(false);
-  const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState(() => getNvidiaApiKey());
-  const [selectedNvidiaModel, setSelectedNvidiaModel] = useState(() => getNvidiaSelectedModel());
+  const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState('');
+  const [selectedNvidiaModel, setSelectedNvidiaModel] = useState('deepseek-ai/deepseek-v4-pro-0813');
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [activeBuildingTargetId, setActiveBuildingTargetId] = useState<string | null>(null);
   const [aiErrorMsg, setAiErrorMsg] = useState<string | null>(null);
 
   const handleSaveNvidiaKey = (key: string) => {
@@ -236,26 +273,158 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     setNvidiaSelectedModel(modelId);
   };
 
+  // Stop Building & 1-Step Snapshot Revert State
+  const previousGraphSnapshotRef = useRef<{ nodes: MindNode[]; edges: MindEdge[] } | null>(null);
+  const aiAbortControllerRef = useRef<AbortController | null>(null);
+  const [isStopConfirmModalOpen, setIsStopConfirmModalOpen] = useState(false);
+
+  // Real-time Thinking & Working AI Log State
+  interface AiLogEntry {
+    id: string;
+    timestamp: string;
+    text: string;
+    type: 'info' | 'success' | 'warn' | 'error';
+  }
+
+  const [aiLogs, setAiLogs] = useState<AiLogEntry[]>([]);
+  const [isLogExpanded, setIsLogExpanded] = useState(false);
+  const [showAiLogPanel, setShowAiLogPanel] = useState(false);
+  const logAutoShrinkTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const logContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const addAiLog = useCallback((text: string, type: 'info' | 'success' | 'warn' | 'error' = 'info') => {
+    const now = new Date();
+    const timestamp = now.toTimeString().split(' ')[0];
+    const entry: AiLogEntry = {
+      id: `${Date.now()}_${Math.random()}`,
+      timestamp,
+      text,
+      type,
+    };
+    setAiLogs((prev) => {
+      const isTicker = text.startsWith('⚡ [Live Stream') || text.startsWith('🧠 [Thinking');
+      if (isTicker && prev.length > 0) {
+        const last = prev[prev.length - 1];
+        if (last.text.startsWith('⚡ [Live Stream') || last.text.startsWith('🧠 [Thinking')) {
+          return [...prev.slice(0, prev.length - 1), entry];
+        }
+      }
+      return [...prev, entry];
+    });
+    setTimeout(() => {
+      if (logContainerRef.current) {
+        logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+      }
+    }, 50);
+  }, []);
+
+  const handleStopBuilding = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (aiAbortControllerRef.current) {
+      aiAbortControllerRef.current.abort();
+      aiAbortControllerRef.current = null;
+    }
+    setIsAiGenerating(false);
+    setIsNvidiaAiModalOpen(false);
+    addAiLog('🛑 AI generation stopped by user.', 'warn');
+    setIsStopConfirmModalOpen(true);
+
+    if (logAutoShrinkTimerRef.current) clearTimeout(logAutoShrinkTimerRef.current);
+    logAutoShrinkTimerRef.current = setTimeout(() => {
+      setIsLogExpanded(false);
+    }, 2000);
+  };
+
+  const handleKeepPartialState = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsStopConfirmModalOpen(false);
+    showNotification('Kept active mind map state');
+  };
+
+  const handleRevertPreviousState = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (previousGraphSnapshotRef.current) {
+      setNodes(previousGraphSnapshotRef.current.nodes);
+      setEdges(previousGraphSnapshotRef.current.edges);
+      if (roomId) {
+        broadcastStateUpdate({
+          nodes: previousGraphSnapshotRef.current.nodes,
+          edges: previousGraphSnapshotRef.current.edges,
+        });
+      }
+    }
+    setIsStopConfirmModalOpen(false);
+    showNotification('↺ Reverted mind map back 1 step to previous state');
+  };
+
   const handleGenerateAiMindMap = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!aiPrompt.trim()) {
       setAiErrorMsg('Please enter a topic or prompt for AI generation');
       return;
     }
-    if (!nvidiaApiKeyInput.trim()) {
-      setAiErrorMsg('NVIDIA API Key required. Please enter your BYOK key (nvapi-...).');
+    const isLocalModel = selectedNvidiaModel.startsWith('ollama/');
+    if (!isLocalModel && !nvidiaApiKeyInput.trim()) {
+      setAiErrorMsg('NVIDIA API Key required for Cloud Models. Please enter your BYOK key (nvapi-...).');
       return;
     }
 
     setAiErrorMsg(null);
     setIsAiGenerating(true);
 
+    if (logAutoShrinkTimerRef.current) {
+      clearTimeout(logAutoShrinkTimerRef.current);
+      logAutoShrinkTimerRef.current = null;
+    }
+    setAiLogs([]);
+    setShowAiLogPanel(true);
+    setIsLogExpanded(true);
+    addAiLog(`🚀 Starting AI MindMap generation for prompt: "${aiPrompt.trim()}"`, 'info');
+
     try {
       handleSaveNvidiaKey(nvidiaApiKeyInput);
+      const isUpgrading = nodes.length > 0;
+
+      // Lock building target node ID for this entire generation run
+      let targetId: string | null = selectedNodeId;
+      if (!targetId && nodes.length > 0) {
+        const match = aiPrompt.trim().match(/node\s*#?\s*(\d+)/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num >= 1 && num <= nodes.length) {
+            targetId = nodes[num - 1].id;
+          }
+        }
+      }
+      setActiveBuildingTargetId(targetId);
+
+      // Save 1-step snapshot before AI generation starts
+      previousGraphSnapshotRef.current = {
+        nodes: JSON.parse(JSON.stringify(nodes)),
+        edges: JSON.parse(JSON.stringify(edges)),
+      };
+
+      const controller = new AbortController();
+      aiAbortControllerRef.current = controller;
+
       const { nodes: newNodes, edges: newEdges } = await generateMindMapWithNvidia(
         aiPrompt.trim(),
         nvidiaApiKeyInput.trim(),
-        selectedNvidiaModel
+        selectedNvidiaModel,
+        nodes,
+        controller.signal,
+        (msg: string) => {
+          addAiLog(msg, 'info');
+        }
       );
 
       setSelectedNodeId(null);
@@ -267,14 +436,41 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         broadcastStateUpdate({ nodes: newNodes, edges: newEdges });
       }
 
-      showNotification('✨ AI MindMap successfully generated with NVIDIA NIM!');
+      const successText = isUpgrading
+        ? '✨ Upgraded existing MindMap structure with NVIDIA AI!'
+        : '✨ AI MindMap successfully generated with NVIDIA NIM!';
+      addAiLog(successText, 'success');
+      showNotification(successText);
       setIsNvidiaAiModalOpen(false);
       setAiPrompt('');
+
+      if (logAutoShrinkTimerRef.current) clearTimeout(logAutoShrinkTimerRef.current);
+      logAutoShrinkTimerRef.current = setTimeout(() => {
+        setIsLogExpanded(false);
+      }, 2000);
     } catch (err: any) {
-      console.error('NVIDIA AI Generation error:', err);
-      setAiErrorMsg(err.message || 'Failed to generate mindmap with NVIDIA AI');
+      const isAbort =
+        err.name === 'AbortError' ||
+        err.message?.toLowerCase().includes('cancelled') ||
+        err.message?.toLowerCase().includes('aborted') ||
+        err.message?.toLowerCase().includes('abort');
+
+      if (isAbort) {
+        addAiLog('🛑 AI generation cancelled by user.', 'warn');
+      } else {
+        console.error('NVIDIA AI Generation error:', err);
+        addAiLog(`❌ Error: ${err.message || 'AI Generation Failed'}`, 'error');
+        setAiErrorMsg(err.message || 'Failed to generate mindmap with NVIDIA AI');
+      }
+
+      if (logAutoShrinkTimerRef.current) clearTimeout(logAutoShrinkTimerRef.current);
+      logAutoShrinkTimerRef.current = setTimeout(() => {
+        setIsLogExpanded(false);
+      }, 2000);
     } finally {
       setIsAiGenerating(false);
+      setActiveBuildingTargetId(null);
+      aiAbortControllerRef.current = null;
     }
   };
 
@@ -489,7 +685,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     };
   }, [isEmojiModalOpen]);
 
-  // Native non-passive wheel listener to stop page scroll when zooming canvas
+  // Native non-passive wheel listener to stop page scroll when zooming/panning canvas
   useEffect(() => {
     const canvasEl = containerRef.current;
     if (!canvasEl) return;
@@ -502,15 +698,23 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
       e.preventDefault();
       e.stopPropagation();
-      const delta = e.deltaY < 0 ? 1.1 : 0.9;
-      setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+
+      if (e.shiftKey) {
+        setPan((p) => ({
+          x: p.x - e.deltaY,
+          y: p.y
+        }));
+      } else {
+        const delta = e.deltaY < 0 ? 1.1 : 0.9;
+        setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+      }
     };
 
     canvasEl.addEventListener('wheel', handleNativeWheel, { passive: false });
     return () => {
       canvasEl.removeEventListener('wheel', handleNativeWheel);
     };
-  }, []);
+  });
 
   // Active Note Popover & Dropdown State
   const [activeNoteNodeId, setActiveNoteNodeId] = useState<string | null>(null);
@@ -964,6 +1168,330 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     setEdges(defaultEdges);
   };
 
+  const loadProfileSampleMap = () => {
+    const profileNodes: MindNode[] = [
+      // Root Node: Personal Profile
+      {
+        id: 'prof_root',
+        text: 'Personal Profile',
+        x: 0,
+        y: 0,
+        width: 240,
+        height: 72,
+        isRoot: true,
+        depth: 0,
+        emoji: '👤',
+        color: '#00f2fe',
+        details: 'Comprehensive Personal Profile covering Motive, Education, Experience, Skills, and Hobbies.',
+        note: 'Main profile hub.',
+      },
+
+      // Branch 1: Motive & Objectives (Top-Left)
+      {
+        id: 'prof_motive',
+        text: 'Motive & Objectives',
+        x: -340,
+        y: -220,
+        width: 200,
+        height: 56,
+        depth: 1,
+        emoji: '🎯',
+        color: '#10b981',
+        parentId: 'prof_root',
+        details: 'Career motivation, vision, and long-term professional aspirations.',
+        note: 'Driven by technology innovation and continuous learning.',
+      },
+      {
+        id: 'prof_motive_1',
+        text: 'Career Vision & Goals',
+        x: -590,
+        y: -300,
+        width: 180,
+        height: 50,
+        depth: 2,
+        emoji: '🚀',
+        color: '#10b981',
+        parentId: 'prof_motive',
+        details: 'Building scalable software systems & leading technical teams.',
+      },
+      {
+        id: 'prof_motive_2',
+        text: 'Core Values & Purpose',
+        x: -590,
+        y: -220,
+        width: 180,
+        height: 50,
+        depth: 2,
+        emoji: '💡',
+        color: '#10b981',
+        parentId: 'prof_motive',
+        details: 'Integrity, impact-driven engineering, and user empathy.',
+      },
+      {
+        id: 'prof_motive_3',
+        text: 'Passion & Growth Mindset',
+        x: -590,
+        y: -140,
+        width: 190,
+        height: 50,
+        depth: 2,
+        emoji: '🔥',
+        color: '#10b981',
+        parentId: 'prof_motive',
+        details: 'Passionate about solving complex real-world problems.',
+      },
+
+      // Branch 2: Education & Qualifications (Top-Right)
+      {
+        id: 'prof_edu',
+        text: 'Education & Qualifications',
+        x: 340,
+        y: -220,
+        width: 220,
+        height: 56,
+        depth: 1,
+        emoji: '🎓',
+        color: '#3b82f6',
+        parentId: 'prof_root',
+        details: 'Academic degrees, certifications, and specialized coursework.',
+      },
+      {
+        id: 'prof_edu_1',
+        text: 'Computer Science Degree',
+        x: 600,
+        y: -300,
+        width: 190,
+        height: 50,
+        depth: 2,
+        emoji: '📜',
+        color: '#3b82f6',
+        parentId: 'prof_edu',
+        details: 'Bachelor of Science / Technology in Computer Engineering.',
+      },
+      {
+        id: 'prof_edu_2',
+        text: 'Certifications & Courses',
+        x: 600,
+        y: -220,
+        width: 190,
+        height: 50,
+        depth: 2,
+        emoji: '🎖️',
+        color: '#3b82f6',
+        parentId: 'prof_edu',
+        details: 'Cloud certifications, System Architecture, & AI/ML specialization.',
+      },
+      {
+        id: 'prof_edu_3',
+        text: 'Academic Projects & Thesis',
+        x: 600,
+        y: -140,
+        width: 200,
+        height: 50,
+        depth: 2,
+        emoji: '🔬',
+        color: '#3b82f6',
+        parentId: 'prof_edu',
+        details: 'Capstone research on distributed state management.',
+      },
+
+      // Branch 3: Experience & Work History (Mid-Left)
+      {
+        id: 'prof_exp',
+        text: 'Work Experience',
+        x: -380,
+        y: 60,
+        width: 190,
+        height: 56,
+        depth: 1,
+        emoji: '💼',
+        color: '#8b5cf6',
+        parentId: 'prof_root',
+        details: 'Professional employment history, key responsibilities, and achievements.',
+      },
+      {
+        id: 'prof_exp_1',
+        text: 'Software Developer Roles',
+        x: -630,
+        y: -20,
+        width: 190,
+        height: 50,
+        depth: 2,
+        emoji: '👨‍💻',
+        color: '#8b5cf6',
+        parentId: 'prof_exp',
+        details: 'Full-Stack Engineer building real-time collaboration platforms.',
+      },
+      {
+        id: 'prof_exp_2',
+        text: 'Key Impact & Projects',
+        x: -630,
+        y: 60,
+        width: 190,
+        height: 50,
+        depth: 2,
+        emoji: '🏆',
+        color: '#8b5cf6',
+        parentId: 'prof_exp',
+        details: 'Optimized performance by 40% & engineered live canvas sync.',
+      },
+      {
+        id: 'prof_exp_3',
+        text: 'Team Leadership & Mentorship',
+        x: -630,
+        y: 140,
+        width: 210,
+        height: 50,
+        depth: 2,
+        emoji: '📈',
+        color: '#8b5cf6',
+        parentId: 'prof_exp',
+        details: 'Mentored team members and led agile product execution.',
+      },
+
+      // Branch 4: Technical & Soft Skills (Mid-Right)
+      {
+        id: 'prof_skills',
+        text: 'Skills & Competencies',
+        x: 380,
+        y: 60,
+        width: 200,
+        height: 56,
+        depth: 1,
+        emoji: '⚡',
+        color: '#f59e0b',
+        parentId: 'prof_root',
+        details: 'Technical stack, tools, frameworks, and interpersonal skills.',
+      },
+      {
+        id: 'prof_skills_1',
+        text: 'Frontend & UI Engineering',
+        x: 630,
+        y: -20,
+        width: 200,
+        height: 50,
+        depth: 2,
+        emoji: '💻',
+        color: '#f59e0b',
+        parentId: 'prof_skills',
+        details: 'React, Next.js, TypeScript, Tailwind CSS, SVG manipulation.',
+      },
+      {
+        id: 'prof_skills_2',
+        text: 'Backend & Cloud Systems',
+        x: 630,
+        y: 60,
+        width: 190,
+        height: 50,
+        depth: 2,
+        emoji: '🛠️',
+        color: '#f59e0b',
+        parentId: 'prof_skills',
+        details: 'Node.js, Express, WebSockets, MongoDB, NVIDIA AI APIs.',
+      },
+      {
+        id: 'prof_skills_3',
+        text: 'Soft Skills & Collaboration',
+        x: 630,
+        y: 140,
+        width: 200,
+        height: 50,
+        depth: 2,
+        emoji: '🤝',
+        color: '#f59e0b',
+        parentId: 'prof_skills',
+        details: 'Problem solving, communication, agile development.',
+      },
+
+      // Branch 5: Hobbies & Personal Interests (Bottom-Center)
+      {
+        id: 'prof_hobbies',
+        text: 'Hobbies & Interests',
+        x: 0,
+        y: 260,
+        width: 210,
+        height: 56,
+        depth: 1,
+        emoji: '🎨',
+        color: '#ff007f',
+        parentId: 'prof_root',
+        details: 'Extracurricular pursuits, creative arts, and wellness.',
+      },
+      {
+        id: 'prof_hobbies_1',
+        text: 'Creative Arts & UI Design',
+        x: -250,
+        y: 370,
+        width: 190,
+        height: 50,
+        depth: 2,
+        emoji: '🖌️',
+        color: '#ff007f',
+        parentId: 'prof_hobbies',
+        details: 'Digital illustration, UI prototyping, and vector art.',
+      },
+      {
+        id: 'prof_hobbies_2',
+        text: 'Sports & Fitness',
+        x: 0,
+        y: 370,
+        width: 170,
+        height: 50,
+        depth: 2,
+        emoji: '⚽',
+        color: '#ff007f',
+        parentId: 'prof_hobbies',
+        details: 'Cycling, soccer, and outdoor adventure.',
+      },
+      {
+        id: 'prof_hobbies_3',
+        text: 'Open Source & Mentoring',
+        x: 250,
+        y: 370,
+        width: 200,
+        height: 50,
+        depth: 2,
+        emoji: '🌱',
+        color: '#ff007f',
+        parentId: 'prof_hobbies',
+        details: 'Contributing to open source software and community building.',
+      },
+    ];
+
+    const profileEdges: MindEdge[] = [
+      { id: 'pe_0', source: 'prof_root', target: 'prof_motive', color: '#10b981' },
+      { id: 'pe_1', source: 'prof_motive', target: 'prof_motive_1', color: '#10b981' },
+      { id: 'pe_2', source: 'prof_motive', target: 'prof_motive_2', color: '#10b981' },
+      { id: 'pe_3', source: 'prof_motive', target: 'prof_motive_3', color: '#10b981' },
+
+      { id: 'pe_4', source: 'prof_root', target: 'prof_edu', color: '#3b82f6' },
+      { id: 'pe_5', source: 'prof_edu', target: 'prof_edu_1', color: '#3b82f6' },
+      { id: 'pe_6', source: 'prof_edu', target: 'prof_edu_2', color: '#3b82f6' },
+      { id: 'pe_7', source: 'prof_edu', target: 'prof_edu_3', color: '#3b82f6' },
+
+      { id: 'pe_8', source: 'prof_root', target: 'prof_exp', color: '#8b5cf6' },
+      { id: 'pe_9', source: 'prof_exp', target: 'prof_exp_1', color: '#8b5cf6' },
+      { id: 'pe_10', source: 'prof_exp', target: 'prof_exp_2', color: '#8b5cf6' },
+      { id: 'pe_11', source: 'prof_exp', target: 'prof_exp_3', color: '#8b5cf6' },
+
+      { id: 'pe_12', source: 'prof_root', target: 'prof_skills', color: '#f59e0b' },
+      { id: 'pe_13', source: 'prof_skills', target: 'prof_skills_1', color: '#f59e0b' },
+      { id: 'pe_14', source: 'prof_skills', target: 'prof_skills_2', color: '#f59e0b' },
+      { id: 'pe_15', source: 'prof_skills', target: 'prof_skills_3', color: '#f59e0b' },
+
+      { id: 'pe_16', source: 'prof_root', target: 'prof_hobbies', color: '#ff007f' },
+      { id: 'pe_17', source: 'prof_hobbies', target: 'prof_hobbies_1', color: '#ff007f' },
+      { id: 'pe_18', source: 'prof_hobbies', target: 'prof_hobbies_2', color: '#ff007f' },
+      { id: 'pe_19', source: 'prof_hobbies', target: 'prof_hobbies_3', color: '#ff007f' },
+    ];
+
+    setNodes(profileNodes);
+    setEdges(profileEdges);
+    setPan({ x: 400, y: 300 });
+    setZoom(0.9);
+    showNotification('Loaded Profile Mind Map (Motive, Education, Experience, Skill, Hobbies)');
+  };
+
   // Initial Load from localStorage, backend API, or default sample
   useEffect(() => {
     // If a room is active in URL query or local room key, skip overwriting canvas with local storage!
@@ -1088,8 +1616,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     showNotification('Reset mind map to default sample map!');
   };
 
-  // Auto-Arrange & Beautify Mind Map Layout
-  const handleAutoArrangeGraph = () => {
+  // Auto-Arrange & Beautify Mind Map Layout (Horizontal or Free 360° Radial)
+  const handleAutoArrangeGraph = (mode: 'horizontal' | 'radial' = 'horizontal') => {
     if (nodes.length === 0) return;
 
     // Identify root nodes (nodes marked isRoot, nodes with no parentId, or nodes whose parentId doesn't exist)
@@ -1107,101 +1635,297 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     const getChildren = (parentId: string) =>
       updatedNodes.filter((n) => n.parentId === parentId && n.id !== parentId);
 
-    // Recursive helper to calculate total subtree height needed
-    const getSubtreeHeight = (nodeId: string): number => {
-      const children = getChildren(nodeId);
-      if (children.length === 0) return 76; // Base height per node
-      let h = 0;
-      children.forEach((c) => {
-        h += getSubtreeHeight(c.id);
-      });
-      return Math.max(76, h);
+    // Dynamic node height helper with safety margin
+    const getNodeHeight = (nodeId: string) => {
+      const n = updatedNodes.find((item) => item.id === nodeId);
+      return (n?.height || 56) + 32; // 32px vertical gap
     };
 
-    // Recursive subtree placer
-    const layoutSubtree = (nodeId: string, startX: number, startY: number, depth: number, dir: 'left' | 'right') => {
-      const idx = updatedNodes.findIndex((n) => n.id === nodeId);
-      if (idx !== -1) {
-        updatedNodes[idx] = {
-          ...updatedNodes[idx],
-          x: startX,
-          y: startY,
-          depth: depth,
-          isRoot: false
-        };
-      }
-
-      const children = getChildren(nodeId);
-      if (children.length === 0) return;
-
-      const totalHeight = children.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
-      let currentY = startY - totalHeight / 2 + 38;
-
-      children.forEach((child) => {
-        const cHeight = getSubtreeHeight(child.id);
-        const cY = currentY + cHeight / 2 - 38;
-        const nextX = dir === 'right' ? startX + 240 : startX - 240;
-        layoutSubtree(child.id, nextX, cY, depth + 1, dir);
-        currentY += cHeight;
-      });
+    // Dynamic node width helper with safety margin
+    const getNodeWidth = (nodeId: string) => {
+      const n = updatedNodes.find((item) => item.id === nodeId);
+      return (n?.width || 180) + 40; // 40px horizontal gap
     };
 
-    let currentRootY = 0;
+    if (mode === 'radial') {
+      // --- FREE 360° RADIAL ALL-DIRECTIONS ARRANGEMENT ---
+      let rootOffsetY = 0;
 
-    rootNodes.forEach((root) => {
-      const rootIdx = updatedNodes.findIndex((n) => n.id === root.id);
-      if (rootIdx !== -1) {
-        updatedNodes[rootIdx] = {
-          ...updatedNodes[rootIdx],
-          x: 0,
-          y: currentRootY,
-          depth: 0,
-          isRoot: true
+      rootNodes.forEach((root) => {
+        const rootIdx = updatedNodes.findIndex((n) => n.id === root.id);
+        if (rootIdx !== -1) {
+          updatedNodes[rootIdx] = {
+            ...updatedNodes[rootIdx],
+            x: 0,
+            y: rootOffsetY,
+            depth: 0,
+            isRoot: true,
+          };
+        }
+
+        const level1 = getChildren(root.id);
+        const count = level1.length;
+        if (count === 0) return;
+
+        const baseRadius = Math.max(340, 240 + count * 18);
+        const angleStep = (2 * Math.PI) / count;
+
+        const layoutRadialSubtree = (
+          nodeId: string,
+          centerX: number,
+          centerY: number,
+          parentAngle: number,
+          depth: number
+        ) => {
+          const children = getChildren(nodeId);
+          if (children.length === 0) return;
+
+          const numChildren = children.length;
+          const fanAngle = Math.min(Math.PI / 1.8, (Math.PI / 3) * Math.max(1, numChildren / 2.5));
+          const startAngle = parentAngle - fanAngle / 2;
+          const stepAngle = numChildren > 1 ? fanAngle / (numChildren - 1) : 0;
+          const childRadius = Math.max(240, 190 + numChildren * 14);
+
+          children.forEach((child, i) => {
+            const childAngle = numChildren === 1 ? parentAngle : startAngle + i * stepAngle;
+            const cx = centerX + Math.cos(childAngle) * childRadius;
+            const cy = centerY + Math.sin(childAngle) * childRadius;
+
+            const cIdx = updatedNodes.findIndex((n) => n.id === child.id);
+            if (cIdx !== -1) {
+              updatedNodes[cIdx] = {
+                ...updatedNodes[cIdx],
+                x: cx,
+                y: cy,
+                depth: depth,
+                isRoot: false,
+              };
+            }
+
+            layoutRadialSubtree(child.id, cx, cy, childAngle, depth + 1);
+          });
         };
-      }
 
-      const children = getChildren(root.id);
-      if (children.length > 0) {
-        const rightChildren = children.filter((_, idx) => idx % 2 === 0);
-        const leftChildren = children.filter((_, idx) => idx % 2 === 1);
+        level1.forEach((child, i) => {
+          const angle = i * angleStep - Math.PI / 2; // Start top
+          const cx = Math.cos(angle) * baseRadius;
+          const cy = rootOffsetY + Math.sin(angle) * baseRadius;
 
-        // Right Wing Layout
-        const totalRightHeight = rightChildren.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
-        let startRightY = currentRootY - totalRightHeight / 2 + 38;
+          const cIdx = updatedNodes.findIndex((n) => n.id === child.id);
+          if (cIdx !== -1) {
+            updatedNodes[cIdx] = {
+              ...updatedNodes[cIdx],
+              x: cx,
+              y: cy,
+              depth: 1,
+              isRoot: false,
+            };
+          }
 
-        rightChildren.forEach((child) => {
-          const childHeight = getSubtreeHeight(child.id);
-          const childY = startRightY + childHeight / 2 - 38;
-          layoutSubtree(child.id, 280, childY, 1, 'right');
-          startRightY += childHeight;
+          layoutRadialSubtree(child.id, cx, cy, angle, 2);
         });
 
-        // Left Wing Layout
-        const totalLeftHeight = leftChildren.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
-        let startLeftY = currentRootY - totalLeftHeight / 2 + 38;
+        rootOffsetY += baseRadius * 2 + 350;
+      });
+    } else {
+      // --- HORIZONTAL LEFT-RIGHT WING ARRANGEMENT ---
+      const getSubtreeHeight = (nodeId: string): number => {
+        const children = getChildren(nodeId);
+        const baseH = getNodeHeight(nodeId);
+        if (children.length === 0) return baseH;
+        const childrenH = children.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
+        return Math.max(baseH, childrenH);
+      };
 
-        leftChildren.forEach((child) => {
-          const childHeight = getSubtreeHeight(child.id);
-          const childY = startLeftY + childHeight / 2 - 38;
-          layoutSubtree(child.id, -280, childY, 1, 'left');
-          startLeftY += childHeight;
+      // Recursive subtree placer
+      const layoutSubtree = (nodeId: string, startX: number, startY: number, depth: number, dir: 'left' | 'right') => {
+        const idx = updatedNodes.findIndex((n) => n.id === nodeId);
+        if (idx !== -1) {
+          updatedNodes[idx] = {
+            ...updatedNodes[idx],
+            x: startX,
+            y: startY,
+            depth: depth,
+            isRoot: false
+          };
+        }
+
+        const children = getChildren(nodeId);
+        if (children.length === 0) return;
+
+        const totalHeight = children.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
+        let currentY = startY - totalHeight / 2;
+
+        const currentWidth = getNodeWidth(nodeId);
+        const HORIZONTAL_STEP = Math.max(280, currentWidth + 60);
+
+        children.forEach((child) => {
+          const cHeight = getSubtreeHeight(child.id);
+          const cY = currentY + cHeight / 2;
+          const nextX = dir === 'right' ? startX + HORIZONTAL_STEP : startX - HORIZONTAL_STEP;
+          layoutSubtree(child.id, nextX, cY, depth + 1, dir);
+          currentY += cHeight;
         });
+      };
+
+      let currentRootY = 0;
+
+      rootNodes.forEach((root) => {
+        const rootIdx = updatedNodes.findIndex((n) => n.id === root.id);
+        if (rootIdx !== -1) {
+          updatedNodes[rootIdx] = {
+            ...updatedNodes[rootIdx],
+            x: 0,
+            y: currentRootY,
+            depth: 0,
+            isRoot: true
+          };
+        }
+
+        const children = getChildren(root.id);
+        if (children.length > 0) {
+          const rightChildren = children.filter((_, idx) => idx % 2 === 0);
+          const leftChildren = children.filter((_, idx) => idx % 2 === 1);
+
+          // Right Wing Layout
+          const totalRightHeight = rightChildren.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
+          let startRightY = currentRootY - totalRightHeight / 2;
+          const rootWidth = getNodeWidth(root.id);
+          const wingX = Math.max(300, rootWidth / 2 + 160);
+
+          rightChildren.forEach((child) => {
+            const childHeight = getSubtreeHeight(child.id);
+            const childY = startRightY + childHeight / 2;
+            layoutSubtree(child.id, wingX, childY, 1, 'right');
+            startRightY += childHeight;
+          });
+
+          // Left Wing Layout
+          const totalLeftHeight = leftChildren.reduce((sum, c) => sum + getSubtreeHeight(c.id), 0);
+          let startLeftY = currentRootY - totalLeftHeight / 2;
+
+          leftChildren.forEach((child) => {
+            const childHeight = getSubtreeHeight(child.id);
+            const childY = startLeftY + childHeight / 2;
+            layoutSubtree(child.id, -wingX, childY, 1, 'left');
+            startLeftY += childHeight;
+          });
+        }
+
+        const treeHeight = Math.max(
+          getChildren(root.id).reduce((sum, c) => sum + getSubtreeHeight(c.id), 0),
+          380
+        );
+        currentRootY += treeHeight + 250;
+      });
+    }
+
+    // --- SUBTREE COLLISION DETECTION & DE-OVERLAPPING PASS ---
+    const shiftSubtree = (startNodeId: string, deltaX: number, deltaY: number) => {
+      const stack = [startNodeId];
+      const visited = new Set<string>();
+
+      while (stack.length > 0) {
+        const currId = stack.pop()!;
+        if (visited.has(currId)) continue;
+        visited.add(currId);
+
+        const nodeIdx = updatedNodes.findIndex((n) => n.id === currId);
+        if (nodeIdx !== -1) {
+          updatedNodes[nodeIdx] = {
+            ...updatedNodes[nodeIdx],
+            x: updatedNodes[nodeIdx].x + deltaX,
+            y: updatedNodes[nodeIdx].y + deltaY
+          };
+
+          const childNodes = updatedNodes.filter((n) => n.parentId === currId && n.id !== currId);
+          childNodes.forEach((c) => stack.push(c.id));
+        }
+      }
+    };
+
+    const isAncestor = (ancestorId: string, targetId: string): boolean => {
+      let curr = updatedNodes.find((n) => n.id === targetId);
+      while (curr && curr.parentId) {
+        if (curr.parentId === ancestorId) return true;
+        const parentId: string = curr.parentId;
+        curr = updatedNodes.find((n) => n.id === parentId);
+      }
+      return false;
+    };
+
+    const MARGIN_X = 40;
+    const MARGIN_Y = 30;
+    const MAX_COLLISION_PASSES = 35;
+
+    for (let pass = 0; pass < MAX_COLLISION_PASSES; pass++) {
+      let movedAny = false;
+
+      for (let i = 0; i < updatedNodes.length; i++) {
+        for (let j = i + 1; j < updatedNodes.length; j++) {
+          const n1 = updatedNodes[i];
+          const n2 = updatedNodes[j];
+
+          if (isAncestor(n1.id, n2.id) || isAncestor(n2.id, n1.id)) continue;
+
+          const w1 = n1.width || 180;
+          const h1 = n1.height || 56;
+          const w2 = n2.width || 180;
+          const h2 = n2.height || 56;
+
+          const minXDist = (w1 + w2) / 2 + MARGIN_X;
+          const minYDist = (h1 + h2) / 2 + MARGIN_Y;
+
+          const dx = n2.x - n1.x;
+          const dy = n2.y - n1.y;
+
+          const absX = Math.abs(dx);
+          const absY = Math.abs(dy);
+
+          const overlapX = minXDist - absX;
+          const overlapY = minYDist - absY;
+
+          if (overlapX > 0 && overlapY > 0) {
+            movedAny = true;
+
+            if (overlapY <= overlapX + 20) {
+              const shiftY = overlapY;
+              const signY = dy >= 0 ? 1 : -1;
+
+              if (n1.isRoot && !n2.isRoot) {
+                shiftSubtree(n2.id, 0, shiftY * signY);
+              } else if (!n1.isRoot && n2.isRoot) {
+                shiftSubtree(n1.id, 0, -shiftY * signY);
+              } else {
+                shiftSubtree(n2.id, 0, (shiftY / 2) * signY);
+                shiftSubtree(n1.id, 0, (-shiftY / 2) * signY);
+              }
+            } else {
+              const shiftX = overlapX;
+              const signX = dx >= 0 ? 1 : -1;
+
+              if (n1.isRoot && !n2.isRoot) {
+                shiftSubtree(n2.id, shiftX * signX, 0);
+              } else if (!n1.isRoot && n2.isRoot) {
+                shiftSubtree(n1.id, -shiftX * signX, 0);
+              } else {
+                shiftSubtree(n2.id, (shiftX / 2) * signX, 0);
+                shiftSubtree(n1.id, (-shiftX / 2) * signX, 0);
+              }
+            }
+          }
+        }
       }
 
-      const treeHeight = Math.max(
-        getChildren(root.id).reduce((sum, c) => sum + getSubtreeHeight(c.id), 0),
-        360
-      );
-      currentRootY += treeHeight + 220;
-    });
+      if (!movedAny) break;
+    }
 
     setNodes(updatedNodes);
-
-    // Recenter canvas camera
     setPan({ x: 450, y: 280 });
     setZoom(0.95);
 
-    showNotification('✨ Auto-arranged mind map into clean, beautiful structure!');
+    const modeText = mode === 'radial' ? '360° Free Radial (All Directions)' : 'Horizontal Tree (Left & Right Wings)';
+    showNotification(`✨ Auto-arranged mind map into ${modeText} layout!`);
   };
 
   // Save mindmap.graphml locally & sync to root folder
@@ -1320,12 +2044,25 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     setDraggedNodeId(null);
   };
 
-  // Mouse Wheel Zoom
+  // Mouse Wheel Zoom & Pan Handler for Canvas Draw Area
   const handleCanvasWheel = (e: React.WheelEvent) => {
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest('.scrollable-note, textarea, .overflow-y-auto, [contenteditable="true"]')) {
+      return; // Allow mouse scrolling inside note card text containers!
+    }
+
     e.preventDefault();
-    const delta = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = Math.min(Math.max(zoom * delta, 0.3), 3);
-    setZoom(newZoom);
+    e.stopPropagation();
+
+    if (e.shiftKey) {
+      setPan((p) => ({
+        x: p.x - e.deltaY,
+        y: p.y
+      }));
+    } else {
+      const delta = e.deltaY < 0 ? 1.1 : 0.9;
+      setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+    }
   };
 
   // Handle Canvas Right Click to show Empty Context Menu
@@ -1531,10 +2268,67 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   };
 
   const handleDeleteNode = (nodeId: string) => {
-    setNodes((prev) => prev.filter((n) => n.id !== nodeId && n.parentId !== nodeId));
-    setEdges((prev) => prev.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    const targetNode = nodes.find((n) => n.id === nodeId);
+    if (!targetNode) return;
+
+    // Helper to collect ALL descendant node IDs recursively (children, grandchildren, etc.)
+    const getSubtreeIds = (startId: string, currentNodes: MindNode[]): Set<string> => {
+      const ids = new Set<string>([startId]);
+      const traverse = (id: string) => {
+        const children = currentNodes.filter((n) => n.parentId === id);
+        children.forEach((child) => {
+          ids.add(child.id);
+          traverse(child.id);
+        });
+      };
+      traverse(startId);
+      return ids;
+    };
+
+    // If deleting root node:
+    if (targetNode.isRoot) {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNodeId(null);
+      setSelectedEdgeId(null);
+      showNotification('Root node & mind map cleared');
+      if (roomId) {
+        broadcastStateUpdate({ nodes: [], edges: [] });
+      }
+      return;
+    }
+
+    // Get set of all node IDs to delete (nodeId + all recursive descendants)
+    const deletedIds = getSubtreeIds(nodeId, nodes);
+    const remainingNodes = nodes.filter((n) => !deletedIds.has(n.id));
+
+    // Cleanup orphan nodes that no longer have a valid parent path to a root node
+    const validNodeIds = new Set(remainingNodes.map((n) => n.id));
+    const cleanNodes = remainingNodes.filter((n) => {
+      if (n.isRoot) return true;
+      let curr = n;
+      while (curr.parentId) {
+        if (!validNodeIds.has(curr.parentId)) return false; // Parent missing => Orphan!
+        const parent = remainingNodes.find((p) => p.id === curr.parentId);
+        if (!parent) return false;
+        curr = parent;
+      }
+      return true;
+    });
+
+    const cleanNodeIds = new Set(cleanNodes.map((n) => n.id));
+    const cleanEdges = edges.filter((e) => cleanNodeIds.has(e.source) && cleanNodeIds.has(e.target));
+
+    setNodes(cleanNodes);
+    setEdges(cleanEdges);
     setSelectedNodeId(null);
-    showNotification('Node removed');
+    setSelectedEdgeId(null);
+
+    showNotification(deletedIds.size > 1 ? `Node & ${deletedIds.size - 1} sub-branches removed` : 'Node removed');
+
+    if (roomId) {
+      broadcastStateUpdate({ nodes: cleanNodes, edges: cleanEdges });
+    }
   };
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
@@ -1556,23 +2350,19 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const visibleEdges = edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
 
   return (
-    <div className="flex flex-col w-full text-white select-none gap-6 flex-1 min-h-0">
-      {/* Drawing Canvas Card */}
-      <div className="flex flex-col w-full flex-1 h-[100vh] min-h-[90vh] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative shadow-2xl">
+    <div className="flex flex-col w-full text-white select-none gap-4 flex-1 min-h-0">
+      {/* Top Header & AI Prompt Control Panel (Outside Drawing Area) */}
+      <div className="flex flex-col w-full bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl overflow-hidden shadow-xl shrink-0 p-3.5 sm:p-4 gap-3">
         {/* Top Header Bar */}
-        <div className={`flex flex-wrap items-center justify-between bg-slate-900/90 backdrop-blur-md border-b border-slate-800 z-20 gap-2.5 transition-all ${
-          isExpanded ? 'px-3 sm:px-4 py-1.5' : 'px-6 py-3'
-        }`}>
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5">
-            <div className={`bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-lg shadow-lg shadow-cyan-500/20 transition-all ${
-              isExpanded ? 'p-1.5' : 'p-2'
-            }`}>
+            <div className={`bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-lg shadow-lg shadow-cyan-500/20 transition-all ${isExpanded ? 'p-1.5' : 'p-2'
+              }`}>
               <Sparkles className={`text-white animate-pulse ${isExpanded ? 'w-4 h-4' : 'w-5 h-5'}`} />
             </div>
             <div className={`flex ${isExpanded ? 'flex-row items-center gap-2' : 'flex-col'}`}>
-              <h2 className={`font-bold bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent transition-all whitespace-nowrap ${
-                isExpanded ? 'text-sm sm:text-base' : 'text-lg'
-              }`}>
+              <h2 className={`font-bold bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent transition-all whitespace-nowrap ${isExpanded ? 'text-sm sm:text-base' : 'text-lg'
+                }`}>
                 Mind Map Editor
               </h2>
               {isExpanded && <span className="text-slate-600 text-xs hidden sm:inline">•</span>}
@@ -1584,22 +2374,33 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
           {/* Action Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <button
-              onClick={handleAutoArrangeGraph}
-              className={`flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-lg shadow-lg shadow-emerald-500/20 transition ${
-                isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'
-              }`}
-              title="Auto-arrange & beautify mind map structure"
-            >
-              <Sparkles className={isExpanded ? 'w-3 h-3 text-slate-950' : 'w-3.5 h-3.5 text-slate-950'} />
-              Auto-Arrange
-            </button>
+            {/* Auto-Arrange Layout Controls: Horizontal & Free 360° Radial */}
+            <div className="flex items-center bg-slate-900 border border-emerald-500/30 p-0.5 rounded-lg gap-0.5">
+              <button
+                onClick={() => handleAutoArrangeGraph('horizontal')}
+                className={`flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-md shadow-md transition ${isExpanded ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-xs'
+                  }`}
+                title="Arrange mind map horizontally (Left & Right Wings)"
+              >
+                <Sparkles className="w-3 h-3 text-slate-950" />
+                <span>↔️ Horizontal</span>
+              </button>
+
+              <button
+                onClick={() => handleAutoArrangeGraph('radial')}
+                className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold rounded-md transition border border-slate-700/60 ${isExpanded ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-xs'
+                  }`}
+                title="Arrange mind map in 360° Free All Directions (Radial Starburst)"
+              >
+                <Globe className="w-3 h-3 text-emerald-400" />
+                <span>🌐 Free 360°</span>
+              </button>
+            </div>
 
             <button
               onClick={handleResetToDefaultMap}
-              className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition ${
-                isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
-              }`}
+              className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                }`}
               title="Reset mind map to default sample map"
             >
               <RotateCcw className={isExpanded ? 'w-3 h-3 text-cyan-400' : 'w-3.5 h-3.5 text-cyan-400'} />
@@ -1607,10 +2408,19 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
             </button>
 
             <button
+              onClick={loadProfileSampleMap}
+              className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold rounded-lg border border-slate-700 transition cursor-pointer ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                }`}
+              title="Load Personal Profile Mind Map (Motive, Education, Experience, Skill, Hobbies)"
+            >
+              <User className={isExpanded ? 'w-3 h-3 text-emerald-400' : 'w-3.5 h-3.5 text-emerald-400'} />
+              Profile Map
+            </button>
+
+            <button
               onClick={() => fileInputRef.current?.click()}
-              className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition ${
-                isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
-              }`}
+              className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                }`}
               title="Open mindmap.graphml file"
             >
               <Upload className={isExpanded ? 'w-3 h-3 text-indigo-400' : 'w-3.5 h-3.5 text-indigo-400'} />
@@ -1626,9 +2436,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
             <button
               onClick={() => setIsNvidiaAiModalOpen(true)}
-              className={`flex items-center gap-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black rounded-lg transition shadow-lg shadow-emerald-500/25 cursor-pointer ${
-                isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'
-              }`}
+              className={`flex items-center gap-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black rounded-lg transition shadow-lg shadow-emerald-500/25 cursor-pointer ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'
+                }`}
               title="Brainstorm & Auto-Generate Mind Map with NVIDIA BYOK AI"
             >
               <Sparkles className="w-3.5 h-3.5 text-slate-950 animate-pulse" />
@@ -1638,9 +2447,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
             <button
               onClick={handleSaveGraphML}
-              className={`flex items-center gap-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-lg shadow-lg shadow-cyan-500/25 transition ${
-                isExpanded ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
-              }`}
+              className={`flex items-center gap-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-lg shadow-lg shadow-cyan-500/25 transition ${isExpanded ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
+                }`}
             >
               <Download className={isExpanded ? 'w-3 h-3 text-slate-950' : 'w-3.5 h-3.5 text-slate-950'} />
               Save mindmap.graphml
@@ -1648,11 +2456,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
             <button
               onClick={() => setIsShareModalOpen(true)}
-              className={`flex items-center gap-1.5 font-bold rounded-lg transition shadow-lg ${
-                isCollaborating
-                  ? 'bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 shadow-emerald-500/20'
-                  : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white shadow-indigo-500/20'
-              } ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'}`}
+              className={`flex items-center gap-1.5 font-bold rounded-lg transition shadow-lg ${isCollaborating
+                ? 'bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 shadow-emerald-500/20'
+                : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white shadow-indigo-500/20'
+                } ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'}`}
               title="Share room & collaborate real-time with team members"
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -1663,9 +2470,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               <>
                 <button
                   onClick={handleOpenCommitModal}
-                  className={`flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg transition shadow-lg shadow-purple-500/20 cursor-pointer ${
-                    isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
-                  }`}
+                  className={`flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg transition shadow-lg shadow-purple-500/20 cursor-pointer ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                    }`}
                   title="Commit version snapshot Git-style with commit message"
                 >
                   <GitCommit className="w-3.5 h-3.5" />
@@ -1674,9 +2480,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
                 <button
                   onClick={handleOpenLogs}
-                  className={`flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold rounded-lg transition shadow-sm cursor-pointer ${
-                    isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
-                  }`}
+                  className={`flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold rounded-lg transition shadow-sm cursor-pointer ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                    }`}
                   title="View Change Logs & Git Commit History for this room"
                 >
                   <FileClock className="w-3.5 h-3.5" />
@@ -1685,9 +2490,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
                 <button
                   onClick={handleUnloadWorkspace}
-                  className={`flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold rounded-lg transition cursor-pointer ${
-                    isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
-                  }`}
+                  className={`flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold rounded-lg transition cursor-pointer ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
+                    }`}
                   title="Unload active room & return to local private canvas"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -1698,16 +2502,26 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           </div>
         </div>
 
-        {/* Inline NVIDIA AI Prompt & Model Control Bar (Right Below Header Controls) */}
-        <div className="mx-4 my-2 p-3 bg-slate-900/90 border border-emerald-500/30 rounded-2xl space-y-2 text-xs backdrop-blur-md shadow-xl shrink-0">
+        {/* NVIDIA AI Prompt & Model Control Bar (Outside Draw Area) */}
+        <div className="p-3 bg-slate-950/80 border border-emerald-500/30 rounded-xl space-y-2 text-xs backdrop-blur-md shadow-inner shrink-0">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center space-x-2">
               <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
                 <Sparkles className="h-4 w-4 animate-pulse fill-current" />
               </div>
               <span className="font-extrabold text-white text-xs tracking-tight flex items-center gap-1.5">
-                NVIDIA AI MindMap Generator
-                <span className="text-[9px] font-mono font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded">BYOK</span>
+                {selectedNvidiaModel.startsWith('ollama/') ? 'Ollama AI MindMap Generator' : 'NVIDIA AI MindMap Generator'}
+                <span className={`text-[9px] font-mono font-black border px-1.5 py-0.5 rounded ${selectedNvidiaModel.startsWith('ollama/')
+                  ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
+                  : 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
+                  }`}>
+                  {selectedNvidiaModel.startsWith('ollama/') ? 'LOCAL OLLAMA' : 'BYOK'}
+                </span>
+                {nodes.length > 0 && (
+                  <span className="text-[9px] font-mono font-bold text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 px-1.5 py-0.5 rounded animate-pulse">
+                    Upgrading Active Map ({nodes.length} nodes)
+                  </span>
+                )}
               </span>
             </div>
 
@@ -1718,13 +2532,35 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 <select
                   value={selectedNvidiaModel}
                   onChange={(e) => handleSelectNvidiaModel(e.target.value)}
-                  className="bg-transparent text-emerald-300 text-xs font-semibold focus:outline-none cursor-pointer"
+                  className="bg-transparent text-emerald-300 text-xs font-semibold focus:outline-none cursor-pointer max-w-[220px] sm:max-w-none"
                 >
-                  {NVIDIA_MODELS.map((m) => (
-                    <option key={m.id} value={m.id} className="bg-slate-900 text-white">
-                      {m.name} ({m.badge})
-                    </option>
-                  ))}
+                  <optgroup label="🌐 NVIDIA Cloud Models (BYOK)" className="bg-slate-900 text-cyan-400 font-bold">
+                    {CLOUD_NVIDIA_MODELS.map((m) => (
+                      <option key={m.id} value={m.id} className="bg-slate-900 text-white font-medium">
+                        {m.name} ({m.badge})
+                      </option>
+                    ))}
+                  </optgroup>
+
+                  <optgroup
+                    label={isOllamaActive ? "🟢 Local Ollama Models (Active)" : "🔴 Local Ollama Models (Offline / Inactive)"}
+                    className={isOllamaActive ? "bg-slate-900 text-emerald-400 font-bold" : "bg-slate-900 text-slate-500 font-bold"}
+                  >
+                    {LOCAL_OLLAMA_MODELS.map((m) => {
+                      const isInstalled = installedOllamaModels.length === 0 || installedOllamaModels.some((name) => name.includes(m.ollamaModel || ''));
+                      const isAvailable = isOllamaActive && isInstalled;
+                      return (
+                        <option
+                          key={m.id}
+                          value={m.id}
+                          disabled={!isAvailable}
+                          className={isAvailable ? "bg-slate-900 text-emerald-300 font-semibold" : "bg-slate-900 text-slate-500 italic"}
+                        >
+                          {m.name} {isAvailable ? "🟢 (Local Active)" : "🔴 (Local - Ollama Offline)"}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
                 </select>
               </div>
 
@@ -1732,10 +2568,16 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               <button
                 onClick={() => setIsNvidiaAiModalOpen(true)}
                 className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium flex items-center space-x-1 cursor-pointer transition"
-                title="Configure NVIDIA BYOK API Key"
+                title={selectedNvidiaModel.startsWith('ollama/') ? 'Local Ollama Model Active (No API Key Required)' : 'Configure NVIDIA BYOK API Key'}
               >
                 <Lock className="h-3 w-3 text-emerald-400" />
-                <span>{nvidiaApiKeyInput ? 'Key Saved ⚙️' : 'Set Key 🔑'}</span>
+                <span>
+                  {selectedNvidiaModel.startsWith('ollama/')
+                    ? 'No Key Needed 🟢'
+                    : mounted && nvidiaApiKeyInput
+                      ? 'Key Saved ⚙️'
+                      : 'Set Key 🔑'}
+                </span>
               </button>
             </div>
           </div>
@@ -1746,37 +2588,54 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               type="text"
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder="Type topic for AI MindMap (e.g. 'Microservices e-commerce architecture with payment and analytics')..."
+              placeholder={
+                nodes.length > 0
+                  ? "Ask AI to modify/upgrade current map (e.g. 'Add a branch for Cloud Tools with AWS and Docker')..."
+                  : "Type topic for AI MindMap (e.g. 'Microservices e-commerce architecture with payment')..."
+              }
               className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
             />
-            <button
-              type="submit"
-              disabled={isAiGenerating}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
-            >
-              {isAiGenerating ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-3.5 w-3.5 text-slate-950 fill-current" />
-                  <span>Generate MindMap</span>
-                </>
-              )}
-            </button>
+            {isAiGenerating ? (
+              <button
+                type="button"
+                onClick={handleStopBuilding}
+                className="px-4 py-2 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white font-black text-xs rounded-xl shadow-lg shadow-rose-500/30 transition flex items-center gap-1.5 cursor-pointer shrink-0 animate-pulse"
+                title="Stop AI building process"
+              >
+                <Square className="h-3.5 w-3.5 fill-current text-white" />
+                <span>Stop Building 🛑</span>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-slate-950 fill-current" />
+                <span>{nodes.length > 0 ? 'Upgrade Map' : 'Generate MindMap'}</span>
+              </button>
+            )}
           </form>
 
           {/* Quick Suggestion Pills */}
           <div className="flex flex-wrap items-center gap-1.5 text-[10px] pt-0.5">
-            <span className="text-slate-500 font-semibold">Quick Prompts:</span>
-            {[
-              '🚀 SaaS Product Launch Roadmap',
-              '💻 Microservices Architecture',
-              '🎨 Content Marketing Funnel',
-              '🎯 Q4 OKRs & Growth Strategy',
-            ].map((pill) => (
+            <span className="text-slate-500 font-semibold">
+              {nodes.length > 0 ? 'Map Upgrade Prompts:' : 'Quick Prompts:'}
+            </span>
+            {(nodes.length > 0
+              ? [
+                '➕ Add 3 detailed sub-value nodes under every child node',
+                '🎯 Expand all branches with actionable key results & metrics',
+                '💰 Add estimated cost, time & priority levels to each branch',
+                '💡 Add pros, cons, and potential risks under each main topic',
+              ]
+              : [
+                '👤 Personal Profile (Motive, Education, Experience, Skill, Hobbies)',
+                '🚀 SaaS Product Launch Roadmap',
+                '💻 Microservices Architecture',
+                '🎨 Content Marketing Funnel',
+                '🎯 Q4 OKRs & Growth Strategy',
+              ]
+            ).map((pill) => (
               <button
                 key={pill}
                 type="button"
@@ -1789,6 +2648,93 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           </div>
         </div>
 
+        {/* Real-time AI Thinking & Working Log Box (Just below prompt div, expandable up to 500px) */}
+        {showAiLogPanel && aiLogs.length > 0 && (
+          <div className="p-3 bg-slate-950/90 border border-purple-500/40 rounded-xl space-y-2 text-xs backdrop-blur-md shadow-2xl shrink-0 transition-all duration-300">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+              <div className="flex items-center space-x-2">
+                <div className="p-1 rounded-lg bg-purple-500/20 text-purple-400">
+                  <Terminal className="h-4 w-4 animate-pulse" />
+                </div>
+                <span className="font-extrabold text-white text-xs tracking-tight flex items-center gap-2">
+                  AI Thinking & Working Log
+                  {isAiGenerating && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-black animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      THINKING LIVE
+                    </span>
+                  )}
+                  <span className="text-[10px] text-slate-500 font-mono font-normal">({aiLogs.length} events)</span>
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-1.5">
+                {/* Expand / Collapse Button (Up to 500px height) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (logAutoShrinkTimerRef.current) clearTimeout(logAutoShrinkTimerRef.current);
+                    setIsLogExpanded(!isLogExpanded);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[10px] font-mono font-bold transition flex items-center gap-1 cursor-pointer"
+                  title={isLogExpanded ? 'Collapse Log (Auto-shrinks 2s after generation)' : 'Expand Log Box (Up to 500px)'}
+                >
+                  {isLogExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  <span>{isLogExpanded ? 'Collapse' : 'Expand (500px)'}</span>
+                </button>
+
+                {/* Clear Log Button */}
+                <button
+                  type="button"
+                  onClick={() => setAiLogs([])}
+                  className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 transition cursor-pointer"
+                  title="Clear Logs"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Hide Log Panel Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowAiLogPanel(false)}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                  title="Hide Log Panel"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Log Messages List (Expandable up to max 500px, auto-shrinks to compact) */}
+            <div
+              ref={logContainerRef}
+              className={`p-2 font-mono text-[11px] leading-relaxed overflow-y-auto custom-scrollbar space-y-1.5 transition-all duration-300 ${isLogExpanded ? 'max-h-[500px]' : 'max-h-24 h-20'
+                }`}
+            >
+              {aiLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className={`flex items-start gap-2 ${log.type === 'success'
+                    ? 'text-emerald-300 font-bold'
+                    : log.type === 'warn'
+                      ? 'text-amber-300 font-bold'
+                      : log.type === 'error'
+                        ? 'text-rose-400 font-bold'
+                        : 'text-slate-300'
+                    }`}
+                >
+                  <span className="text-slate-500 text-[10px] shrink-0 font-mono">[{log.timestamp}]</span>
+                  <span className="break-all">{log.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Pure Drawing Canvas Card (Dedicated ONLY to Map Graph & Nodes) */}
+      <div className="flex flex-col w-full flex-1 h-[100vh] min-h-[90vh] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden relative shadow-2xl">
         {/* Canvas Area */}
         <div
           ref={containerRef}
@@ -1797,10 +2743,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
           onContextMenu={handleCanvasContextMenu}
-          onWheel={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
+          onWheel={handleCanvasWheel}
         >
           {/* SVG Grid & Edge Connections Layer */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
@@ -2029,6 +2972,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               );
               const calcHeight = hasChildren ? Math.max(node.height, 68) : Math.max(node.height, 52);
 
+              const buildingTargetNodeId = selectedNodeId || (nodes.length > 0 ? (nodes.find((n) => n.isRoot)?.id || nodes[0].id) : null);
+
               return (
                 <div
                   key={node.id}
@@ -2052,6 +2997,21 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     boxShadow: isRoot ? `0 0 24px ${node.color || '#00f2fe'}44` : undefined
                   }}
                 >
+                  {/* Real-time Hammering Worker Building Animation (Positioned BELOW Node) */}
+                  {isAiGenerating && (
+                    activeBuildingTargetId
+                      ? (node.id === activeBuildingTargetId || node.parentId === activeBuildingTargetId)
+                      : (!node.isRoot || nodes.length === 1)
+                  ) && (
+                    <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center">
+                      <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-950/95 border border-amber-400/80 text-amber-300 shadow-md text-[9px] font-black tracking-tight animate-bounce">
+                        <span className="inline-block animate-[spin_0.8s_ease-in-out_infinite] text-xs">🔨</span>
+                        <span className="font-mono uppercase text-amber-300 text-[8.5px] tracking-wider animate-pulse whitespace-nowrap">
+                          👷‍♂️ Hammering...
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {!hasChildren ? (
                     /* Single Row Layout for Child / Leaf Nodes (Truncate with ... after 300px max) */
                     <div className="flex items-center gap-2 w-full h-full min-w-0">
@@ -2786,13 +3746,23 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               </button>
               <button
                 onClick={() => {
-                  handleAutoArrangeGraph();
+                  handleAutoArrangeGraph('horizontal');
                   setEmptyContextMenu(null);
                 }}
                 className="flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-800 text-emerald-400 rounded-lg transition border-t border-slate-800/80 mt-0.5"
               >
                 <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                Auto-Arrange Map
+                Arrange: ↔️ Horizontal
+              </button>
+              <button
+                onClick={() => {
+                  handleAutoArrangeGraph('radial');
+                  setEmptyContextMenu(null);
+                }}
+                className="flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-slate-800 text-teal-300 rounded-lg transition"
+              >
+                <Globe className="w-3.5 h-3.5 text-teal-400" />
+                Arrange: 🌐 Free 360°
               </button>
             </div>
           )}
@@ -2800,12 +3770,20 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           {/* Bottom Left Floating Zoom & Canvas Controls */}
           <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-1.5 rounded-xl shadow-xl">
             <button
-              onClick={handleAutoArrangeGraph}
-              className="p-1.5 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition flex items-center gap-1 px-2 font-mono text-[11px] font-bold mr-1"
-              title="Auto-arrange & beautify mind map layout"
+              onClick={() => handleAutoArrangeGraph('horizontal')}
+              className="p-1.5 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition flex items-center gap-1 px-2 font-mono text-[11px] font-bold"
+              title="Arrange mind map horizontally (Left & Right Wings)"
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Arrange</span>
+              <span>↔️ Horiz</span>
+            </button>
+            <button
+              onClick={() => handleAutoArrangeGraph('radial')}
+              className="p-1.5 hover:bg-teal-500/20 text-teal-300 rounded-lg transition flex items-center gap-1 px-2 font-mono text-[11px] font-bold mr-1"
+              title="Arrange mind map in 360° Free All Directions (Radial)"
+            >
+              <Globe className="w-3.5 h-3.5 text-teal-400" />
+              <span>🌐 360°</span>
             </button>
             <div className="h-4 w-px bg-slate-800 mr-1" />
             <button
@@ -2863,10 +3841,11 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           };
 
           const rootOriginNode = getRootAncestor(selectedNode);
+          const selectedNodeIdx = nodes.findIndex((n) => n.id === selectedNode.id);
 
           return (
             <div className="space-y-4">
-              {/* Header: Page Icon + Node Name + Depth Badge */}
+              {/* Header: Page Icon + Node Name + Depth Badge + Node Number Badge */}
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 rounded-lg">
@@ -2882,6 +3861,9 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                         }`}>
                         {selectedNode.isRoot ? 'ROOT NODE' : `DEPTH ${selectedNode.depth}`}
                       </span>
+                      <span className="text-[10px] font-mono font-black px-2.5 py-0.5 rounded border bg-purple-500/20 border-purple-400 text-purple-300 shadow-sm shadow-purple-500/20">
+                        Node #{selectedNodeIdx + 1}
+                      </span>
                     </div>
                     <p className="text-xs text-slate-400">Node Documentation & Hierarchy Context</p>
                   </div>
@@ -2889,6 +3871,13 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               </div>
               {/* Hierarchy Context Info (Just Below Main Details Div) */}
               <div className="flex flex-wrap items-center gap-4 p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl text-xs">
+                {/* Node Position Number */}
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-slate-500 uppercase text-[10px]">Node Position:</span>
+                  <span className="font-mono font-black text-purple-300 bg-purple-500/20 border border-purple-400/40 px-2 py-0.5 rounded text-[11px] shadow-sm shadow-purple-500/20">
+                    Node #{selectedNodeIdx + 1}
+                  </span>
+                </div>
                 {/* Parent Node Info */}
                 <div className="flex items-center gap-1.5">
                   <span className="font-mono font-bold text-slate-500 uppercase text-[10px]">Parent Node:</span>
@@ -3339,36 +4328,92 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   </div>
                 </div>
 
-                {/* 3 Models Dropdown Switch */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
-                    <span>NVIDIA Model Selector (3 Models Supported)</span>
-                    <span className="text-[10px] font-mono text-cyan-400">Selected: {selectedNvidiaModel}</span>
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {NVIDIA_MODELS.map((model) => {
-                      const isSelected = selectedNvidiaModel === model.id;
-                      return (
-                        <button
-                          key={model.id}
-                          type="button"
-                          onClick={() => handleSelectNvidiaModel(model.id)}
-                          className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${
-                            isSelected
+                {/* Model Selector Cards */}
+                <div className="space-y-3">
+                  {/* Section 1: Cloud NVIDIA Models */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-cyan-400 font-extrabold">🌐 NVIDIA Cloud AI Models (BYOK Key Required)</span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {CLOUD_NVIDIA_MODELS.map((model) => {
+                        const isSelected = selectedNvidiaModel === model.id;
+                        return (
+                          <button
+                            key={model.id}
+                            type="button"
+                            onClick={() => handleSelectNvidiaModel(model.id)}
+                            className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${isSelected
                               ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
                               : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-                          }`}
-                        >
-                          <div>
-                            <span className="text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 inline-block mb-1">
-                              {model.badge}
-                            </span>
-                            <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
-                          </div>
-                          <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
-                        </button>
-                      );
-                    })}
+                              }`}
+                          >
+                            <div>
+                              <span className="text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 inline-block mb-1">
+                                {model.badge}
+                              </span>
+                              <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                            </div>
+                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Section 2: Local Ollama Models */}
+                  <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <span className="text-emerald-400 font-black">🏠 Local Ollama Models (No API Key Required)</span>
+                      </label>
+                      <span className={`text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full border ${isOllamaActive
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-slate-800 text-slate-500 border-slate-700'
+                        }`}>
+                        {isOllamaActive ? '🟢 Ollama Active (http://localhost:11434)' : '🔴 Ollama Service Offline'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {LOCAL_OLLAMA_MODELS.map((model) => {
+                        const isSelected = selectedNvidiaModel === model.id;
+                        const isInstalled = installedOllamaModels.length === 0 || installedOllamaModels.some((name) => name.includes(model.ollamaModel || ''));
+                        const isAvailable = isOllamaActive && isInstalled;
+
+                        return (
+                          <button
+                            key={model.id}
+                            type="button"
+                            disabled={!isAvailable}
+                            onClick={() => isAvailable && handleSelectNvidiaModel(model.id)}
+                            className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between space-y-2 ${!isAvailable
+                              ? 'bg-slate-950/60 border-slate-800 text-slate-600 opacity-50 grayscale cursor-not-allowed'
+                              : isSelected
+                                ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-md shadow-emerald-500/10 cursor-pointer'
+                                : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800/60 hover:text-white cursor-pointer'
+                              }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded border ${isAvailable
+                                  ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                                  : 'bg-slate-800 border-slate-700 text-slate-500'
+                                  }`}>
+                                  {model.badge}
+                                </span>
+                                <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${isAvailable ? 'bg-emerald-400/20 text-emerald-400' : 'bg-slate-800 text-slate-500'
+                                  }`}>
+                                  {isAvailable ? '🟢 Active' : '🔴 Offline'}
+                                </span>
+                              </div>
+                              <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                            </div>
+                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -3381,7 +4426,11 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     rows={3}
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="e.g. Brainstorm a microservices architecture for an automated trading platform with data ingestion, ML models, and notification services..."
+                    placeholder={
+                      nodes.length > 0
+                        ? "Ask AI to expand, modify or upgrade the current mind map (e.g. 'Expand Technical Skills branch with Rust and WebAssembly')..."
+                        : "e.g. Brainstorm a microservices architecture for an automated trading platform with data ingestion, ML models, and notification services..."
+                    }
                     className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
                   />
 
@@ -3389,6 +4438,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                     <span className="text-slate-400 text-[10px]">Quick Prompts:</span>
                     {[
+                      '👤 Personal Profile (Motive, Education, Experience, Skill, Hobbies)',
                       '🚀 SaaS Product Launch Roadmap',
                       '💻 Microservices Architecture',
                       '🎨 Content Marketing Funnel',
@@ -3424,29 +4474,75 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 >
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  onClick={handleGenerateAiMindMap}
-                  disabled={isAiGenerating}
-                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {isAiGenerating ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
-                      <span>Generating Mind Map with NVIDIA AI...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 text-slate-950 fill-current" />
-                      <span>Generate Mind Map</span>
-                    </>
-                  )}
-                </button>
+                {isAiGenerating ? (
+                  <button
+                    type="button"
+                    onClick={handleStopBuilding}
+                    className="px-5 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white font-black text-xs rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer animate-pulse"
+                  >
+                    <Square className="w-4 h-4 fill-current text-white" />
+                    <span>Stop Building 🛑</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    onClick={handleGenerateAiMindMap}
+                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4 text-slate-950 fill-current" />
+                    <span>{nodes.length > 0 ? 'Upgrade Mind Map' : 'Generate Mind Map'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>,
           document.body
         )}
+
+      {/* Stop Building Confirmation Modal (Keep vs Revert 1 Step) */}
+      {mounted && isStopConfirmModalOpen && createPortal(
+        <div
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-[100001] animate-fade-in pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center relative z-[100002] pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto">
+              <Square className="w-6 h-6 fill-current" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-white">AI Building Stopped</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                AI mind map generation was stopped. Choose how you want to handle the canvas:
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={handleKeepPartialState}
+                className="w-full py-3 px-4 bg-emerald-400 hover:bg-emerald-300 active:bg-emerald-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition cursor-pointer flex items-center justify-center gap-2 pointer-events-auto"
+              >
+                <Check className="w-4 h-4" />
+                Keep Current Canvas State
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRevertPreviousState}
+                className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-rose-300 border border-rose-500/40 font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-2 pointer-events-auto"
+              >
+                <RotateCcw className="w-4 h-4 text-rose-400" />
+                Revert 1 Step Back (Restore Previous State)
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Notification Banner */}
       {statusMessage && (

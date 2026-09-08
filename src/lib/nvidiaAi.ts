@@ -1,41 +1,88 @@
-export interface NvidiaModel {
+export interface AiModelItem {
   id: string;
   name: string;
   badge: string;
   type: 'text' | 'vision';
+  provider: 'nvidia' | 'ollama';
+  ollamaModel?: string;
   description: string;
 }
 
-export const NVIDIA_MODELS: NvidiaModel[] = [
+export type NvidiaModel = AiModelItem;
+
+export const CLOUD_NVIDIA_MODELS: AiModelItem[] = [
   {
-    id: 'meta/llama-3.3-70b-instruct',
-    name: 'Llama 3.3 70B Instruct',
-    badge: 'Llama 3.3 70B',
+    id: 'deepseek-ai/deepseek-v4-pro-0813',
+    name: 'DeepSeek V4 Pro',
+    badge: 'DeepSeek V4 Pro',
     type: 'text',
-    description: 'Active flagship 70B reasoning model for rapid brainstorming and structured graph layout generation.',
+    provider: 'nvidia',
+    description: '1M-token context window MoE model optimized for high accuracy, coding, and agentic workflows.',
   },
   {
-    id: 'meta/llama-3.2-11b-vision-instruct',
-    name: 'Llama 3.2 11B Vision Instruct',
-    badge: 'Vision 1 (Llama)',
-    type: 'vision',
-    description: 'Multimodal vision model capable of understanding visual diagrams, images, and complex prompt structures.',
+    id: 'google/gemma-4-31b-it',
+    name: 'Gemma 4 31B Instruct',
+    badge: 'Gemma 4 31B',
+    type: 'text',
+    provider: 'nvidia',
+    description: 'Dense 31B model delivering frontier reasoning for coding, agentic workflows, and fine-tuning.',
+  },
+  {
+    id: 'nvidia/nemotron-3.5-lightning-30b-a3b',
+    name: 'Nemotron 3.5 Lightning 30B',
+    badge: 'Nemotron 3.5 30B',
+    type: 'text',
+    provider: 'nvidia',
+    description: 'Fastest 30B A3B MoE model with leading domain accuracy for specialized agentic tasks.',
   },
   {
     id: 'openai/gpt-oss-20b',
     name: 'GPT-OSS 20B (OpenAI)',
-    badge: 'Vision 2 (GPT-OSS 20B)',
+    badge: 'GPT-OSS 20B',
+    type: 'text',
+    provider: 'nvidia',
+    description: 'High performance open-weights model specialized in SVG code generation and mindmap structures.',
+  },
+  {
+    id: 'meta/muse-glimmer-30b',
+    name: 'Muse Glimmer 30B',
+    badge: 'Muse Glimmer 30B',
     type: 'vision',
-    description: 'High performance open-weights multimodal model specialized in visual reasoning, logos, and vector layout design.',
+    provider: 'nvidia',
+    description: 'Multimodal reasoning model accepting text & visual inputs with native tool-calling capabilities.',
   },
 ];
+
+export const LOCAL_OLLAMA_MODELS: AiModelItem[] = [
+  {
+    id: 'ollama/qwen2.5-coder:7b',
+    name: 'Qwen 2.5 Coder 7B',
+    badge: 'Ollama Local 7B',
+    type: 'text',
+    provider: 'ollama',
+    ollamaModel: 'qwen2.5-coder:7b',
+    description: 'Local open-weights Qwen 2.5 Coder 7B model running on local Ollama service (http://localhost:11434).',
+  },
+  {
+    id: 'ollama/llava:7b',
+    name: 'LLaVA 7B (Multimodal)',
+    badge: 'Ollama Local 7B',
+    type: 'vision',
+    provider: 'ollama',
+    ollamaModel: 'llava:7b',
+    description: 'Local multimodal vision & reasoning LLaVA 7B model running on local Ollama service (http://localhost:11434).',
+  },
+];
+
+export const NVIDIA_MODELS: AiModelItem[] = [...CLOUD_NVIDIA_MODELS, ...LOCAL_OLLAMA_MODELS];
 
 const API_KEY_STORAGE_KEY = 'toolip_nvidia_api_key';
 const SELECTED_MODEL_STORAGE_KEY = 'toolip_nvidia_selected_model';
 
 export function getNvidiaApiKey(): string {
-  if (typeof window === 'undefined') return '';
-  return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+  const envKey = process.env.NEXT_PUBLIC_NVIDIA_API_KEY || process.env.NVIDIA_API_KEY || '';
+  if (typeof window === 'undefined') return envKey;
+  return localStorage.getItem(API_KEY_STORAGE_KEY) || envKey;
 }
 
 export function setNvidiaApiKey(key: string): void {
@@ -66,12 +113,177 @@ export function setNvidiaSelectedModel(modelId: string): void {
   localStorage.setItem(SELECTED_MODEL_STORAGE_KEY, modelId);
 }
 
+/**
+ * Check if local Ollama service is active & list installed local models
+ */
+export async function checkOllamaHealth(endpoint = 'http://localhost:11434'): Promise<{ active: boolean; models: string[] }> {
+  if (typeof window === 'undefined') return { active: false, models: [] };
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(`${endpoint}/api/tags`, {
+      method: 'GET',
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      const models = (data.models || []).map((m: any) => m.name || m.model);
+      return { active: true, models };
+    }
+  } catch {
+    // Offline / unreachable
+  }
+  return { active: false, models: [] };
+}
+
+/**
+ * Generate completion using local Ollama service (http://localhost:11434) with real-time streaming
+ */
+export async function generateOllamaCompletion({
+  model,
+  messages,
+  signal,
+  endpoint = 'http://localhost:11434',
+  onLog,
+}: {
+  model: string;
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+  signal?: AbortSignal;
+  endpoint?: string;
+  onLog?: (msg: string) => void;
+}): Promise<string> {
+  onLog?.(`🟢 Connecting to Local Ollama service (${endpoint}) for model "${model}"...`);
+  if (signal?.aborted) throw new Error('AI generation was cancelled by user.');
+
+  try {
+    const res = await fetch(`${endpoint}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: true,
+        options: {
+          temperature: 0.6,
+          num_ctx: 8192,
+        },
+      }),
+      signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Ollama Error (${res.status}): ${text || res.statusText}`);
+    }
+
+    if (!res.body) {
+      throw new Error('Ollama response body is empty.');
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = '';
+    let buffer = '';
+    let tokenCount = 0;
+    let lastLogTime = Date.now();
+    const startTime = Date.now();
+    let inThinkBlock = false;
+    let thinkText = '';
+    const loggedNodeTitles = new Set<string>();
+
+    onLog?.(`⚡ Connected! Real-time stream active. Receiving AI thinking & generation tokens...`);
+
+    while (true) {
+      if (signal?.aborted) throw new Error('AI generation was cancelled by user.');
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunkStr = decoder.decode(value, { stream: true });
+      buffer += chunkStr;
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          const parsed = JSON.parse(trimmed);
+          const token = parsed.message?.content || parsed.response || '';
+          if (token) {
+            fullContent += token;
+            tokenCount++;
+
+            if (token.includes('<think>')) {
+              inThinkBlock = true;
+              onLog?.(`🧠 AI Reasoning Chain (<think>): Analyzing structure...`);
+            }
+            if (inThinkBlock) {
+              thinkText += token;
+              if (token.includes('</think>')) {
+                inThinkBlock = false;
+                onLog?.(`💡 AI Reasoning Complete (${thinkText.length} chars of thinking logic processed).`);
+              }
+            }
+
+            const now = Date.now();
+
+            // Extract newly completed node titles from accumulated JSON
+            const textRegex = /"text"\s*:\s*"([^"]+)"/g;
+            let match: RegExpExecArray | null;
+            while ((match = textRegex.exec(fullContent)) !== null) {
+              const title = match[1];
+              if (title && !loggedNodeTitles.has(title)) {
+                loggedNodeTitles.add(title);
+                onLog?.(`✨ [Stream Token #${tokenCount}] Generated Node: "${title}"`);
+              }
+            }
+
+            if (now - lastLogTime > 250 || parsed.done) {
+              lastLogTime = now;
+              const elapsedSec = ((now - startTime) / 1000).toFixed(1);
+
+              if (inThinkBlock) {
+                const snippet = thinkText.slice(-60).replace(/\n/g, ' ');
+                onLog?.(`🧠 [Thinking ${elapsedSec}s] ${snippet}...`);
+              } else {
+                onLog?.(`⚡ [Live Stream ${elapsedSec}s] Generating structural JSON... (${tokenCount} tokens / ${fullContent.length} bytes)`);
+              }
+            }
+
+            if (parsed.done) {
+              const totalSec = ((Date.now() - startTime) / 1000).toFixed(1);
+              onLog?.(`✅ Ollama stream completed in ${totalSec}s (${tokenCount} tokens generated).`);
+            }
+          }
+        } catch {
+          // ignore incomplete chunk
+        }
+      }
+    }
+
+    if (!fullContent.trim()) {
+      throw new Error('Ollama returned an empty completion response.');
+    }
+    return fullContent;
+  } catch (e: any) {
+    if (e.name === 'AbortError' || signal?.aborted) {
+      throw new Error('AI generation was cancelled by user.');
+    }
+    throw new Error(
+      `Failed to connect to local Ollama service at ${endpoint}: ${e.message}. Please verify Ollama is running ('ollama serve').`
+    );
+  }
+}
+
 export interface NvidiaCompletionParams {
   apiKey?: string;
   modelId?: string;
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
   temperature?: number;
   maxTokens?: number;
+  signal?: AbortSignal;
 }
 
 export async function generateNvidiaCompletion({
@@ -80,6 +292,7 @@ export async function generateNvidiaCompletion({
   messages,
   temperature = 0.7,
   maxTokens = 2048,
+  signal,
 }: NvidiaCompletionParams): Promise<string> {
   const key = apiKey?.trim() || getNvidiaApiKey();
   if (!key) {
@@ -105,11 +318,13 @@ export async function generateNvidiaCompletion({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal,
     });
     if (res.ok || res.status < 500) {
       response = res;
     }
   } catch (e: any) {
+    if (e.name === 'AbortError') throw new Error('AI generation was cancelled by user.');
     lastErrorMsg = e.message;
   }
 
@@ -121,11 +336,13 @@ export async function generateNvidiaCompletion({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal,
       });
       if (expressRes.ok || expressRes.status < 500) {
         response = expressRes;
       }
     } catch (e: any) {
+      if (e.name === 'AbortError') throw new Error('AI generation was cancelled by user.');
       lastErrorMsg = e.message;
     }
   }
@@ -145,8 +362,10 @@ export async function generateNvidiaCompletion({
           temperature,
           max_tokens: maxTokens,
         }),
+        signal,
       });
     } catch (e: any) {
+      if (e.name === 'AbortError') throw new Error('AI generation was cancelled by user.');
       throw new Error(`Failed to connect to NVIDIA API: ${e.message || lastErrorMsg}. Please check network connection.`);
     }
   }
@@ -179,15 +398,136 @@ export async function generateNvidiaCompletion({
 }
 
 /**
+ * Robustly extract and parse JSON from AI model response, automatically repairing common LLM syntax anomalies
+ * (e.g. trailing commas, single quotes, unquoted keys, control chars, markdown wrappers, truncated responses).
+ */
+export function robustParseJson(rawText: string): any {
+  let str = rawText.trim();
+
+  // 1. Extract content inside markdown code block if present
+  const codeBlockMatch = str.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (codeBlockMatch && codeBlockMatch[1]) {
+    str = codeBlockMatch[1].trim();
+  }
+
+  // 2. Extract from first '{' to last '}' if conversational wrapper text exists
+  const firstBrace = str.indexOf('{');
+  const lastBrace = str.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    str = str.substring(firstBrace, lastBrace + 1).trim();
+  } else if (firstBrace !== -1 && lastBrace === -1) {
+    // Truncated response before closing brace
+    str = str.substring(firstBrace).trim();
+  }
+
+  // 3. First attempt: Direct JSON.parse
+  try {
+    return JSON.parse(str);
+  } catch (e1) {
+    // 4. Auto-repair pass for common LLM JSON syntax errors:
+    let repaired = str;
+
+    // a. Strip trailing commas before } or ]
+    repaired = repaired.replace(/,\s*([}\]])/g, '$1');
+
+    // b. Convert single-quoted keys/strings to double-quoted JSON strings
+    repaired = repaired.replace(/([{,]\s*)'([^']+)'\s*:/g, '$1"$2":');
+    repaired = repaired.replace(/:\s*'([^']*)'/g, ': "$1"');
+
+    // c. Replace unescaped control characters & raw linebreaks inside quotes
+    repaired = repaired.replace(/[\u0000-\u001F]+/g, ' ');
+
+    try {
+      return JSON.parse(repaired);
+    } catch (e2) {
+      // d. Remove dangling trailing comma before end of string
+      repaired = repaired.replace(/,\s*$/g, '');
+      try {
+        return JSON.parse(repaired);
+      } catch (e3) {
+        // e. TRUNCATION REPAIR PASS: If AI output was cut off mid-array (hit maxTokens limit)
+        if (repaired.includes('"nodes"')) {
+          const lastObjClose = repaired.lastIndexOf('}');
+          if (lastObjClose !== -1) {
+            let truncated = repaired.substring(0, lastObjClose + 1).trim();
+            if (truncated.endsWith(',')) {
+              truncated = truncated.slice(0, -1).trim();
+            }
+            if (!truncated.endsWith(']')) {
+              truncated += '\n  ]';
+            }
+            if (!truncated.endsWith('}')) {
+              truncated += '\n}';
+            }
+            try {
+              return JSON.parse(truncated);
+            } catch (e4) {
+              let patch = truncated;
+              const openBrackets = (patch.match(/\[/g) || []).length;
+              const closeBrackets = (patch.match(/\]/g) || []).length;
+              const openBraces = (patch.match(/\{/g) || []).length;
+              const closeBraces = (patch.match(/\}/g) || []).length;
+
+              for (let i = 0; i < openBrackets - closeBrackets; i++) patch += ']';
+              for (let i = 0; i < openBraces - closeBraces; i++) patch += '}';
+              try {
+                return JSON.parse(patch);
+              } catch (e5) {
+                // continue
+              }
+            }
+          }
+        }
+
+        console.error('Failed to parse AI JSON:', { rawText, repaired });
+        throw new Error(
+          `AI JSON Syntax Error: ${(e3 as Error).message}. The model response was received but contained malformed JSON formatting.`
+        );
+      }
+    }
+  }
+}
+
+/**
  * Generate structured Mind Map nodes JSON from a user prompt using NVIDIA NIM API.
+ * Supports incremental map updates by passing existing canvas nodes.
  */
 export async function generateMindMapWithNvidia(
   prompt: string,
   apiKey?: string,
-  modelId?: string
+  modelId?: string,
+  existingNodes?: any[],
+  signal?: AbortSignal,
+  onLog?: (msg: string) => void
 ): Promise<{ nodes: any[]; edges: any[] }> {
+  if (signal?.aborted) {
+    throw new Error('AI generation was cancelled by user.');
+  }
+
+  const selectedModel = modelId || getNvidiaSelectedModel();
+  onLog?.(`🚀 Initializing NVIDIA AI MindMap generation using model: ${selectedModel}...`);
+
+  const hasExistingMap = Array.isArray(existingNodes) && existingNodes.length > 0;
+
+  let existingContext = '';
+  if (hasExistingMap) {
+    onLog?.(`🧠 Reading & parsing active canvas state (${existingNodes.length} existing nodes)...`);
+    const condensed = existingNodes.map((n, idx) => ({
+      nodeNumber: idx + 1,
+      id: n.id,
+      text: n.text,
+      parentId: n.parentId || null,
+      isRoot: !!n.isRoot,
+      emoji: n.emoji || '📌',
+      color: n.color || '#00f2fe',
+      details: n.details || '',
+      note: n.note || '',
+    }));
+    existingContext = `CURRENT EXISTING MINDMAP STRUCTURE:\n${JSON.stringify({ nodes: condensed }, null, 2)}\n\n`;
+  }
+
   const systemPrompt = `You are an expert AI mindmap & architecture designer for the Toolip workspace.
-Your job is to generate a comprehensive, visually rich mind map graph structure based on the user's prompt.
+Your job is to generate or update a comprehensive, visually rich mind map graph structure based on the user's prompt.
 
 You MUST respond ONLY with a valid, clean JSON object (no markdown formatting outside the JSON, no backticks wrappers if possible, just pure valid JSON).
 
@@ -218,35 +558,58 @@ JSON Schema:
 }
 
 Rules:
-1. Always create exactly ONE main root node (isRoot: true, depth: 0, parentId: null).
-2. Create 3 to 6 main sub-branches (depth: 1, parentId set to root node id).
-3. For each sub-branch, create 2 to 4 child sub-items (depth: 2, parentId set to parent branch id).
+1. Always keep exactly ONE main root node (isRoot: true, depth: 0, parentId: null).
+2. IF "CURRENT EXISTING MINDMAP STRUCTURE" IS PROVIDED: READ IT CAREFULLY. Each node has a "nodeNumber" (1, 2, 3...) matching the UI label. When the user instruction specifies "upgrade node N", "node #N", or names a specific topic, attach the new sub-nodes directly under that node's "id" (by setting parentId to that node's "id"). Preserve all existing node IDs, titles, and hierarchy. Return the full updated node list.
+3. IF NO EXISTING STRUCTURE IS PROVIDED: Create a fresh mind map with 3 to 6 main sub-branches (depth: 1) and sub-items (depth: 2). Keep overall node count between 8 to 16 nodes to ensure complete responses without hitting output limits.
 4. Assign appropriate emojis (e.g. 🧠, 💡, 🚀, 🎯, 🎨, 💻, ⚡, 🔥, 🏆, 📌) to every node.
 5. Assign vibrant hex colors from this palette (#00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6, #ff5722) based on branch themes.
 6. Provide informative "details" and "note" content for each node.
-7. Return ONLY the raw JSON string matching the schema.`;
+7. CRITICAL JSON RULES: Use double quotes for all JSON keys/strings. Never include trailing commas before closing braces/brackets. Return ONLY the raw JSON string matching the schema.`;
 
-  const rawText = await generateNvidiaCompletion({
-    apiKey,
-    modelId,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Generate a mindmap for: ${prompt}` },
-    ],
-    temperature: 0.6,
-    maxTokens: 3000,
-  });
+  const userPromptText = hasExistingMap
+    ? `${existingContext}USER INSTRUCTION TO MODIFY/EXPAND MAP:\n"${prompt}"\n\nTask: Modify/upgrade the existing mindmap above based on the user's instruction. If node N is specified, attach new nodes under node N. Return the full updated array of nodes.`
+    : `Generate a mindmap for: ${prompt}`;
 
-  // Extract JSON string (strip ```json blocks if present)
-  let cleanJson = rawText.trim();
-  if (cleanJson.startsWith('```')) {
-    cleanJson = cleanJson.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+  const localOllamaMatch = LOCAL_OLLAMA_MODELS.find((m) => m.id === selectedModel);
+
+  let rawText = '';
+  if (localOllamaMatch) {
+    onLog?.(`🏠 Routing generation request to Local Ollama model (${localOllamaMatch.name})...`);
+    rawText = await generateOllamaCompletion({
+      model: localOllamaMatch.ollamaModel || 'qwen2.5-coder:7b',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPromptText },
+      ],
+      signal,
+      onLog,
+    });
+  } else {
+    onLog?.(`📡 Dispatching prompt request to NVIDIA NIM API endpoint...`);
+    if (signal?.aborted) throw new Error('AI generation was cancelled by user.');
+
+    rawText = await generateNvidiaCompletion({
+      apiKey,
+      modelId: selectedModel,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPromptText },
+      ],
+      temperature: 0.6,
+      maxTokens: 3500,
+      signal,
+    });
   }
 
-  const parsed = JSON.parse(cleanJson);
+  if (signal?.aborted) throw new Error('AI generation was cancelled by user.');
+  onLog?.(`⚡ API Response received. Executing robust JSON auto-repair parser...`);
+
+  const parsed = robustParseJson(rawText);
   if (!parsed || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0) {
     throw new Error('AI returned invalid mindmap node structure.');
   }
+
+  onLog?.(`⚙️ Successfully parsed ${parsed.nodes.length} nodes from AI JSON response. Computing 2D graph layout...`);
 
   // Calculate layout coordinates for nodes (radial / tree layout)
   const nodes: any[] = [];
@@ -265,12 +628,14 @@ Rules:
     isRoot: true,
     depth: 0,
     parentId: null,
-    x: rootX,
-    y: rootY,
-    width: 220,
-    height: 64,
+    x: rootNode.x !== undefined ? rootNode.x : rootX,
+    y: rootNode.y !== undefined ? rootNode.y : rootY,
+    width: rootNode.width || 220,
+    height: rootNode.height || 64,
     color: rootNode.color || '#00f2fe',
     emoji: rootNode.emoji || '🧠',
+    details: rootNode.details || '',
+    note: rootNode.note || '',
   });
 
   const level1Nodes = rawNodes.filter((n: any) => n !== rootNode && (n.parentId === rootId || n.depth === 1));
@@ -282,8 +647,8 @@ Rules:
 
   level1Nodes.forEach((node: any, idx: number) => {
     const angle = idx * angleStep - Math.PI / 2;
-    const x = Math.round(rootX + radius1 * Math.cos(angle));
-    const y = Math.round(rootY + radius1 * Math.sin(angle));
+    const x = node.x !== undefined ? node.x : Math.round(rootX + radius1 * Math.cos(angle));
+    const y = node.y !== undefined ? node.y : Math.round(rootY + radius1 * Math.sin(angle));
 
     const nodeId = node.id || `node_l1_${idx}`;
 
@@ -295,10 +660,12 @@ Rules:
       parentId: rootId,
       x,
       y,
-      width: 180,
-      height: 56,
+      width: node.width || 180,
+      height: node.height || 56,
       color: node.color || '#ff007f',
       emoji: node.emoji || '🚀',
+      details: node.details || '',
+      note: node.note || '',
     });
 
     edges.push({
@@ -319,8 +686,8 @@ Rules:
 
       children.forEach((child: any, cIdx: number) => {
         const cAngle = totalChild > 1 ? startAngle + cIdx * childStep : angle;
-        const cx = Math.round(x + childRadius * Math.cos(cAngle));
-        const cy = Math.round(y + childRadius * Math.sin(cAngle));
+        const cx = child.x !== undefined ? child.x : Math.round(x + childRadius * Math.cos(cAngle));
+        const cy = child.y !== undefined ? child.y : Math.round(y + childRadius * Math.sin(cAngle));
 
         const childId = child.id || `node_l2_${idx}_${cIdx}`;
         nodes.push({
@@ -331,10 +698,12 @@ Rules:
           parentId: nodeId,
           x: cx,
           y: cy,
-          width: 160,
-          height: 50,
+          width: child.width || 160,
+          height: child.height || 50,
           color: child.color || node.color || '#10b981',
           emoji: child.emoji || '📌',
+          details: child.details || '',
+          note: child.note || '',
         });
 
         edges.push({
@@ -347,6 +716,36 @@ Rules:
     }
   });
 
+  // Attach any orphaned nodes
+  const addedIds = new Set(nodes.map((n) => n.id));
+  rawNodes.forEach((n: any, idx: number) => {
+    if (!addedIds.has(n.id)) {
+      const orphanId = n.id || `orphan_${idx}`;
+      nodes.push({
+        ...n,
+        id: orphanId,
+        isRoot: false,
+        depth: n.depth || 2,
+        parentId: n.parentId || rootId,
+        x: n.x !== undefined ? n.x : 500,
+        y: n.y !== undefined ? n.y : 500,
+        width: n.width || 160,
+        height: n.height || 50,
+        color: n.color || '#8b5cf6',
+        emoji: n.emoji || '📌',
+      });
+      if (n.parentId && addedIds.has(n.parentId)) {
+        edges.push({
+          id: `e_${n.parentId}_${orphanId}`,
+          source: n.parentId,
+          target: orphanId,
+          color: n.color || '#8b5cf6',
+        });
+      }
+    }
+  });
+
+  onLog?.(`✨ MindMap graph generated successfully with ${nodes.length} nodes and ${edges.length} connections!`);
   return { nodes, edges };
 }
 
