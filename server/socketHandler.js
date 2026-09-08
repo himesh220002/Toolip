@@ -112,7 +112,7 @@ const setupSocketHandlers = (io) => {
           existingSocketId === socket.id ||
           (userInfo.userId && existingUser.userId === userInfo.userId) ||
           (userInfo.name && existingUser.name === userInfo.name);
-        
+
         if (isSameUser) {
           roomMap.delete(existingSocketId);
         }

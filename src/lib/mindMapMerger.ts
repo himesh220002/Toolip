@@ -148,9 +148,9 @@ export function mergeIncrementalMindMap(
       let isLeft = false;
       if (isParentRoot) {
         const leftCount = mergedNodes.filter((n) => n.parentId === rootId && n.x < rootX).length +
-                          newNodesToAdd.filter((n) => n.parentId === rootId && n.x < rootX).length;
+          newNodesToAdd.filter((n) => n.parentId === rootId && n.x < rootX).length;
         const rightCount = mergedNodes.filter((n) => n.parentId === rootId && n.x >= rootX).length +
-                           newNodesToAdd.filter((n) => n.parentId === rootId && n.x >= rootX).length;
+          newNodesToAdd.filter((n) => n.parentId === rootId && n.x >= rootX).length;
         isLeft = leftCount < rightCount;
       } else {
         isLeft = parentX < rootX;

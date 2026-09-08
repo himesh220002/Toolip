@@ -579,8 +579,8 @@ export async function generateMindMapWithNvidia(
     onLog?.(`🧠 Reading & parsing active canvas state (${existingNodes.length} existing nodes)...`);
 
     const targetNode = (targetNodeId && existingNodes.find((n) => n.id === targetNodeId)) ||
-                       existingNodes.find((n) => n.isRoot || n.depth === 0) ||
-                       existingNodes[0];
+      existingNodes.find((n) => n.isRoot || n.depth === 0) ||
+      existingNodes[0];
 
     const targetChildrenTitles = existingNodes
       .filter((n) => n.parentId === targetNode.id)

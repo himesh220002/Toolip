@@ -390,7 +390,7 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
                 </div>
 
                 {/* Actual tool — dark armor surface so selectors stay visible */}
-                <div className="bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_textarea]:bg-[#060913] [&_textarea]:text-white [&_textarea]:border-white/10 [&_label]:text-white/60 flex-1 overflow-y-auto px-4 sm:px-10 lg:px-20 py-3 flex flex-col min-h-0 h-full w-full">
+                <div className="bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_textarea]:bg-[#060913] [&_textarea]:text-white [&_textarea]:border-white/10 [&_label]:text-white/60 flex-1 overflow-hidden px-4 sm:px-10 lg:px-20 py-3 flex flex-col min-h-0 h-full w-full">
                   <div className="max-w-none text-[15px] leading-relaxed [&_p]:text-[15px] [&_h3]:text-lg [&_h2]:text-xl flex-1 flex flex-col min-h-0 h-full w-full">
                     {renderComponent()}
                   </div>

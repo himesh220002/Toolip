@@ -63,8 +63,8 @@ export const LogTableModal: React.FC<LogTableModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 sm:p-6 animate-in fade-in">
-      <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-in fade-in">
+      <div className="relative w-full max-w-7xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
@@ -92,7 +92,7 @@ export const LogTableModal: React.FC<LogTableModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-hidden flex flex-col p-4 sm:p-6">
+        <div className="flex-1 overflow-hidden flex flex-col p-4">
           {!isLoggedIn ? (
             <div className="flex-1 flex flex-col items-center justify-center py-12 text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">

@@ -206,8 +206,8 @@ MANDATORY RULES FOR MAP UPGRADES & EXPANSIONS:
 
   if (existingNodes.length > 0) {
     const targetNode = (targetNodeId && existingNodes.find((n) => n.id === targetNodeId)) ||
-                       existingNodes.find((n) => n.isRoot || n.depth === 0) ||
-                       existingNodes[0];
+      existingNodes.find((n) => n.isRoot || n.depth === 0) ||
+      existingNodes[0];
 
     const targetChildrenTitles = existingNodes
       .filter((n) => n.parentId === targetNode.id)
