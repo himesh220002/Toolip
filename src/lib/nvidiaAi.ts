@@ -577,18 +577,17 @@ export async function generateMindMapWithNvidia(
   let existingContext = '';
   if (hasExistingMap) {
     onLog?.(`🧠 Reading & parsing active canvas state (${existingNodes.length} existing nodes)...`);
-    const condensed = existingNodes.map((n, idx) => ({
-      nodeNumber: idx + 1,
-      id: n.id,
-      text: n.text,
-      parentId: n.parentId || null,
-      isRoot: !!n.isRoot,
-      emoji: n.emoji || '📌',
-      color: n.color || '#00f2fe',
-      details: n.details || '',
-      note: n.note || '',
-    }));
-    existingContext = `CURRENT EXISTING MINDMAP STRUCTURE:\n${JSON.stringify({ nodes: condensed }, null, 2)}\n\n`;
+
+    const targetNode = (targetNodeId && existingNodes.find((n) => n.id === targetNodeId)) ||
+                       existingNodes.find((n) => n.isRoot || n.depth === 0) ||
+                       existingNodes[0];
+
+    const targetChildrenTitles = existingNodes
+      .filter((n) => n.parentId === targetNode.id)
+      .map((n) => n.text);
+
+    existingContext = `TARGET PARENT NODE TO EXPAND: "${targetNode.text}" (ID: "${targetNode.id}")
+Current Sub-Items under Target Node: ${JSON.stringify(targetChildrenTitles)}\n\n`;
   }
 
   const systemPrompt = `You are an expert AI mindmap & architecture designer for the Toolip workspace.
@@ -600,39 +599,30 @@ JSON Schema:
 {
   "nodes": [
     {
-      "id": "root_1",
-      "text": "Main Topic Title",
-      "emoji": "🧠",
-      "color": "#00f2fe",
-      "isRoot": true,
-      "depth": 0,
-      "details": "High level description of main topic",
-      "note": "Initial notes for main topic"
-    },
-    {
-      "id": "node_2",
-      "text": "Branch 1 Title",
-      "parentId": "root_1",
+      "id": "new_1",
+      "text": "Subtopic Title",
+      "parentId": "target_id",
       "emoji": "🚀",
       "color": "#ff007f",
       "depth": 1,
-      "details": "Details about branch 1",
-      "note": "Notes for branch 1"
+      "details": "Details about subtopic",
+      "note": "Notes about subtopic"
     }
   ]
 }
 
 Rules:
-1. Always keep exactly ONE main root node (isRoot: true, depth: 0, parentId: null).
-2. IF "CURRENT EXISTING MINDMAP STRUCTURE" IS PROVIDED: You MUST PRESERVE all existing node IDs and structure. When the user asks to upgrade or expand a node, create NEW nodes with unique "id" strings and set their "parentId" to the target node's "id". Do NOT delete or replace existing nodes from other branches.
-3. IF NO EXISTING STRUCTURE IS PROVIDED: Create a fresh mind map with 3 to 6 main sub-branches (depth: 1) and sub-items (depth: 2). Keep overall node count between 8 to 16 nodes to ensure complete responses without hitting output limits.
-4. Assign appropriate emojis (e.g. 🧠, 💡, 🚀, 🎯, 🎨, 💻, ⚡, 🔥, 🏆, 📌) to every node.
-5. Assign vibrant hex colors from this palette (#00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6, #ff5722) based on branch themes.
-6. Provide informative "details" and "note" content for each node.
-7. CRITICAL JSON RULES: Use double quotes for all JSON keys/strings. Never include trailing commas before closing braces/brackets. Return ONLY the raw JSON string matching the schema.`;
+1. IF EXPANDING AN EXISTING TARGET NODE:
+   - Generate ONLY 4 to 8 BRAND NEW, highly detailed sub-nodes with "parentId" set to the target node's "id" (or a new sub-item's id).
+   - Do NOT output existing ancestor nodes, root nodes, or existing sub-items. Output ONLY the array of new nodes being added.
+2. IF NO EXISTING STRUCTURE IS PROVIDED: Create a fresh mind map with 1 root node and 3 to 6 main sub-branches (depth: 1) and sub-items (depth: 2).
+3. Assign appropriate emojis (e.g. 🧠, 💡, 🚀, 🎯, 🎨, 💻, ⚡, 🔥, 🏆, 📌) to every node.
+4. Assign vibrant hex colors from this palette (#00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6, #ff5722) based on branch themes.
+5. Provide informative "details" and "note" content for each node.
+6. CRITICAL JSON RULES: Use double quotes for all JSON keys/strings. Never include trailing commas before closing braces/brackets. Return ONLY the raw JSON string matching the schema.`;
 
   const userPromptText = hasExistingMap
-    ? `${existingContext}USER INSTRUCTION TO MODIFY/EXPAND MAP:\n"${prompt}"\n\nTask: Expand/upgrade the mind map according to the user request. Attach new nodes under the specified target node ID (or relevant node). PRESERVE ALL EXISTING NODES. Output the nodes JSON array.`
+    ? `${existingContext}USER PROMPT: "${prompt}"\n\nTask: Generate ONLY 4 to 8 BRAND NEW sub-nodes attaching under parentId specified above. Do NOT include existing nodes. Output the nodes JSON array.`
     : `Generate a mindmap for: ${prompt}`;
 
   const isOllamaModel = selectedModel.startsWith('ollama/');

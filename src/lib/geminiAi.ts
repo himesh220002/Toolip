@@ -205,15 +205,26 @@ MANDATORY RULES FOR MAP UPGRADES & EXPANSIONS:
   let userPromptText = `Generate a complete, deeply detailed mind map for topic: "${prompt}"`;
 
   if (existingNodes.length > 0) {
-    const compactNodes = existingNodes.map((n, idx) => ({
-      nodeNumber: idx + 1,
-      id: n.id,
-      text: n.text,
-      depth: n.depth,
-      parentId: n.parentId || null,
-      isRoot: !!n.isRoot,
-    }));
-    userPromptText = `EXISTING MINDMAP STRUCTURE:\n${JSON.stringify({ nodes: compactNodes }, null, 2)}\n\nUSER REQUEST: "${prompt}"\n\nTask: Expand/upgrade the mind map according to the user request. Attach new nodes under the specified target node ID (or relevant node). PRESERVE ALL EXISTING NODES. Output the nodes JSON array.`;
+    const targetNode = (targetNodeId && existingNodes.find((n) => n.id === targetNodeId)) ||
+                       existingNodes.find((n) => n.isRoot || n.depth === 0) ||
+                       existingNodes[0];
+
+    const targetChildrenTitles = existingNodes
+      .filter((n) => n.parentId === targetNode.id)
+      .map((n) => n.text);
+
+    userPromptText = `MAP UPGRADE REQUEST:
+- TARGET PARENT NODE TO EXPAND: "${targetNode.text}" (ID: "${targetNode.id}")
+- Current Sub-Items under Target Node: ${JSON.stringify(targetChildrenTitles)}
+
+USER PROMPT: "${prompt}"
+
+CRITICAL GENERATION RULES:
+1. Generate ONLY 4 to 8 BRAND NEW sub-nodes to extend the target parent node "${targetNode.text}".
+2. Set "parentId": "${targetNode.id}" on every new node (or set parentId to one of your newly generated node IDs if creating multi-level sub-branches).
+3. DO NOT INCLUDE OR REPEAT EXISTING NODES (${JSON.stringify(targetChildrenTitles)}). Do NOT output root or ancestor nodes. Output ONLY the new nodes array.
+4. Each new node MUST have: unique string "id" (e.g. "new_1", "new_2"), "text" (specific title), "parentId" ("${targetNode.id}"), "emoji", "color", "details", and "note".
+5. Return ONLY a valid JSON object matching: {"nodes": [...]}.`;
   }
 
   onLog?.(`📡 Dispatching request to Google Gemini API endpoint...`);

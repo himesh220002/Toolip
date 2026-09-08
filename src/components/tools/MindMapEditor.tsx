@@ -458,19 +458,22 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       // Lock building target node ID for this entire generation run
       let targetId: string | null = selectedNodeId;
       if (!targetId && nodes.length > 0) {
-        const match = aiPrompt.trim().match(/node\s*#?\s*(\d+)/i);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (num >= 1 && num <= nodes.length) {
-            targetId = nodes[num - 1].id;
-          }
-        }
-        if (!targetId) {
-          const promptLower = aiPrompt.trim().toLowerCase();
-          const sortedNodes = [...nodes].sort((a, b) => b.text.length - a.text.length);
-          const matched = sortedNodes.find((n) => promptLower.includes(n.text.toLowerCase().trim()));
-          if (matched) {
-            targetId = matched.id;
+        const promptLower = aiPrompt.trim().toLowerCase();
+        // Sort by title length descending so longer matching titles take precedence (e.g. "Launch & Post-Launch" over "Launch")
+        const sortedNodes = [...nodes].sort((a, b) => b.text.length - a.text.length);
+        const matchedByTitle = sortedNodes.find(
+          (n) => n.text.trim() && promptLower.includes(n.text.toLowerCase().trim())
+        );
+
+        if (matchedByTitle) {
+          targetId = matchedByTitle.id;
+        } else {
+          const match = aiPrompt.trim().match(/node\s*#?\s*(\d+)/i);
+          if (match) {
+            const num = parseInt(match[1], 10);
+            if (num >= 1 && num <= nodes.length) {
+              targetId = nodes[num - 1].id;
+            }
           }
         }
       }

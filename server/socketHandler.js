@@ -11,19 +11,27 @@ function getUserFromToken(token) {
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    return { id: decoded.userId, name: decoded.name, email: decoded.email, isGuest: !!decoded.isGuest };
+    const uid = decoded.userId || decoded.id || decoded.sub;
+    if (!uid) return null;
+    return {
+      id: uid,
+      userId: uid,
+      name: decoded.name || 'User',
+      email: decoded.email || '',
+      isGuest: !!decoded.isGuest,
+    };
   } catch (e) {
     return null;
   }
 }
 
 function canEditRoom(roomId, userInfo) {
-  // Allow edits only if user is authenticated (not guest) when in a collaborative room
   // Private offline mode (no roomId) is always editable
   if (!roomId || !roomId.startsWith('room_')) return true;
   if (!userInfo) return false;
   if (userInfo.isGuest) return false;
-  if (!userInfo.userId || String(userInfo.userId).startsWith('guest_')) return false;
+  const uid = userInfo.userId || userInfo.id;
+  if (!uid || String(uid).startsWith('guest_') || String(uid).startsWith('Guest')) return false;
   return true;
 }
 
@@ -32,7 +40,7 @@ async function createLogEntry({ roomId, toolId, userInfo, action, summary, nodeI
     await RoomLog.create({
       roomId,
       toolId: toolId || 'mindmap',
-      userId: String(userInfo?.userId || 'guest'),
+      userId: String(userInfo?.userId || userInfo?.id || 'guest'),
       userName: userInfo?.name || 'Guest',
       userEmail: userInfo?.email || '',
       action,
@@ -74,11 +82,12 @@ const setupSocketHandlers = (io) => {
       const tokenUser = getUserFromToken(token);
       const effectiveUser = tokenUser || user;
 
-      const userId = tokenUser?.id || user?.id || user?.email || user?.name || `user-${socket.id.slice(0, 4)}`;
+      const userId = tokenUser?.userId || tokenUser?.id || user?.id || user?.email || user?.name || `user-${socket.id.slice(0, 4)}`;
       const isGuest = !tokenUser || tokenUser.isGuest || String(userId).startsWith('guest_') || String(userId).startsWith('Guest');
       const userInfo = {
         socketId: socket.id,
         userId,
+        id: userId,
         name: tokenUser?.name || user?.name || `Collaborator-${socket.id.slice(0, 4)}`,
         email: tokenUser?.email || user?.email || '',
         avatar: user?.avatarUrl || '',
@@ -123,13 +132,13 @@ const setupSocketHandlers = (io) => {
     socket.on('state_update', async ({ roomId, toolId, dataState, token }) => {
       if (!roomId || !dataState) return;
 
-      // Gate: only authenticated users can mutate collaborative rooms
-      const tokenUser = token ? getUserFromToken(token) : null;
+      const clientToken = token || socket.authToken;
+      const tokenUser = clientToken ? getUserFromToken(clientToken) : null;
       const effectiveUser = tokenUser || socket.userInfo;
-      const canEdit = canEditRoom(roomId, effectiveUser || socket.userInfo);
+      const canEdit = canEditRoom(roomId, effectiveUser);
       if (!canEdit) {
         socket.emit('edit_denied', { reason: 'login_required', message: 'Please login to edit this collaborative graph' });
-        console.log(`🚫 Edit denied for ${socket.userInfo?.name} in ${roomId} (guest)`);
+        console.log(`🚫 Edit denied for ${socket.userInfo?.name || 'User'} in ${roomId} (guest)`);
         return;
       }
 
@@ -162,7 +171,7 @@ const setupSocketHandlers = (io) => {
           );
           pendingSaves.delete(roomId);
           // Create audit log for this save
-          const logUser = token ? getUserFromToken(token) || socket.userInfo : socket.userInfo;
+          const logUser = clientToken ? getUserFromToken(clientToken) || socket.userInfo : socket.userInfo;
           await createLogEntry({
             roomId,
             toolId,
@@ -182,7 +191,8 @@ const setupSocketHandlers = (io) => {
     // Node specific delta update (e.g. dragging a single node or editing text)
     socket.on('node_update', ({ roomId, node, token }) => {
       if (!roomId || !node) return;
-      const tokenUser = token ? getUserFromToken(token) : null;
+      const clientToken = token || socket.authToken;
+      const tokenUser = clientToken ? getUserFromToken(clientToken) : null;
       const effectiveUser = tokenUser || socket.userInfo;
       if (!canEditRoom(roomId, effectiveUser)) {
         socket.emit('edit_denied', { reason: 'login_required', message: 'Please login to edit this collaborative graph' });
