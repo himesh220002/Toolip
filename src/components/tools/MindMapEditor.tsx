@@ -69,6 +69,12 @@ import {
   setNvidiaSelectedModel,
   generateMindMapWithNvidia
 } from '../../lib/nvidiaAi';
+import {
+  CLOUD_GEMINI_MODELS,
+  generateMindMapWithGemini,
+  getGeminiApiKey,
+  setGeminiApiKey
+} from '../../lib/geminiAi';
 
 export interface MindNode {
   id: string;
@@ -235,6 +241,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     if (key) {
       setNvidiaApiKeyInput(key);
     }
+    const gKey = getGeminiApiKey();
+    if (gKey) {
+      setGeminiApiKeyInput(gKey);
+    }
     const savedModel = getNvidiaSelectedModel();
     if (savedModel) {
       setSelectedNvidiaModel(savedModel);
@@ -256,9 +266,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     return () => clearInterval(interval);
   }, []);
 
-  // NVIDIA BYOK AI Generator State
+  // NVIDIA & GEMINI BYOK AI Generator State
   const [isNvidiaAiModalOpen, setIsNvidiaAiModalOpen] = useState(false);
   const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState('');
+  const [geminiApiKeyInput, setGeminiApiKeyInput] = useState('');
   const [selectedNvidiaModel, setSelectedNvidiaModel] = useState('deepseek-ai/deepseek-v4-pro-0813');
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
@@ -292,6 +303,12 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     setNvidiaApiKey(key);
     setNvidiaApiKeyInput(key);
     showNotification(key.trim() ? '✓ Saved NVIDIA API Key to BYOK local storage' : 'Removed NVIDIA API Key');
+  };
+
+  const handleSaveGeminiKey = (key: string) => {
+    setGeminiApiKey(key);
+    setGeminiApiKeyInput(key);
+    showNotification(key.trim() ? '✓ Saved Google Gemini API Key to BYOK local storage' : 'Removed Gemini API Key');
   };
 
   const handleSelectNvidiaModel = (modelId: string) => {
@@ -398,8 +415,16 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       setAiErrorMsg('Please enter a topic or prompt for AI generation');
       return;
     }
+
+    const isGeminiModel = selectedNvidiaModel.startsWith('gemini-');
     const isLocalModel = selectedNvidiaModel.startsWith('ollama/');
-    if (!isLocalModel && !nvidiaApiKeyInput.trim()) {
+
+    if (isGeminiModel && !geminiApiKeyInput.trim()) {
+      setAiErrorMsg('Google Gemini API Key required. Please enter your key from Google AI Studio (https://aistudio.google.com/app/apikey).');
+      return;
+    }
+
+    if (!isLocalModel && !isGeminiModel && !nvidiaApiKeyInput.trim()) {
       setAiErrorMsg('NVIDIA API Key required for Cloud Models. Please enter your BYOK key (nvapi-...).');
       return;
     }
@@ -414,10 +439,15 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     setAiLogs([]);
     setShowAiLogPanel(true);
     setIsLogExpanded(true);
-    addAiLog(`🚀 Starting AI MindMap generation for prompt: "${aiPrompt.trim()}"`, 'info');
+    addAiLog(`🚀 Starting AI MindMap generation (${selectedNvidiaModel}) for: "${aiPrompt.trim()}"`, 'info');
 
     try {
-      handleSaveNvidiaKey(nvidiaApiKeyInput);
+      if (isGeminiModel) {
+        handleSaveGeminiKey(geminiApiKeyInput);
+      } else if (!isLocalModel) {
+        handleSaveNvidiaKey(nvidiaApiKeyInput);
+      }
+
       const isUpgrading = nodes.length > 0;
 
       // Lock building target node ID for this entire generation run
@@ -442,16 +472,32 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       const controller = new AbortController();
       aiAbortControllerRef.current = controller;
 
-      const { nodes: newNodes, edges: newEdges } = await generateMindMapWithNvidia(
-        aiPrompt.trim(),
-        nvidiaApiKeyInput.trim(),
-        selectedNvidiaModel,
-        nodes,
-        controller.signal,
-        (msg: string) => {
-          addAiLog(msg, 'info');
-        }
-      );
+      let newGraph: { nodes: any[]; edges: any[] };
+      if (isGeminiModel) {
+        newGraph = await generateMindMapWithGemini(
+          aiPrompt.trim(),
+          geminiApiKeyInput.trim(),
+          selectedNvidiaModel,
+          nodes,
+          controller.signal,
+          (msg: string) => {
+            addAiLog(msg, 'info');
+          }
+        );
+      } else {
+        newGraph = await generateMindMapWithNvidia(
+          aiPrompt.trim(),
+          nvidiaApiKeyInput.trim(),
+          selectedNvidiaModel,
+          nodes,
+          controller.signal,
+          (msg: string) => {
+            addAiLog(msg, 'info');
+          }
+        );
+      }
+
+      const { nodes: newNodes, edges: newEdges } = newGraph;
 
       setSelectedNodeId(null);
       setSelectedEdgeId(null);
@@ -462,9 +508,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         broadcastStateUpdate({ nodes: newNodes, edges: newEdges });
       }
 
+      const providerLabel = isGeminiModel ? 'Google Gemini AI' : isLocalModel ? 'Local Ollama' : 'NVIDIA NIM';
       const successText = isUpgrading
-        ? '✨ Upgraded existing MindMap structure with NVIDIA AI!'
-        : '✨ AI MindMap successfully generated with NVIDIA NIM!';
+        ? `✨ Upgraded existing MindMap structure with ${providerLabel}!`
+        : `✨ AI MindMap successfully generated with ${providerLabel}!`;
       addAiLog(successText, 'success');
       showNotification(successText);
       setIsNvidiaAiModalOpen(false);
@@ -2489,7 +2536,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               title="Share room & collaborate real-time with team members"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>{isCollaborating ? `Live (${activeUsers.length})` : 'Share & Team'}</span>
+              <span>{isCollaborating ? `Live (${activeUsers.length})` : 'Team Collaboration'}</span>
             </button>
 
             {isCollaborating && (
@@ -2560,6 +2607,14 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   onChange={(e) => handleSelectNvidiaModel(e.target.value)}
                   className="bg-transparent text-emerald-300 text-xs font-semibold focus:outline-none cursor-pointer max-w-[220px] sm:max-w-none"
                 >
+                  <optgroup label="⚡ Direct Google Gemini Models (Instant Queue)" className="bg-slate-900 text-blue-400 font-bold">
+                    {CLOUD_GEMINI_MODELS.map((m) => (
+                      <option key={m.id} value={m.id} className="bg-slate-900 text-white font-medium">
+                        {m.name} ({m.badge})
+                      </option>
+                    ))}
+                  </optgroup>
+
                   <optgroup label="🌐 NVIDIA Cloud Models (BYOK)" className="bg-slate-900 text-cyan-400 font-bold">
                     {CLOUD_NVIDIA_MODELS.map((m) => (
                       <option key={m.id} value={m.id} className="bg-slate-900 text-white font-medium">
@@ -2830,7 +2885,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               ))}
 
               {/* Render Connecting Edges */}
-              {visibleEdges.map((e) => {
+              {visibleEdges.map((e, idx) => {
                 const srcNode = nodes.find((n) => n.id === e.source);
                 const tgtNode = nodes.find((n) => n.id === e.target);
                 if (!srcNode || !tgtNode) return null;
@@ -2850,7 +2905,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 const markerId = `arrow-${strokeColor.replace('#', '')}`;
 
                 return (
-                  <g key={e.id} className="group cursor-pointer">
+                  <g key={`${e.id}_${idx}`} className="group cursor-pointer">
                     {/* Invisible wide stroke for easy clicking/holding edge */}
                     <path
                       d={pathD}
@@ -2971,7 +3026,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               transformOrigin: '0 0'
             }}
           >
-            {visibleNodes.map((node) => {
+            {visibleNodes.map((node, idx) => {
               const isSelected = node.id === selectedNodeId;
               const isRoot = !!node.isRoot;
 
@@ -3002,7 +3057,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
               return (
                 <div
-                  key={node.id}
+                  key={`${node.id}_${idx}`}
                   onMouseDown={(e) => handleNodeMouseDown(e, node)}
                   onDoubleClick={(e) => handleNodeDoubleClick(e, node)}
                   className={`absolute pointer-events-auto flex flex-col justify-between px-4 py-2.5 rounded-2xl ${draggedNodeId === node.id ? 'transition-none' : 'transition-colors transition-shadow'
@@ -3029,15 +3084,15 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                       ? (node.id === activeBuildingTargetId || node.parentId === activeBuildingTargetId)
                       : (!node.isRoot || nodes.length === 1)
                   ) && (
-                    <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center">
-                      <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-950/95 border border-amber-400/80 text-amber-300 shadow-md text-[9px] font-black tracking-tight animate-bounce">
-                        <span className="inline-block animate-[spin_0.8s_ease-in-out_infinite] text-xs">🔨</span>
-                        <span className="font-mono uppercase text-amber-300 text-[8.5px] tracking-wider animate-pulse whitespace-nowrap">
-                          👷‍♂️ Hammering...
-                        </span>
+                      <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center">
+                        <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-950/95 border border-amber-400/80 text-amber-300 shadow-md text-[9px] font-black tracking-tight animate-bounce">
+                          <span className="inline-block animate-[spin_0.8s_ease-in-out_infinite] text-xs">🔨</span>
+                          <span className="font-mono uppercase text-amber-300 text-[8.5px] tracking-wider animate-pulse whitespace-nowrap">
+                            👷‍♂️ Hammering...
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                   {!hasChildren ? (
                     /* Single Row Layout for Child / Leaf Nodes (Truncate with ... after 300px max) */
                     <div className="flex items-center gap-2 w-full h-full min-w-0">
@@ -3934,8 +3989,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   <span className="font-mono font-bold text-slate-500 uppercase text-[10px]">Sub-branches ({childNodes.length}):</span>
                   {childNodes.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                      {childNodes.map((child) => (
-                        <span key={child.id} className="bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-[11px] text-slate-200 font-semibold flex items-center gap-1">
+                      {childNodes.map((child, childIdx) => (
+                        <span key={`${child.id}_${childIdx}`} className="bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-[11px] text-slate-200 font-semibold flex items-center gap-1">
                           {child.emoji && <span>{child.emoji}</span>}
                           <span>{child.text}</span>
                         </span>
@@ -4320,6 +4375,40 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                {/* Google Gemini BYOK API Key Section */}
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Google Gemini API Key (Direct API)</span>
+                    </label>
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-blue-400 hover:underline flex items-center gap-1"
+                    >
+                      Get Key from Google AI Studio ↗
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="password"
+                      value={geminiApiKeyInput}
+                      onChange={(e) => setGeminiApiKeyInput(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-blue-300 placeholder-slate-600 focus:outline-none focus:border-blue-400 transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSaveGeminiKey(geminiApiKeyInput)}
+                      className="px-3.5 py-2.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 font-bold text-xs rounded-xl border border-blue-500/40 transition cursor-pointer shrink-0"
+                    >
+                      Save Gemini Key
+                    </button>
+                  </div>
+                </div>
+
                 {/* NVIDIA BYOK API Key Section */}
                 <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
                   <div className="flex items-center justify-between">
@@ -4356,6 +4445,37 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
                 {/* Model Selector Cards */}
                 <div className="space-y-3">
+                  {/* Section 0: Direct Google Gemini Models */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-blue-400 font-extrabold">⚡ Direct Google Gemini AI Models (Instant Queue)</span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {CLOUD_GEMINI_MODELS.map((model) => {
+                        const isSelected = selectedNvidiaModel === model.id;
+                        return (
+                          <button
+                            key={model.id}
+                            type="button"
+                            onClick={() => handleSelectNvidiaModel(model.id)}
+                            className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${isSelected
+                              ? 'bg-blue-950/40 border-blue-400 text-white shadow-md shadow-blue-500/10'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                              }`}
+                          >
+                            <div>
+                              <span className="text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-blue-400 inline-block mb-1">
+                                {model.badge}
+                              </span>
+                              <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                            </div>
+                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Section 1: Cloud NVIDIA Models */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
@@ -4642,7 +4762,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 </div>
 
                 {/* Prompt Text Area */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-200">
                     Brainstorm Prompt / Topic
                   </label>
@@ -4658,7 +4778,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
                   />
 
-                  {/* Quick Suggestion Pills */}
+                  
                   <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                     <span className="text-slate-400 text-[10px]">Quick Prompts:</span>
                     {[
@@ -4678,7 +4798,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                       </button>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Error Banner */}
                 {aiErrorMsg && (
@@ -4690,7 +4810,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800 shrink-0">
+              {/* <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsNvidiaAiModalOpen(false)}
@@ -4717,7 +4837,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     <span>{nodes.length > 0 ? 'Upgrade Mind Map' : 'Generate Mind Map'}</span>
                   </button>
                 )}
-              </div>
+              </div> */}
             </div>
           </div>,
           document.body

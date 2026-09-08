@@ -54,15 +54,239 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Express status endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'Toolip Express & WebSocket API Backend',
+const serverStartTime = Date.now();
+
+// Helper to construct backend trigger status payload
+function getStatusPayload(req) {
+  const activePort = httpServer.address()?.port || PORT;
+  return {
+    status: 'online',
+    service: 'Toolip Realtime Collaboration & AI Backend Server',
+    message: '🚀 Toolip Express & Socket.io server is live and operational!',
+    port: activePort,
+    uptimeSeconds: Math.floor((Date.now() - serverStartTime) / 1000),
     timestamp: new Date().toISOString(),
-    toolsAvailable: 34,
-    mongoConnected: !!connectDB,
-  });
+    version: '1.0.0',
+    websocket: {
+      status: 'active',
+      path: '/socket.io/',
+      cors: '*',
+    },
+    database: {
+      type: 'MongoDB Atlas',
+      connected: true,
+    },
+    endpoints: {
+      rootStatus: 'GET /',
+      apiHealth: 'GET /api/health',
+      apiStatus: 'GET /api/status',
+      createRoom: 'POST /api/rooms/create',
+      getRoom: 'GET /api/rooms/:roomId',
+      userRooms: 'GET /api/rooms/user/my-rooms',
+      authRegister: 'POST /api/auth/register',
+      authLogin: 'POST /api/auth/login',
+      nvidiaProxy: 'POST /api/nvidia/generate',
+    },
+  };
+}
+
+// Express Root & Status Endpoints
+app.get(['/', '/api', '/api/status', '/api/health'], (req, res) => {
+  const statusData = getStatusPayload(req);
+
+  // Send interactive live dashboard HTML with JSON code block for browser navigation
+  if (req.headers.accept && req.headers.accept.includes('text/html')) {
+    const jsonStr = JSON.stringify(statusData, null, 2);
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toolip Backend Server - Live</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090d16;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(6, 182, 212, 0.15);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      max-width: 760px;
+      width: 100%;
+      padding: 2.5rem;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #00f2fe, #4facfe);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 22px;
+      color: #090d16;
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #ffffff, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 9999px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .info-item {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      padding: 1rem;
+      border-radius: 14px;
+    }
+    .info-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .info-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .json-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    pre {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      padding: 1.25rem;
+      color: #38bdf8;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+    .footer {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="title-group">
+        <div class="logo">T</div>
+        <div>
+          <h1>Toolip Server Engine</h1>
+          <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">Realtime Express & Socket.io Backend</div>
+        </div>
+      </div>
+      <div class="badge">
+        <span class="dot"></span>
+        <span>ONLINE :${statusData.port}</span>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Server Host & Port</div>
+        <div class="info-value">http://localhost:${statusData.port}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">WebSocket Engine</div>
+        <div class="info-value">Socket.io Connected</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Uptime</div>
+        <div class="info-value">${statusData.uptimeSeconds}s</div>
+      </div>
+    </div>
+
+    <div class="json-title">
+      <span>Backend Response Trigger JSON:</span>
+      <span style="font-size:0.75rem; color:#34d399; font-weight:600;">Status: 200 OK</span>
+    </div>
+    <pre><code>${jsonStr}</code></pre>
+
+    <div class="footer">
+      Toolip Collaborative Workspace Engine &bull; Port ${statusData.port}
+    </div>
+  </div>
+</body>
+</html>`;
+    return res.send(html);
+  }
+
+  // Pure JSON response for API calls
+  return res.json(statusData);
 });
 
 // Auth Routes
@@ -384,13 +608,15 @@ app.post('/api/nvidia/generate', async (req, res) => {
   }
 });
 
+let currentPort = Number(PORT);
+
 httpServer.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    const fallbackPort = Number(PORT) + 1;
-    console.warn(`⚠️ Port ${PORT} is in use. Falling back to port ${fallbackPort}...`);
-    httpServer.listen(fallbackPort, () => {
-      console.log(`🚀 Express & Socket.io server running on http://localhost:${fallbackPort}`);
-    });
+    currentPort++;
+    console.warn(`⚠️ Port ${currentPort - 1} is in use. Retrying on port ${currentPort}...`);
+    setTimeout(() => {
+      httpServer.listen(currentPort);
+    }, 300);
   } else {
     console.error('Server error:', err);
   }

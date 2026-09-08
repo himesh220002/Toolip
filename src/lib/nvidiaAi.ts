@@ -51,6 +51,14 @@ export const CLOUD_NVIDIA_MODELS: AiModelItem[] = [
     provider: 'nvidia',
     description: 'Multimodal reasoning model accepting text & visual inputs with native tool-calling capabilities.',
   },
+  {
+    id: 'moonshotai/kimi-k3',
+    name: 'Kimi K3 (Moonshot AI)',
+    badge: 'Moonshot Kimi K3',
+    type: 'text',
+    provider: 'nvidia',
+    description: 'Frontier long-context reasoning model by Moonshot AI with superior structural understanding, mindmaps, and coding.',
+  },
 ];
 
 export const LOCAL_OLLAMA_MODELS: AiModelItem[] = [
@@ -670,6 +678,20 @@ Rules:
   const edges: any[] = [];
 
   const rawNodes = parsed.nodes;
+
+  // Pre-process rawNodes to ensure unique IDs across all nodes returned by AI
+  const rawSeenIds = new Set<string>();
+  rawNodes.forEach((n: any, idx: number) => {
+    let origId = n.id ? String(n.id).trim() : `node_${idx + 1}`;
+    let uniqueId = origId;
+    let count = 1;
+    while (rawSeenIds.has(uniqueId)) {
+      uniqueId = `${origId}_${count++}`;
+    }
+    rawSeenIds.add(uniqueId);
+    n.id = uniqueId;
+  });
+
   const rootNode = rawNodes.find((n: any) => n.isRoot || n.depth === 0) || rawNodes[0];
 
   const rootId = rootNode.id || 'root_main';
@@ -799,8 +821,33 @@ Rules:
     }
   });
 
-  onLog?.(`✨ MindMap graph generated successfully with ${nodes.length} nodes and ${edges.length} connections!`);
-  return { nodes, edges };
+  // Final strict deduplication of node and edge IDs
+  const finalNodes: any[] = [];
+  const seenNodeIds = new Set<string>();
+  nodes.forEach((n, idx) => {
+    let nid = n.id ? String(n.id).trim() : `node_${idx}`;
+    let count = 1;
+    while (seenNodeIds.has(nid)) {
+      nid = `${n.id || 'node'}_dup_${count++}`;
+    }
+    seenNodeIds.add(nid);
+    finalNodes.push({ ...n, id: nid });
+  });
+
+  const finalEdges: any[] = [];
+  const seenEdgeIds = new Set<string>();
+  edges.forEach((e, idx) => {
+    let eid = e.id ? String(e.id).trim() : `e_${e.source}_${e.target}`;
+    let count = 1;
+    while (seenEdgeIds.has(eid)) {
+      eid = `${e.id || 'edge'}_dup_${count++}`;
+    }
+    seenEdgeIds.add(eid);
+    finalEdges.push({ ...e, id: eid });
+  });
+
+  onLog?.(`✨ MindMap graph generated successfully with ${finalNodes.length} nodes and ${finalEdges.length} connections!`);
+  return { nodes: finalNodes, edges: finalEdges };
 }
 
 /**
