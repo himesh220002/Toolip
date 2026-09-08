@@ -78,6 +78,61 @@ export const NVIDIA_MODELS: AiModelItem[] = [...CLOUD_NVIDIA_MODELS, ...LOCAL_OL
 
 const API_KEY_STORAGE_KEY = 'toolip_nvidia_api_key';
 const SELECTED_MODEL_STORAGE_KEY = 'toolip_nvidia_selected_model';
+const CUSTOM_OLLAMA_STORAGE_KEY = 'toolip_custom_ollama_models';
+
+export function getCustomOllamaModels(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const saved = localStorage.getItem(CUSTOM_OLLAMA_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addCustomOllamaModel(rawModelName: string): string {
+  if (typeof window === 'undefined') return '';
+  const cleanName = rawModelName.trim().replace(/^ollama\//i, '');
+  if (!cleanName) return '';
+
+  const existing = getCustomOllamaModels();
+  if (!existing.includes(cleanName)) {
+    const updated = [...existing, cleanName];
+    localStorage.setItem(CUSTOM_OLLAMA_STORAGE_KEY, JSON.stringify(updated));
+  }
+  return `ollama/${cleanName}`;
+}
+
+export function removeCustomOllamaModel(rawModelName: string): void {
+  if (typeof window === 'undefined') return;
+  const cleanName = rawModelName.trim().replace(/^ollama\//i, '');
+  const existing = getCustomOllamaModels();
+  const updated = existing.filter((m) => m !== cleanName);
+  localStorage.setItem(CUSTOM_OLLAMA_STORAGE_KEY, JSON.stringify(updated));
+}
+
+export function getAllOllamaModels(installedModels: string[] = []): AiModelItem[] {
+  const customNames = getCustomOllamaModels();
+  const baseDefaults = ['qwen2.5-coder:7b', 'llava:7b'];
+
+  const allNames = Array.from(
+    new Set<string>([...baseDefaults, ...customNames, ...installedModels])
+  );
+
+  return allNames.map((name) => {
+    const cleanName = name.replace(/^ollama\//i, '');
+    const isCustom = customNames.includes(cleanName);
+    return {
+      id: `ollama/${cleanName}`,
+      name: cleanName,
+      badge: isCustom ? 'Custom Local' : 'Ollama Local',
+      type: 'text',
+      provider: 'ollama',
+      ollamaModel: cleanName,
+      description: `Local open-weights ${cleanName} model running on local Ollama service (http://localhost:11434).`,
+    };
+  });
+}
 
 export function getNvidiaApiKey(): string {
   const envKey = process.env.NEXT_PUBLIC_NVIDIA_API_KEY || process.env.NVIDIA_API_KEY || '';
@@ -100,12 +155,10 @@ export function removeNvidiaApiKey(): void {
 }
 
 export function getNvidiaSelectedModel(): string {
-  if (typeof window === 'undefined') return NVIDIA_MODELS[0].id;
+  if (typeof window === 'undefined') return CLOUD_NVIDIA_MODELS[0].id;
   const saved = localStorage.getItem(SELECTED_MODEL_STORAGE_KEY);
-  if (saved && NVIDIA_MODELS.some((m) => m.id === saved)) {
-    return saved;
-  }
-  return NVIDIA_MODELS[0].id;
+  if (saved) return saved;
+  return CLOUD_NVIDIA_MODELS[0].id;
 }
 
 export function setNvidiaSelectedModel(modelId: string): void {
@@ -570,13 +623,14 @@ Rules:
     ? `${existingContext}USER INSTRUCTION TO MODIFY/EXPAND MAP:\n"${prompt}"\n\nTask: Modify/upgrade the existing mindmap above based on the user's instruction. If node N is specified, attach new nodes under node N. Return the full updated array of nodes.`
     : `Generate a mindmap for: ${prompt}`;
 
-  const localOllamaMatch = LOCAL_OLLAMA_MODELS.find((m) => m.id === selectedModel);
+  const isOllamaModel = selectedModel.startsWith('ollama/');
 
   let rawText = '';
-  if (localOllamaMatch) {
-    onLog?.(`🏠 Routing generation request to Local Ollama model (${localOllamaMatch.name})...`);
+  if (isOllamaModel) {
+    const rawOllamaName = selectedModel.replace(/^ollama\//i, '');
+    onLog?.(`🏠 Routing generation request to Local Ollama model (${rawOllamaName})...`);
     rawText = await generateOllamaCompletion({
-      model: localOllamaMatch.ollamaModel || 'qwen2.5-coder:7b',
+      model: rawOllamaName,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPromptText },

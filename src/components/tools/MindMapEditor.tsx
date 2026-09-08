@@ -59,6 +59,9 @@ import {
   NVIDIA_MODELS,
   CLOUD_NVIDIA_MODELS,
   LOCAL_OLLAMA_MODELS,
+  getAllOllamaModels,
+  addCustomOllamaModel,
+  removeCustomOllamaModel,
   checkOllamaHealth,
   getNvidiaApiKey,
   setNvidiaApiKey,
@@ -261,6 +264,29 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [activeBuildingTargetId, setActiveBuildingTargetId] = useState<string | null>(null);
   const [aiErrorMsg, setAiErrorMsg] = useState<string | null>(null);
+
+  // Custom Local Ollama Model State
+  const [customOllamaInput, setCustomOllamaInput] = useState('');
+  const [showOllamaGuide, setShowOllamaGuide] = useState(false);
+
+  const handleAddCustomModelSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!customOllamaInput.trim()) return;
+    const newModelId = addCustomOllamaModel(customOllamaInput);
+    if (newModelId) {
+      handleSelectNvidiaModel(newModelId);
+      showNotification(`✓ Added & selected custom local model: "${customOllamaInput.trim()}"`);
+      setCustomOllamaInput('');
+    }
+  };
+
+  const handleRemoveCustomModelClick = (modelId: string) => {
+    removeCustomOllamaModel(modelId);
+    showNotification(`Removed custom model: ${modelId}`);
+    if (selectedNvidiaModel === modelId) {
+      handleSelectNvidiaModel(CLOUD_NVIDIA_MODELS[0].id);
+    }
+  };
 
   const handleSaveNvidiaKey = (key: string) => {
     setNvidiaApiKey(key);
@@ -2546,7 +2572,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     label={isOllamaActive ? "🟢 Local Ollama Models (Active)" : "🔴 Local Ollama Models (Offline / Inactive)"}
                     className={isOllamaActive ? "bg-slate-900 text-emerald-400 font-bold" : "bg-slate-900 text-slate-500 font-bold"}
                   >
-                    {LOCAL_OLLAMA_MODELS.map((m) => {
+                    {getAllOllamaModels(installedOllamaModels).map((m) => {
                       const isInstalled = installedOllamaModels.length === 0 || installedOllamaModels.some((name) => name.includes(m.ollamaModel || ''));
                       const isAvailable = isOllamaActive && isInstalled;
                       return (
@@ -4376,26 +4402,27 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {LOCAL_OLLAMA_MODELS.map((model) => {
+                      {getAllOllamaModels(installedOllamaModels).map((model) => {
                         const isSelected = selectedNvidiaModel === model.id;
                         const isInstalled = installedOllamaModels.length === 0 || installedOllamaModels.some((name) => name.includes(model.ollamaModel || ''));
                         const isAvailable = isOllamaActive && isInstalled;
+                        const isCustom = model.badge === 'Custom Local';
 
                         return (
-                          <button
+                          <div
                             key={model.id}
-                            type="button"
-                            disabled={!isAvailable}
-                            onClick={() => isAvailable && handleSelectNvidiaModel(model.id)}
                             className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between space-y-2 ${!isAvailable
-                              ? 'bg-slate-950/60 border-slate-800 text-slate-600 opacity-50 grayscale cursor-not-allowed'
+                              ? 'bg-slate-950/60 border-slate-800 text-slate-600 opacity-60 grayscale'
                               : isSelected
-                                ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-md shadow-emerald-500/10 cursor-pointer'
-                                : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800/60 hover:text-white cursor-pointer'
+                                ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
+                                : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800/60'
                               }`}
                           >
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
+                            <div
+                              onClick={() => isAvailable && handleSelectNvidiaModel(model.id)}
+                              className="cursor-pointer space-y-1.5"
+                            >
+                              <div className="flex items-center justify-between">
                                 <span className={`text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded border ${isAvailable
                                   ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
                                   : 'bg-slate-800 border-slate-700 text-slate-500'
@@ -4407,12 +4434,209 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                                   {isAvailable ? '🟢 Active' : '🔴 Offline'}
                                 </span>
                               </div>
-                              <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                              <h4 className="text-xs font-black text-slate-100 flex items-center justify-between">
+                                <span>{model.name}</span>
+                                {isSelected && <span className="text-[10px] text-emerald-400 font-bold">✓ Selected</span>}
+                              </h4>
+                              <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
                             </div>
-                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
-                          </button>
+
+                            {isCustom && (
+                              <div className="pt-1 flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveCustomModelClick(model.id);
+                                  }}
+                                  className="text-[10px] text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Remove Custom Model
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
+                    </div>
+
+                    {/* Add Custom Local Model Form */}
+                    <form onSubmit={handleAddCustomModelSubmit} className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                      <input
+                        type="text"
+                        value={customOllamaInput}
+                        onChange={(e) => setCustomOllamaInput(e.target.value)}
+                        placeholder="Add custom model name (e.g. mistral:7b, llama3.2:3b)..."
+                        className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-emerald-400"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow transition shrink-0 cursor-pointer"
+                      >
+                        + Add Local Model
+                      </button>
+                    </form>
+
+                    {/* Interactive Step-by-Step Local Ollama Setup & Usage Guide */}
+                    <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3 mt-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Terminal className="w-4 h-4 text-emerald-400" />
+                          <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider">
+                            📖 How to Setup & Run Custom Local Ollama Models (Step-by-Step Guide)
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowOllamaGuide(!showOllamaGuide)}
+                          className="text-[10px] font-mono text-emerald-400 hover:underline cursor-pointer"
+                        >
+                          {showOllamaGuide ? 'Collapse Guide ▲' : 'Show Setup Guide 📖'}
+                        </button>
+                      </div>
+
+                      {showOllamaGuide && (
+                        <div className="space-y-3 text-xs text-slate-300 leading-relaxed pt-1 border-t border-slate-800/80">
+                          {/* Step 1 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">1</span>
+                              <span>Download & Install Ollama</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                              Download Ollama for Linux, macOS, or Windows from{' '}
+                              <a href="https://ollama.com" target="_blank" rel="noreferrer" className="text-emerald-400 underline font-semibold">
+                                ollama.com ↗
+                              </a>
+                            </p>
+                          </div>
+
+                          {/* Step 2 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">2</span>
+                              <span>Choose a Suitable Model for Your PC Specs</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                              Research and pick an efficient model suited for your RAM / VRAM (e.g. 7B models like <code className="text-emerald-300">qwen2.5-coder:7b</code> for 8GB-16GB RAM, or 3B models for low VRAM PCs).
+                            </p>
+                          </div>
+
+                          {/* Step 3 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">3</span>
+                              <span>Pull Model via Terminal</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mb-1">Open your terminal and pull your chosen model:</p>
+                            <div className="flex items-center justify-between p-2 bg-slate-950 border border-slate-800 rounded-lg font-mono text-[11px]">
+                              <span className="text-amber-300">ollama pull qwen2.5-coder:7b</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText('ollama pull qwen2.5-coder:7b');
+                                  showNotification('Copied: ollama pull qwen2.5-coder:7b');
+                                }}
+                                className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 cursor-pointer"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Step 4 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1.5">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">4</span>
+                              <span>Verify Download & Start Service</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] font-mono">
+                              <div className="flex items-center justify-between p-1.5 bg-slate-950 border border-slate-800 rounded-lg">
+                                <span className="text-slate-300">ollama list</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText('ollama list');
+                                    showNotification('Copied: ollama list');
+                                  }}
+                                  className="text-[9px] text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800 cursor-pointer"
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                              <div className="flex items-center justify-between p-1.5 bg-slate-950 border border-slate-800 rounded-lg">
+                                <span className="text-slate-300">systemctl start ollama</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText('systemctl start ollama');
+                                    showNotification('Copied: systemctl start ollama');
+                                  }}
+                                  className="text-[9px] text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800 cursor-pointer"
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                              <div className="flex items-center justify-between p-1.5 bg-slate-950 border border-slate-800 rounded-lg sm:col-span-2">
+                                <span className="text-slate-300">systemctl status ollama</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText('systemctl status ollama');
+                                    showNotification('Copied: systemctl status ollama');
+                                  }}
+                                  className="text-[9px] text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800 cursor-pointer"
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Step 5 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">5</span>
+                              <span>Test Chat Response in Terminal</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mb-1">
+                              Run model in terminal and test if chat prompt responds:
+                            </p>
+                            <div className="flex items-center justify-between p-2 bg-slate-950 border border-slate-800 rounded-lg font-mono text-[11px]">
+                              <span className="text-cyan-300">ollama run qwen2.5-coder:7b</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText('ollama run qwen2.5-coder:7b');
+                                  showNotification('Copied: ollama run qwen2.5-coder:7b');
+                                }}
+                                className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 cursor-pointer"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Step 6 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">6</span>
+                              <span>Add Model Name to Toolip</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                              Copy the exact model name from <code className="text-amber-300">ollama list</code> (e.g. <code className="text-emerald-300">qwen2.5-coder:7b</code> or <code className="text-emerald-300">mistral:7b</code>) and paste it into the <strong>Add Custom Local Model</strong> input above!
+                            </p>
+                          </div>
+
+                          {/* Step 7 */}
+                          <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <p className="text-[11px] text-emerald-200 font-medium">
+                              Ensure status shows <span className="text-emerald-300 font-bold">🟢 Ollama Active</span> and you are good to go for 100% private, keyless local AI generation!
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
