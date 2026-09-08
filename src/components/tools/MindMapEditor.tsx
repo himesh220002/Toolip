@@ -50,9 +50,14 @@ import {
   User,
   Globe,
   Square,
-  Terminal
+  Terminal,
+  Undo2,
+  Redo2,
+  WandSparkles,
+  ArrowBigUpDash
 } from 'lucide-react';
 import { useCollaborativeSession } from '../../hooks/useCollaborativeSession';
+import { useUndoRedoStack } from '../../hooks/useUndoRedoStack';
 import { ShareModal } from '../collaboration/ShareModal';
 import { LogTableModal } from '../collaboration/LogTableModal';
 import {
@@ -195,8 +200,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const [edges, setEdges] = useState<MindEdge[]>([]);
 
   // Canvas Pan & Zoom State
-  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 400, y: 300 });
-  const [zoom, setZoom] = useState<number>(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 600, y: 400 });
+  const [zoom, setZoom] = useState<number>(.6);
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -607,6 +612,81 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     onRemoteNodeChange: handleRemoteNodeChange,
   });
 
+  // Stack-based Undo & Redo History State
+  const { canUndo, canRedo, recordState, undo, redo, clearHistory, undoSize, redoSize } = useUndoRedoStack<{
+    nodes: MindNode[];
+    edges: MindEdge[];
+  }>({ maxSize: 50 });
+
+  // Record graph snapshot onto undoStack
+  const pushUndoSnapshot = useCallback(() => {
+    recordState({ nodes, edges });
+  }, [recordState, nodes, edges]);
+
+  const handleUndo = useCallback(() => {
+    const previousState = undo({ nodes, edges });
+    if (previousState) {
+      setSelectedNodeId(null);
+      setSelectedEdgeId(null);
+      setNodes(previousState.nodes);
+      setEdges(previousState.edges);
+      if (roomId) {
+        broadcastStateUpdate({ nodes: previousState.nodes, edges: previousState.edges });
+      }
+      showNotification(`↺ Undo state restored (${undoSize - 1} remaining in stack)`);
+    }
+  }, [undo, nodes, edges, roomId, broadcastStateUpdate, undoSize]);
+
+  const handleRedo = useCallback(() => {
+    const nextState = redo({ nodes, edges });
+    if (nextState) {
+      setSelectedNodeId(null);
+      setSelectedEdgeId(null);
+      setNodes(nextState.nodes);
+      setEdges(nextState.edges);
+      if (roomId) {
+        broadcastStateUpdate({ nodes: nextState.nodes, edges: nextState.edges });
+      }
+      showNotification(`↻ Redo state applied (${redoSize - 1} remaining in stack)`);
+    }
+  }, [redo, nodes, edges, roomId, broadcastStateUpdate, redoSize]);
+
+  // Keyboard Shortcuts for Undo (Ctrl+Z / Cmd+Z) and Redo (Ctrl+Y / Cmd+Y / Cmd+Shift+Z)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+
+      const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+      if (modifier && !e.altKey) {
+        if (e.key === 'z' || e.key === 'Z') {
+          if (e.shiftKey) {
+            e.preventDefault();
+            handleRedo();
+          } else {
+            e.preventDefault();
+            handleUndo();
+          }
+        } else if (e.key === 'y' || e.key === 'Y') {
+          e.preventDefault();
+          handleRedo();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
   // Git Commit Version State
   const [isCommitModalOpen, setIsCommitModalOpen] = useState(false);
   const [commitMessage, setCommitMessage] = useState('');
@@ -787,7 +867,25 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     return () => {
       canvasEl.removeEventListener('wheel', handleNativeWheel);
     };
-  });
+  }, []);
+
+  // Prevent outer document page scrolling when in Fullscreen Editor mode
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const preventPageScroll = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('.scrollable-note, textarea, .overflow-y-auto, [contenteditable="true"]')) {
+        return;
+      }
+      e.preventDefault();
+    };
+
+    window.addEventListener('wheel', preventPageScroll, { passive: false });
+    return () => {
+      window.removeEventListener('wheel', preventPageScroll);
+    };
+  }, [isExpanded]);
 
   // Active Note Popover & Dropdown State
   const [activeNoteNodeId, setActiveNoteNodeId] = useState<string | null>(null);
@@ -1560,8 +1658,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
     setNodes(profileNodes);
     setEdges(profileEdges);
-    setPan({ x: 400, y: 300 });
-    setZoom(0.9);
+    setPan({ x: 600, y: 400 });
+    setZoom(.6);
     showNotification('Loaded Profile Mind Map (Motive, Education, Experience, Skill, Hobbies)');
   };
 
@@ -1658,8 +1756,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         if (Array.isArray(parsedNodes) && parsedNodes.length > 0) {
           setNodes(parsedNodes);
           setEdges(Array.isArray(parsedEdges) ? parsedEdges : []);
-          setPan({ x: 400, y: 300 });
-          setZoom(1);
+          setPan({ x: 600, y: 400 });
+          setZoom(.6);
           return;
         }
       }
@@ -1667,8 +1765,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       console.warn('Failed to restore mindmap state from localStorage', e);
     }
     loadDefaultSampleMap();
-    setPan({ x: 400, y: 300 });
-    setZoom(1);
+    setPan({ x: 600, y: 400 });
+    setZoom(.6);
   }, []);
 
   const handleUnloadWorkspace = useCallback(() => {
@@ -1679,6 +1777,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
   // Reset to Default Sample Map & Clear Storage
   const handleResetToDefaultMap = () => {
+    pushUndoSnapshot();
     try {
       localStorage.removeItem(STORAGE_KEY_NODES);
       localStorage.removeItem(STORAGE_KEY_EDGES);
@@ -1692,6 +1791,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   // Auto-Arrange & Beautify Mind Map Layout (Horizontal or Free 360° Radial)
   const handleAutoArrangeGraph = (mode: 'horizontal' | 'radial' = 'horizontal') => {
     if (nodes.length === 0) return;
+    pushUndoSnapshot();
 
     // Identify root nodes (nodes marked isRoot, nodes with no parentId, or nodes whose parentId doesn't exist)
     const rootNodes = nodes.filter(
@@ -1994,8 +2094,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     }
 
     setNodes(updatedNodes);
-    setPan({ x: 450, y: 280 });
-    setZoom(0.95);
+    setPan({ x: 600, y: 400 });
+    setZoom(.6);
 
     const modeText = mode === 'radial' ? '360° Free Radial (All Directions)' : 'Horizontal Tree (Left & Right Wings)';
     showNotification(`✨ Auto-arranged mind map into ${modeText} layout!`);
@@ -2214,12 +2314,14 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   };
 
   const handleDeleteEdge = (edgeId: string) => {
+    pushUndoSnapshot();
     setEdges((prev) => prev.filter((e) => e.id !== edgeId));
     setSelectedEdgeId(null);
     showNotification('Removed arrow connection');
   };
 
   const handleSetEdgeColor = (edgeId: string, colorHex: string) => {
+    pushUndoSnapshot();
     setEdges((prev) => prev.map((e) => (e.id === edgeId ? { ...e, color: colorHex } : e)));
     showNotification('Updated arrow color');
   };
@@ -2233,6 +2335,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
   const saveEditingText = () => {
     if (editingNodeId) {
+      pushUndoSnapshot();
       setNodes((prev) => prev.map((n) => (n.id === editingNodeId ? { ...n, text: editingText || 'Node' } : n)));
       setEditingNodeId(null);
     }
@@ -2243,6 +2346,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     const parent = nodes.find((n) => n.id === parentNodeId);
     if (!parent) return;
 
+    pushUndoSnapshot();
     const childCount = nodes.filter((n) => n.parentId === parentNodeId).length;
     const isLeft = parent.x < 0;
     const offsetX = isLeft ? -180 : 180;
@@ -2277,6 +2381,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
   const handleCreateNodeAtCoords = (isRootNode: boolean) => {
     if (!emptyContextMenu) return;
+    pushUndoSnapshot();
     const newNodeId = `n_${Date.now()}`;
     const newNode: MindNode = {
       id: newNodeId,
@@ -2329,11 +2434,13 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   };
 
   const handleSetEmoji = (nodeId: string, emoji: string) => {
+    pushUndoSnapshot();
     setNodes((prev) => prev.map((n) => (n.id === nodeId ? { ...n, emoji } : n)));
     setActiveSubMenu(null);
   };
 
   const handleSetNodeColor = (nodeId: string, colorHex: string) => {
+    pushUndoSnapshot();
     setNodes((prev) => prev.map((n) => (n.id === nodeId ? { ...n, color: colorHex } : n)));
     // Also update outgoing edges color
     setEdges((prev) => prev.map((e) => (e.source === nodeId ? { ...e, color: colorHex } : e)));
@@ -2343,6 +2450,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const handleDeleteNode = (nodeId: string) => {
     const targetNode = nodes.find((n) => n.id === nodeId);
     if (!targetNode) return;
+    pushUndoSnapshot();
 
     // Helper to collect ALL descendant node IDs recursively (children, grandchildren, etc.)
     const getSubtreeIds = (startId: string, currentNodes: MindNode[]): Set<string> => {
@@ -2423,50 +2531,63 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const visibleEdges = edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
 
   return (
-    <div className="flex flex-col w-full text-white select-none gap-4 flex-1 min-h-0">
+    <div className="flex flex-col w-full text-white gap-4 flex-1 min-h-0">
       {/* Top Header & AI Prompt Control Panel (Outside Drawing Area) */}
-      <div className="flex flex-col w-full bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl overflow-hidden shadow-xl shrink-0 p-3.5 sm:p-4 gap-3">
+      <div className={`flex flex-col w-full bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl overflow-hidden shadow-xl shrink-0 transition-all ${isExpanded ? 'p-2 sm:p-2.5 gap-2' : 'p-3.5 sm:p-4 gap-3'
+        }`}>
         {/* Top Header Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className={`bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-lg shadow-lg shadow-cyan-500/20 transition-all ${isExpanded ? 'p-1.5' : 'p-2'
-              }`}>
-              <Sparkles className={`text-white animate-pulse ${isExpanded ? 'w-4 h-4' : 'w-5 h-5'}`} />
-            </div>
-            <div className={`flex ${isExpanded ? 'flex-row items-center gap-2' : 'flex-col'}`}>
-              <h2 className={`font-bold bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent transition-all whitespace-nowrap ${isExpanded ? 'text-sm sm:text-base' : 'text-lg'
-                }`}>
-                Mind Map Editor
-              </h2>
-              {isExpanded && <span className="text-slate-600 text-xs hidden sm:inline">•</span>}
-              <p className={`text-slate-400 whitespace-nowrap ${isExpanded ? 'text-[10px]' : 'text-xs'}`}>
-                Interactive node builder & GraphML export/import
-              </p>
-            </div>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+
 
           {/* Action Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* Auto-Arrange Layout Controls: Horizontal & Free 360° Radial */}
             <div className="flex items-center bg-slate-900 border border-emerald-500/30 p-0.5 rounded-lg gap-0.5">
               <button
                 onClick={() => handleAutoArrangeGraph('horizontal')}
-                className={`flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-md shadow-md transition ${isExpanded ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-xs'
+                className={`flex items-center gap-1  hover:from-emerald-400 hover:to-teal-500 text-slate-50 font-bold rounded-md shadow-md transition ${isExpanded ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-xs'
                   }`}
                 title="Arrange mind map horizontally (Left & Right Wings)"
               >
-                <Sparkles className="w-3 h-3 text-slate-950" />
                 <span>↔️ Horizontal</span>
               </button>
 
               <button
                 onClick={() => handleAutoArrangeGraph('radial')}
-                className={`flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold rounded-md transition border border-slate-700/60 ${isExpanded ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-xs'
+                className={`flex items-center gap-1 hover:bg-slate-700 text-emerald-300 font-bold rounded-md transition border border-slate-700/60 ${isExpanded ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-xs'
                   }`}
                 title="Arrange mind map in 360° Free All Directions (Radial Starburst)"
               >
-                <Globe className="w-3 h-3 text-emerald-400" />
                 <span>🌐 Free 360°</span>
+              </button>
+            </div>
+
+            {/* Undo & Redo History Controls (Stack Data Structure) */}
+            <div className="flex items-center bg-slate-900 border border-slate-700/60 p-0.5 rounded-lg gap-0.5">
+              <button
+                onClick={handleUndo}
+                disabled={!canUndo}
+                className={`flex items-center gap-1 font-bold rounded-md transition ${canUndo
+                  ? 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/40 shadow cursor-pointer'
+                  : 'bg-slate-900/60 text-slate-600 cursor-not-allowed border border-slate-800'
+                  } ${isExpanded ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-xs'}`}
+                title={canUndo ? `Undo last call / change (Ctrl+Z) [${undoSize} items in stack]` : 'Undo stack is empty'}
+              >
+                <Undo2 className={`w-3.5 h-3.5 ${canUndo ? 'text-indigo-400' : 'text-slate-600'}`} />
+                <span>Undo{undoSize > 0 ? ` (${undoSize})` : ''}</span>
+              </button>
+
+              <button
+                onClick={handleRedo}
+                disabled={!canRedo}
+                className={`flex items-center gap-1 font-bold rounded-md transition ${canRedo
+                  ? 'bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/40 shadow cursor-pointer'
+                  : 'bg-slate-900/60 text-slate-600 cursor-not-allowed border border-slate-800'
+                  } ${isExpanded ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-xs'}`}
+                title={canRedo ? `Redo last call / change (Ctrl+Y / Cmd+Shift+Z) [${redoSize} items in stack]` : 'Redo stack is empty'}
+              >
+                <Redo2 className={`w-3.5 h-3.5 ${canRedo ? 'text-purple-400' : 'text-slate-600'}`} />
+                <span>Redo{redoSize > 0 ? ` (${redoSize})` : ''}</span>
               </button>
             </div>
 
@@ -2513,8 +2634,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 }`}
               title="Brainstorm & Auto-Generate Mind Map with NVIDIA BYOK AI"
             >
-              <Sparkles className="w-3.5 h-3.5 text-slate-950 animate-pulse" />
-              <span>NVIDIA AI</span>
+              <span>AI Model</span>
               <span className="px-1 py-0.2 text-[9px] bg-slate-950/20 text-slate-950 font-mono rounded font-black">BYOK</span>
             </button>
 
@@ -2548,14 +2668,14 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   title="Commit version snapshot Git-style with commit message"
                 >
                   <GitCommit className="w-3.5 h-3.5" />
-                  <span>Git Commit</span>
+                  <span>M-Commit</span>
                 </button>
 
                 <button
                   onClick={handleOpenLogs}
                   className={`flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold rounded-lg transition shadow-sm cursor-pointer ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
                     }`}
-                  title="View Change Logs & Git Commit History for this room"
+                  title="View Change Logs & M Commit History for this room"
                 >
                   <FileClock className="w-3.5 h-3.5" />
                   <span>Audit Logs</span>
@@ -2580,7 +2700,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center space-x-2">
               <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
-                <Sparkles className="h-4 w-4 animate-pulse fill-current" />
+                <WandSparkles className="h-4 w-4 animate-pulse fill-current" />
               </div>
               <span className="font-extrabold text-white text-xs tracking-tight flex items-center gap-1.5">
                 {selectedNvidiaModel.startsWith('ollama/') ? 'Ollama AI MindMap Generator' : 'NVIDIA AI MindMap Generator'}
@@ -2674,7 +2794,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   ? "Ask AI to modify/upgrade current map (e.g. 'Add a branch for Cloud Tools with AWS and Docker')..."
                   : "Type topic for AI MindMap (e.g. 'Microservices e-commerce architecture with payment')..."
               }
-              className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
+              className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
             />
             {isAiGenerating ? (
               <button
@@ -2689,16 +2809,16 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
             ) : (
               <button
                 type="submit"
-                className="px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                className="px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-lg rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer shrink-0"
               >
-                <Sparkles className="h-3.5 w-3.5 text-slate-950 fill-current" />
+                <ArrowBigUpDash className="h-3.5 w-3.5 text-slate-950 fill-current" />
                 <span>{nodes.length > 0 ? 'Upgrade Map' : 'Generate MindMap'}</span>
               </button>
             )}
           </form>
 
           {/* Quick Suggestion Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 text-[10px] pt-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 text-[12px] pt-0.5">
             <span className="text-slate-500 font-semibold">
               {nodes.length > 0 ? 'Map Upgrade Prompts:' : 'Quick Prompts:'}
             </span>
@@ -2721,7 +2841,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 key={pill}
                 type="button"
                 onClick={() => setAiPrompt(pill)}
-                className="px-2 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-slate-800 transition cursor-pointer"
+                className="px-2 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 text-emerald-200 border border-slate-800 transition cursor-pointer"
               >
                 {pill}
               </button>
@@ -3883,8 +4003,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
             </button>
             <button
               onClick={() => {
-                setPan({ x: 400, y: 300 });
-                setZoom(1);
+                setPan({ x: 600, y: 400 });
+                setZoom(.6);
               }}
               className="p-1.5 hover:bg-slate-800 text-slate-300 rounded-lg transition"
               title="Reset Pan & Zoom"
@@ -4888,11 +5008,11 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         document.body
       )}
 
-      {/* Notification Banner */}
+      {/* Notification Banner - Top Left Corner */}
       {statusMessage && (
-        <div className="fixed bottom-4 right-4 z-[100000] bg-cyan-500 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce">
-          <Sparkles className="w-4 h-4" />
-          {statusMessage}
+        <div className="fixed top-5 left-5 z-[100000] bg-gradient-to-r from-cyan-400 via-teal-400 to-indigo-500 text-slate-950 px-4 py-2 rounded-xl text-xs font-black shadow-2xl border border-cyan-300/40 flex items-center gap-2 animate-bounce pointer-events-none">
+          <Sparkles className="w-4 h-4 text-slate-950" />
+          <span>{statusMessage}</span>
         </div>
       )}
     </div>

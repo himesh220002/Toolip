@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useCurrentContext, ToolStatus, ToolItem } from '@/context/CurrentContext';
 import { ArrowLeft, Tag, Share2, Check, Crosshair, Shield, Hexagon, Activity, Zap, Maximize2, Minimize2, LogOut, UserCheck, ChevronDown } from 'lucide-react';
@@ -65,6 +66,11 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState<boolean>(false);
   const [headerUser, setHeaderUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const syncHeaderUser = useCallback(() => {
     try {
@@ -348,80 +354,106 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
         </div>
 
         {/* Workspace - Halo terminal */}
-        <div className={
-          isWorkspaceExpanded
-            ? "fixed top-[60px] inset-x-[10px] bottom-0 z-50 bg-[#0A0F1F] flex flex-col m-0 p-0 rounded-none border-t border-l border-r border-white/10 shadow-2xl overflow-hidden"
-            : "relative clip-chamfer p-[1.5px] bg-gradient-to-br from-white/10 via-white/5 to-transparent"
-        }>
-          <div className={`relative bg-[#0A0F1F] overflow-hidden flex flex-col ${isWorkspaceExpanded ? 'h-full w-full rounded-none flex-1 min-h-0' : 'clip-chamfer'}`}>
-            {/* Terminal header */}
-            <div className={`flex items-center justify-between bg-gunmetal-900 border-b border-white/10 shrink-0 transition-all ${
-              isWorkspaceExpanded ? 'px-3 sm:px-4 py-1.5 min-h-[36px]' : 'px-4 sm:px-6 py-3.5'
-            }`}>
-              <div className="flex items-center gap-3">
-                <div className={`clip-chamfer-sm bg-halo-cyan/15 border border-halo-cyan/30 flex items-center justify-center text-halo-cyan transition-all ${
-                  isWorkspaceExpanded ? 'h-6 w-6' : 'h-8 w-8'
-                }`}>
-                  <Zap className={isWorkspaceExpanded ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-                </div>
-                <div>
-                  <div className={`font-tech font-bold tracking-[0.12em] text-white ${
-                    isWorkspaceExpanded ? 'text-xs' : 'text-sm'
-                  }`}>
-                    {isWorkspaceExpanded ? 'TOOL WORKSPACE // ACTIVE' : 'TOOL WORKSPACE // ACTIVE'}
+        {mounted && isWorkspaceExpanded
+          ? createPortal(
+            <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] bg-[#0A0F1F] flex flex-col m-0 p-0 rounded-none border-none shadow-2xl overflow-hidden">
+              <div className="relative bg-[#0A0F1F] overflow-hidden flex flex-col h-full w-full rounded-none flex-1 min-h-0">
+                {/* Terminal header */}
+                <div className="flex items-center justify-between bg-gunmetal-900 border-b border-white/10 shrink-0 transition-all px-4 sm:px-10 lg:px-20 py-2 min-h-[38px]">
+                  <div className="flex items-center gap-3">
+                    <div className="clip-chamfer-sm bg-halo-cyan/15 border border-halo-cyan/30 flex items-center justify-center text-halo-cyan transition-all h-6 w-6">
+                      <Zap className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <div className="font-tech font-bold tracking-[0.12em] text-white text-xs">
+                        TOOL WORKSPACE // FULLSCREEN
+                      </div>
+                      <div className="font-mono tracking-[0.12em] font-bold text-white/40 text-[9px] hidden sm:block">
+                        CLIENT-SIDE • ZERO TELEMETRY • INSTANT
+                      </div>
+                    </div>
                   </div>
-                  <div className={`font-mono tracking-[0.12em] font-bold text-white/40 ${
-                    isWorkspaceExpanded ? 'text-[9px] hidden sm:block' : 'text-[10px]'
-                  }`}>
-                    CLIENT-SIDE • ZERO TELEMETRY • INSTANT
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.14em] font-bold text-white/30">
-                <div className="hidden sm:flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_6px_#10b981]" /> ONLINE
-                </div>
+                  <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.14em] font-bold text-white/30">
+                    <div className="hidden sm:flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_6px_#10b981]" /> ONLINE
+                    </div>
 
-                <button
-                  onClick={() => setIsWorkspaceExpanded(!isWorkspaceExpanded)}
-                  title={isWorkspaceExpanded ? 'Minimize Workspace (Esc)' : 'Expand Workspace to Full Screen'}
-                  className={`flex items-center gap-1.5 bg-white/[0.06] hover:bg-halo-cyan/20 border border-white/15 hover:border-halo-cyan/50 clip-chamfer-sm text-white/90 hover:text-halo-cyan transition-all cursor-pointer shadow-sm ${
-                    isWorkspaceExpanded ? 'px-2 py-0.5 text-[9px]' : 'px-3 py-1 text-[10px]'
-                  }`}
-                >
-                  {isWorkspaceExpanded ? (
-                    <>
+                    <button
+                      onClick={() => setIsWorkspaceExpanded(false)}
+                      title="Minimize Workspace (Esc)"
+                      className="flex items-center gap-1.5 bg-white/[0.06] hover:bg-halo-cyan/20 border border-white/15 hover:border-halo-cyan/50 clip-chamfer-sm text-white/90 hover:text-halo-cyan transition-all cursor-pointer shadow-sm px-2 py-0.5 text-[9px]"
+                    >
                       <Minimize2 className="h-3.5 w-3.5 text-vice-pink" />
                       <span className="font-bold tracking-widest">MINIMIZE</span>
-                    </>
-                  ) : (
-                    <>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Actual tool — dark armor surface so selectors stay visible */}
+                <div className="bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_textarea]:bg-[#060913] [&_textarea]:text-white [&_textarea]:border-white/10 [&_label]:text-white/60 flex-1 overflow-y-auto px-4 sm:px-10 lg:px-20 py-3 flex flex-col min-h-0 h-full w-full">
+                  <div className="max-w-none text-[15px] leading-relaxed [&_p]:text-[15px] [&_h3]:text-lg [&_h2]:text-xl flex-1 flex flex-col min-h-0 h-full w-full">
+                    {renderComponent()}
+                  </div>
+                </div>
+
+                {/* Terminal footer */}
+                <div className="px-4 sm:px-10 lg:px-20 py-2 bg-gunmetal-900 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-2 font-mono text-[8px] tracking-[0.14em] font-bold text-white/25 shrink-0">
+                  <span>▶ DONE — YOUR DATA STAYS ON YOUR DEVICE • NO UPLOAD • PRESS ESC TO EXIT FULLSCREEN</span>
+                  <Link href="/" className="text-halo-cyan hover:text-white transition-colors">← RETURN TO TOOLS</Link>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+          : (
+            <div className="relative clip-chamfer p-[1.5px] bg-gradient-to-br from-white/10 via-white/5 to-transparent">
+              <div className="relative bg-[#0A0F1F] overflow-hidden flex flex-col clip-chamfer">
+                {/* Terminal header */}
+                <div className="flex items-center justify-between bg-gunmetal-900 border-b border-white/10 shrink-0 transition-all px-4 sm:px-6 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="clip-chamfer-sm bg-halo-cyan/15 border border-halo-cyan/30 flex items-center justify-center text-halo-cyan transition-all h-8 w-8">
+                      <Zap className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="font-tech font-bold tracking-[0.12em] text-white text-sm">
+                        TOOL WORKSPACE // ACTIVE
+                      </div>
+                      <div className="font-mono tracking-[0.12em] font-bold text-white/40 text-[10px]">
+                        CLIENT-SIDE • ZERO TELEMETRY • INSTANT
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.14em] font-bold text-white/30">
+                    <div className="hidden sm:flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_6px_#10b981]" /> ONLINE
+                    </div>
+
+                    <button
+                      onClick={() => setIsWorkspaceExpanded(true)}
+                      title="Expand Workspace to Full Screen"
+                      className="flex items-center gap-1.5 bg-white/[0.06] hover:bg-halo-cyan/20 border border-white/15 hover:border-halo-cyan/50 clip-chamfer-sm text-white/90 hover:text-halo-cyan transition-all cursor-pointer shadow-sm px-3 py-1 text-[10px]"
+                    >
                       <Maximize2 className="h-3.5 w-3.5 text-halo-cyan" />
                       <span className="font-bold tracking-widest">EXPAND</span>
-                    </>
-                  )}
-                </button>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Actual tool — dark armor surface so selectors stay visible */}
+                <div className="bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_textarea]:bg-[#060913] [&_textarea]:text-white [&_textarea]:border-white/10 [&_label]:text-white/60 p-4 min-h-[460px]">
+                  <div className="max-w-none text-[15px] leading-relaxed [&_p]:text-[15px] [&_h3]:text-lg [&_h2]:text-xl">
+                    {renderComponent()}
+                  </div>
+                </div>
+
+                {/* Terminal footer */}
+                <div className="px-4 sm:px-6 py-2 bg-gunmetal-900 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-2 font-mono text-[8px] tracking-[0.14em] font-bold text-white/25 shrink-0">
+                  <span>▶ DONE — YOUR DATA STAYS ON YOUR DEVICE • NO UPLOAD</span>
+                  <Link href="/" className="text-halo-cyan hover:text-white transition-colors">← RETURN TO TOOLS</Link>
+                </div>
               </div>
             </div>
-
-            {/* Actual tool — dark armor surface so selectors stay visible */}
-            <div className={`bg-[#080C18] text-white [&_select]:bg-gunmetal-800 [&_select]:text-white [&_select]:border-white/10 [&_input]:text-white [&_textarea]:bg-[#060913] [&_textarea]:text-white [&_textarea]:border-white/10 [&_label]:text-white/60 ${
-              isWorkspaceExpanded
-                ? 'flex-1 overflow-y-auto p-[20px] flex flex-col min-h-0'
-                : 'p-4 sm:p-6 lg:p-8 min-h-[460px]'
-            }`}>
-              <div className={`max-w-none text-[15px] leading-relaxed [&_p]:text-[15px] [&_h3]:text-lg [&_h2]:text-xl ${isWorkspaceExpanded ? 'flex-1 flex flex-col min-h-0' : ''}`}>
-                {renderComponent()}
-              </div>
-            </div>
-
-            {/* Terminal footer */}
-            <div className="px-4 sm:px-6 py-2 bg-gunmetal-900 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-2 font-mono text-[8px] tracking-[0.14em] font-bold text-white/25 shrink-0">
-              <span>▶ DONE — YOUR DATA STAYS ON YOUR DEVICE • NO UPLOAD {isWorkspaceExpanded && '• PRESS ESC TO EXIT FULLSCREEN'}</span>
-              <Link href="/" className="text-halo-cyan hover:text-white transition-colors">← RETURN TO TOOLS</Link>
-            </div>
-          </div>
-        </div>
+          )}
 
         {/* SEO Guide & JSON-LD FAQ Section */}
         <ToolSeoSection seoData={seoData} toolTitle={tool.title} />
