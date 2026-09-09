@@ -20,6 +20,7 @@ export interface MindNode {
   details?: string;
   note?: string;
   notes?: string[];
+  tag?: string;
 }
 
 export interface MindEdge {
@@ -104,6 +105,7 @@ export function mergeIncrementalMindMap(
       if (aiNode.text && aiNode.text.trim()) matchedNode.text = aiNode.text.trim();
       if (aiNode.details) matchedNode.details = aiNode.details;
       if (aiNode.note) matchedNode.note = aiNode.note;
+      if (aiNode.tag) matchedNode.tag = aiNode.tag;
       if (aiNode.emoji && aiNode.emoji !== '🧠') matchedNode.emoji = aiNode.emoji;
       if (aiNode.color && (!matchedNode.color || matchedNode.color === '#00f2fe')) matchedNode.color = aiNode.color;
     } else {

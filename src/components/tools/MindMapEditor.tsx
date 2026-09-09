@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Plus,
@@ -54,7 +54,8 @@ import {
   Undo2,
   Redo2,
   WandSparkles,
-  ArrowBigUpDash
+  ArrowBigUpDash,
+  Tag
 } from 'lucide-react';
 import { useCollaborativeSession } from '../../hooks/useCollaborativeSession';
 import { useUndoRedoStack } from '../../hooks/useUndoRedoStack';
@@ -97,6 +98,7 @@ export interface MindNode {
   details?: string;
   note?: string;
   notes?: string[];
+  tag?: string;
 }
 
 export interface MindEdge {
@@ -210,6 +212,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState<string>('');
+  const [editingTagNodeId, setEditingTagNodeId] = useState<string | null>(null);
+  const [editingTagText, setEditingTagText] = useState<string>('');
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [mouseCanvasPos, setMouseCanvasPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -234,6 +238,9 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const [roomLogs, setRoomLogs] = useState<any[]>([]);
   const [isLogLoading, setIsLogLoading] = useState(false);
   const [logTotal, setLogTotal] = useState(0);
+
+  // Git-style M-Commit snapshot state
+  const [lastCommittedSnapshot, setLastCommittedSnapshot] = useState<string | null>(null);
 
   // Reset confirmation state
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
@@ -627,6 +634,44 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     onRemoteNodeChange: handleRemoteNodeChange,
   });
 
+  // Diagram Snapshot Comparison for M-Commit Uncommitted Changes Tracking (Excludes layout x,y coordinates)
+  const getDiagramSnapshot = useCallback((nodeList: MindNode[], edgeList: MindEdge[]) => {
+    return JSON.stringify({
+      n: (nodeList || []).map((n) => ({
+        id: n.id,
+        text: n.text,
+        parentId: n.parentId,
+        color: n.color,
+        emoji: n.emoji,
+        details: n.details,
+        note: n.note,
+        notes: n.notes,
+        tag: n.tag,
+        isRoot: n.isRoot,
+        collapsed: n.collapsed
+      })),
+      e: (edgeList || []).map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        color: e.color
+      }))
+    });
+  }, []);
+
+  const hasUncommittedChanges = useMemo(() => {
+    if (!isCollaborating) return true;
+    if (!lastCommittedSnapshot) return false;
+    const currentSnapshot = getDiagramSnapshot(nodes, edges);
+    return currentSnapshot !== lastCommittedSnapshot;
+  }, [isCollaborating, lastCommittedSnapshot, getDiagramSnapshot, nodes, edges]);
+
+  useEffect(() => {
+    if (isCollaborating && nodes.length > 0 && lastCommittedSnapshot === null) {
+      setLastCommittedSnapshot(getDiagramSnapshot(nodes, edges));
+    }
+  }, [isCollaborating, nodes, edges, lastCommittedSnapshot, getDiagramSnapshot]);
+
   // Stack-based Undo & Redo History State
   const { canUndo, canRedo, recordState, undo, redo, clearHistory, undoSize, redoSize } = useUndoRedoStack<{
     nodes: MindNode[];
@@ -805,6 +850,9 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       // Broadcast updated state to all connected room peers
       broadcastStateUpdate(dataState);
 
+      // Update last committed snapshot so M-Commit button grays out until new changes are made
+      setLastCommittedSnapshot(getDiagramSnapshot(nodes, edges));
+
       showNotification(`Git Commit ${res.version ? `v${res.version}` : ''} saved & pushed to Atlas!`);
       setIsCommitModalOpen(false);
       setCommitMessage('');
@@ -829,6 +877,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     if (roomId) {
       broadcastStateUpdate(snapshot);
     }
+    setLastCommittedSnapshot(getDiagramSnapshot(snapshot.nodes, snapshot.edges || []));
     showNotification(`Restored graph canvas to Git Version ${version ? `v${version}` : 'snapshot'}`);
   };
 
@@ -1776,7 +1825,6 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   // Auto-Arrange & Beautify Mind Map Layout (Horizontal or Free 360° Radial)
   const handleAutoArrangeGraph = (mode: 'horizontal' | 'radial' = 'horizontal') => {
     if (nodes.length === 0) return;
-    pushUndoSnapshot();
 
     // Identify root nodes (nodes marked isRoot, nodes with no parentId, or nodes whose parentId doesn't exist)
     const rootNodes = nodes.filter(
@@ -1806,7 +1854,16 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     };
 
     if (mode === 'radial') {
-      // --- FREE 360° RADIAL ALL-DIRECTIONS ARRANGEMENT ---
+      // --- FREE 360° PROPORTIONAL RADIAL SECTOR STARBURST ---
+      const getSubtreeWeight = (nodeId: string, visited = new Set<string>()): number => {
+        if (visited.has(nodeId)) return 1;
+        visited.add(nodeId);
+        const children = getChildren(nodeId);
+        if (children.length === 0) return 1;
+        const total = children.reduce((sum, c) => sum + getSubtreeWeight(c.id, visited), 0);
+        return Math.max(1, total);
+      };
+
       let rootOffsetY = 0;
 
       rootNodes.forEach((root) => {
@@ -1822,32 +1879,48 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         }
 
         const level1 = getChildren(root.id);
-        const count = level1.length;
-        if (count === 0) return;
+        if (level1.length === 0) return;
 
-        const baseRadius = Math.max(340, 240 + count * 18);
-        const angleStep = (2 * Math.PI) / count;
+        const totalRootWeight = level1.reduce((sum, c) => sum + getSubtreeWeight(c.id), 0);
+        const level1Radius = Math.max(380, 260 + level1.length * 20);
 
-        const layoutRadialSubtree = (
+        const layoutRadialSectors = (
           nodeId: string,
-          centerX: number,
-          centerY: number,
-          parentAngle: number,
-          depth: number
+          sectorStart: number,
+          sectorEnd: number,
+          parentCenterX: number,
+          parentCenterY: number,
+          depth: number,
+          parentRadius: number
         ) => {
           const children = getChildren(nodeId);
           if (children.length === 0) return;
 
-          const numChildren = children.length;
-          const fanAngle = Math.min(Math.PI / 1.8, (Math.PI / 3) * Math.max(1, numChildren / 2.5));
-          const startAngle = parentAngle - fanAngle / 2;
-          const stepAngle = numChildren > 1 ? fanAngle / (numChildren - 1) : 0;
-          const childRadius = Math.max(240, 190 + numChildren * 14);
+          const totalWeight = children.reduce((sum, c) => sum + getSubtreeWeight(c.id), 0);
+          const sectorSpan = sectorEnd - sectorStart;
+
+          // Compute dynamic radial distance for this depth level
+          const minRequiredRadius = Math.max(
+            parentRadius + 280,
+            (240 * children.length) / Math.max(0.2, sectorSpan)
+          );
+          const currentRadius = Math.min(minRequiredRadius, parentRadius + 500);
+
+          let currentAngle = sectorStart;
 
           children.forEach((child, i) => {
-            const childAngle = numChildren === 1 ? parentAngle : startAngle + i * stepAngle;
-            const cx = centerX + Math.cos(childAngle) * childRadius;
-            const cy = centerY + Math.sin(childAngle) * childRadius;
+            const childWeight = getSubtreeWeight(child.id);
+            const childSpan = (childWeight / totalWeight) * sectorSpan;
+            const childStart = currentAngle;
+            const childEnd = currentAngle + childSpan;
+            const childCenterAngle = (childStart + childEnd) / 2;
+
+            // Stagger radial distance slightly for dense sibling nodes to prevent box collision
+            const staggerOffset = (i % 2 === 1 && children.length > 2) ? 45 : 0;
+            const finalRadius = currentRadius + staggerOffset;
+
+            const cx = parentCenterX + Math.cos(childCenterAngle) * finalRadius;
+            const cy = parentCenterY + Math.sin(childCenterAngle) * finalRadius;
 
             const cIdx = updatedNodes.findIndex((n) => n.id === child.id);
             if (cIdx !== -1) {
@@ -1860,14 +1933,37 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               };
             }
 
-            layoutRadialSubtree(child.id, cx, cy, childAngle, depth + 1);
+            // Recurse for deeper subtrees within child's strict angular sector bounds!
+            layoutRadialSectors(
+              child.id,
+              childStart,
+              childEnd,
+              parentCenterX,
+              parentCenterY,
+              depth + 1,
+              finalRadius
+            );
+
+            currentAngle = childEnd;
           });
         };
 
+        // Lay out Level 1 sectors around 360° circle starting from top (-PI/2)
+        let currentAngle = -Math.PI / 2;
+        const totalSpan = 2 * Math.PI;
+
         level1.forEach((child, i) => {
-          const angle = i * angleStep - Math.PI / 2; // Start top
-          const cx = Math.cos(angle) * baseRadius;
-          const cy = rootOffsetY + Math.sin(angle) * baseRadius;
+          const childWeight = getSubtreeWeight(child.id);
+          const childSpan = (childWeight / totalRootWeight) * totalSpan;
+          const childStart = currentAngle;
+          const childEnd = currentAngle + childSpan;
+          const childCenterAngle = (childStart + childEnd) / 2;
+
+          const staggerOffset = (i % 2 === 1 && level1.length > 3) ? 40 : 0;
+          const finalRadius = level1Radius + staggerOffset;
+
+          const cx = Math.cos(childCenterAngle) * finalRadius;
+          const cy = rootOffsetY + Math.sin(childCenterAngle) * finalRadius;
 
           const cIdx = updatedNodes.findIndex((n) => n.id === child.id);
           if (cIdx !== -1) {
@@ -1880,10 +1976,79 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
             };
           }
 
-          layoutRadialSubtree(child.id, cx, cy, angle, 2);
+          layoutRadialSectors(
+            child.id,
+            childStart,
+            childEnd,
+            0,
+            rootOffsetY,
+            2,
+            finalRadius
+          );
+
+          currentAngle = childEnd;
         });
 
-        rootOffsetY += baseRadius * 2 + 350;
+        // Additional radial-aware collision relaxation pass: if two nodes overlap in 2D space,
+        // push the outer node radially outward without altering its angle!
+        for (let pass = 0; pass < 20; pass++) {
+          let movedAny = false;
+          for (let i = 0; i < updatedNodes.length; i++) {
+            for (let j = i + 1; j < updatedNodes.length; j++) {
+              const n1 = updatedNodes[i];
+              const n2 = updatedNodes[j];
+              if (n1.isRoot || n2.isRoot) continue;
+
+              const dx = n2.x - n1.x;
+              const dy = n2.y - n1.y;
+              const dist = Math.hypot(dx, dy);
+              const minAllowedDist = Math.max((n1.width || 180) / 2 + (n2.width || 180) / 2 + 50, 180);
+
+              if (dist < minAllowedDist && dist > 0) {
+                movedAny = true;
+                // Determine which node is further from root (0, rootOffsetY)
+                const dist1ToRoot = Math.hypot(n1.x, n1.y - rootOffsetY);
+                const dist2ToRoot = Math.hypot(n2.x, n2.y - rootOffsetY);
+
+                const outerNode = dist2ToRoot >= dist1ToRoot ? n2 : n1;
+                const outerDist = Math.hypot(outerNode.x, outerNode.y - rootOffsetY);
+
+                if (outerDist > 0) {
+                  const pushAmount = (minAllowedDist - dist) + 25;
+                  const angleFromRoot = Math.atan2(outerNode.y - rootOffsetY, outerNode.x);
+
+                  const deltaX = Math.cos(angleFromRoot) * pushAmount;
+                  const deltaY = Math.sin(angleFromRoot) * pushAmount;
+
+                  const shiftRadialSubtree = (startId: string) => {
+                    const stack = [startId];
+                    const visited = new Set<string>();
+                    while (stack.length > 0) {
+                      const curr = stack.pop()!;
+                      if (visited.has(curr)) continue;
+                      visited.add(curr);
+                      const idx = updatedNodes.findIndex((n) => n.id === curr);
+                      if (idx !== -1) {
+                        updatedNodes[idx] = {
+                          ...updatedNodes[idx],
+                          x: updatedNodes[idx].x + deltaX,
+                          y: updatedNodes[idx].y + deltaY,
+                        };
+                        updatedNodes
+                          .filter((n) => n.parentId === curr && n.id !== curr)
+                          .forEach((c) => stack.push(c.id));
+                      }
+                    }
+                  };
+                  shiftRadialSubtree(outerNode.id);
+                }
+              }
+            }
+          }
+          if (!movedAny) break;
+        }
+
+        rootOffsetY += level1Radius * 2 + 600;
       });
     } else {
       // --- HORIZONTAL LEFT-RIGHT WING ARRANGEMENT ---
@@ -1976,106 +2141,106 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         );
         currentRootY += treeHeight + 250;
       });
-    }
 
-    // --- SUBTREE COLLISION DETECTION & DE-OVERLAPPING PASS ---
-    const shiftSubtree = (startNodeId: string, deltaX: number, deltaY: number) => {
-      const stack = [startNodeId];
-      const visited = new Set<string>();
+      // --- SUBTREE COLLISION DETECTION & DE-OVERLAPPING PASS (FOR HORIZONTAL LAYOUT ONLY) ---
+      const shiftSubtree = (startNodeId: string, deltaX: number, deltaY: number) => {
+        const stack = [startNodeId];
+        const visited = new Set<string>();
 
-      while (stack.length > 0) {
-        const currId = stack.pop()!;
-        if (visited.has(currId)) continue;
-        visited.add(currId);
+        while (stack.length > 0) {
+          const currId = stack.pop()!;
+          if (visited.has(currId)) continue;
+          visited.add(currId);
 
-        const nodeIdx = updatedNodes.findIndex((n) => n.id === currId);
-        if (nodeIdx !== -1) {
-          updatedNodes[nodeIdx] = {
-            ...updatedNodes[nodeIdx],
-            x: updatedNodes[nodeIdx].x + deltaX,
-            y: updatedNodes[nodeIdx].y + deltaY
-          };
+          const nodeIdx = updatedNodes.findIndex((n) => n.id === currId);
+          if (nodeIdx !== -1) {
+            updatedNodes[nodeIdx] = {
+              ...updatedNodes[nodeIdx],
+              x: updatedNodes[nodeIdx].x + deltaX,
+              y: updatedNodes[nodeIdx].y + deltaY
+            };
 
-          const childNodes = updatedNodes.filter((n) => n.parentId === currId && n.id !== currId);
-          childNodes.forEach((c) => stack.push(c.id));
+            const childNodes = updatedNodes.filter((n) => n.parentId === currId && n.id !== currId);
+            childNodes.forEach((c) => stack.push(c.id));
+          }
         }
-      }
-    };
+      };
 
-    const isAncestor = (ancestorId: string, targetId: string): boolean => {
-      let curr = updatedNodes.find((n) => n.id === targetId);
-      while (curr && curr.parentId) {
-        if (curr.parentId === ancestorId) return true;
-        const parentId: string = curr.parentId;
-        curr = updatedNodes.find((n) => n.id === parentId);
-      }
-      return false;
-    };
+      const isAncestor = (ancestorId: string, targetId: string): boolean => {
+        let curr = updatedNodes.find((n) => n.id === targetId);
+        while (curr && curr.parentId) {
+          if (curr.parentId === ancestorId) return true;
+          const parentId: string = curr.parentId;
+          curr = updatedNodes.find((n) => n.id === parentId);
+        }
+        return false;
+      };
 
-    const MARGIN_X = 40;
-    const MARGIN_Y = 30;
-    const MAX_COLLISION_PASSES = 35;
+      const MARGIN_X = 40;
+      const MARGIN_Y = 30;
+      const MAX_COLLISION_PASSES = 35;
 
-    for (let pass = 0; pass < MAX_COLLISION_PASSES; pass++) {
-      let movedAny = false;
+      for (let pass = 0; pass < MAX_COLLISION_PASSES; pass++) {
+        let movedAny = false;
 
-      for (let i = 0; i < updatedNodes.length; i++) {
-        for (let j = i + 1; j < updatedNodes.length; j++) {
-          const n1 = updatedNodes[i];
-          const n2 = updatedNodes[j];
+        for (let i = 0; i < updatedNodes.length; i++) {
+          for (let j = i + 1; j < updatedNodes.length; j++) {
+            const n1 = updatedNodes[i];
+            const n2 = updatedNodes[j];
 
-          if (isAncestor(n1.id, n2.id) || isAncestor(n2.id, n1.id)) continue;
+            if (isAncestor(n1.id, n2.id) || isAncestor(n2.id, n1.id)) continue;
 
-          const w1 = n1.width || 180;
-          const h1 = n1.height || 56;
-          const w2 = n2.width || 180;
-          const h2 = n2.height || 56;
+            const w1 = n1.width || 180;
+            const h1 = n1.height || 56;
+            const w2 = n2.width || 180;
+            const h2 = n2.height || 56;
 
-          const minXDist = (w1 + w2) / 2 + MARGIN_X;
-          const minYDist = (h1 + h2) / 2 + MARGIN_Y;
+            const minXDist = (w1 + w2) / 2 + MARGIN_X;
+            const minYDist = (h1 + h2) / 2 + MARGIN_Y;
 
-          const dx = n2.x - n1.x;
-          const dy = n2.y - n1.y;
+            const dx = n2.x - n1.x;
+            const dy = n2.y - n1.y;
 
-          const absX = Math.abs(dx);
-          const absY = Math.abs(dy);
+            const absX = Math.abs(dx);
+            const absY = Math.abs(dy);
 
-          const overlapX = minXDist - absX;
-          const overlapY = minYDist - absY;
+            const overlapX = minXDist - absX;
+            const overlapY = minYDist - absY;
 
-          if (overlapX > 0 && overlapY > 0) {
-            movedAny = true;
+            if (overlapX > 0 && overlapY > 0) {
+              movedAny = true;
 
-            if (overlapY <= overlapX + 20) {
-              const shiftY = overlapY;
-              const signY = dy >= 0 ? 1 : -1;
+              if (overlapY <= overlapX + 20) {
+                const shiftY = overlapY;
+                const signY = dy >= 0 ? 1 : -1;
 
-              if (n1.isRoot && !n2.isRoot) {
-                shiftSubtree(n2.id, 0, shiftY * signY);
-              } else if (!n1.isRoot && n2.isRoot) {
-                shiftSubtree(n1.id, 0, -shiftY * signY);
+                if (n1.isRoot && !n2.isRoot) {
+                  shiftSubtree(n2.id, 0, shiftY * signY);
+                } else if (!n1.isRoot && n2.isRoot) {
+                  shiftSubtree(n1.id, 0, -shiftY * signY);
+                } else {
+                  shiftSubtree(n2.id, 0, (shiftY / 2) * signY);
+                  shiftSubtree(n1.id, 0, (-shiftY / 2) * signY);
+                }
               } else {
-                shiftSubtree(n2.id, 0, (shiftY / 2) * signY);
-                shiftSubtree(n1.id, 0, (-shiftY / 2) * signY);
-              }
-            } else {
-              const shiftX = overlapX;
-              const signX = dx >= 0 ? 1 : -1;
+                const shiftX = overlapX;
+                const signX = dx >= 0 ? 1 : -1;
 
-              if (n1.isRoot && !n2.isRoot) {
-                shiftSubtree(n2.id, shiftX * signX, 0);
-              } else if (!n1.isRoot && n2.isRoot) {
-                shiftSubtree(n1.id, -shiftX * signX, 0);
-              } else {
-                shiftSubtree(n2.id, (shiftX / 2) * signX, 0);
-                shiftSubtree(n1.id, (-shiftX / 2) * signX, 0);
+                if (n1.isRoot && !n2.isRoot) {
+                  shiftSubtree(n2.id, shiftX * signX, 0);
+                } else if (!n1.isRoot && n2.isRoot) {
+                  shiftSubtree(n1.id, -shiftX * signX, 0);
+                } else {
+                  shiftSubtree(n2.id, (shiftX / 2) * signX, 0);
+                  shiftSubtree(n1.id, (-shiftX / 2) * signX, 0);
+                }
               }
             }
           }
         }
-      }
 
-      if (!movedAny) break;
+        if (!movedAny) break;
+      }
     }
 
     setNodes(updatedNodes);
@@ -2254,9 +2419,24 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       const isZooming = e.ctrlKey || e.metaKey;
 
       if (isZooming) {
-        // Ctrl + Wheel / Cmd + Wheel -> Zoom Canvas In & Out
-        const delta = e.deltaY < 0 ? 1.1 : 0.9;
-        setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+        // Ctrl + Wheel / Cmd + Wheel -> Zoom Canvas directly at Mouse Cursor Position
+        const rect = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        setZoom((prevZoom) => {
+          const factor = e.deltaY < 0 ? 1.12 : 0.88;
+          const newZoom = Math.min(Math.max(prevZoom * factor, 0.25), 3.5);
+
+          if (newZoom === prevZoom) return prevZoom;
+
+          setPan((prevPan) => ({
+            x: mouseX - (mouseX - prevPan.x) * (newZoom / prevZoom),
+            y: mouseY - (mouseY - prevPan.y) * (newZoom / prevZoom),
+          }));
+
+          return newZoom;
+        });
       } else if (e.shiftKey) {
         // Shift + Wheel -> Pan Left & Right (Horizontal)
         const scrollDelta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
@@ -2291,8 +2471,25 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     const isZooming = e.ctrlKey || e.metaKey;
 
     if (isZooming) {
-      const delta = e.deltaY < 0 ? 1.1 : 0.9;
-      setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      setZoom((prevZoom) => {
+        const factor = e.deltaY < 0 ? 1.12 : 0.88;
+        const newZoom = Math.min(Math.max(prevZoom * factor, 0.25), 3.5);
+
+        if (newZoom === prevZoom) return prevZoom;
+
+        setPan((prevPan) => ({
+          x: mouseX - (mouseX - prevPan.x) * (newZoom / prevZoom),
+          y: mouseY - (mouseY - prevPan.y) * (newZoom / prevZoom),
+        }));
+
+        return newZoom;
+      });
     } else if (e.shiftKey) {
       const scrollDelta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
       setPan((p) => ({
@@ -2408,6 +2605,14 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       pushUndoSnapshot();
       setNodes((prev) => prev.map((n) => (n.id === editingNodeId ? { ...n, text: editingText || 'Node' } : n)));
       setEditingNodeId(null);
+    }
+  };
+
+  const saveEditingTag = () => {
+    if (editingTagNodeId) {
+      pushUndoSnapshot();
+      setNodes((prev) => prev.map((n) => (n.id === editingTagNodeId ? { ...n, tag: editingTagText.trim() } : n)));
+      setEditingTagNodeId(null);
     }
   };
 
@@ -2733,11 +2938,19 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               <>
                 <button
                   onClick={handleOpenCommitModal}
-                  className={`flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg transition shadow-lg shadow-purple-500/20 cursor-pointer ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'
-                    }`}
-                  title="Commit version snapshot Git-style with commit message"
+                  disabled={!hasUncommittedChanges}
+                  className={`flex items-center gap-1.5 font-bold rounded-lg transition shadow-lg ${
+                    hasUncommittedChanges
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-500/20 cursor-pointer'
+                      : 'bg-slate-800/80 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-60'
+                  } ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'}`}
+                  title={
+                    hasUncommittedChanges
+                      ? 'Commit version snapshot Git-style with commit message'
+                      : 'No uncommitted changes in diagram (Already committed)'
+                  }
                 >
-                  <GitCommit className="w-3.5 h-3.5" />
+                  <GitCommit className={`w-3.5 h-3.5 ${hasUncommittedChanges ? 'text-white' : 'text-slate-500'}`} />
                   <span>M-Commit</span>
                 </button>
 
@@ -3283,6 +3496,15 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                         </div>
                       </div>
                     )}
+
+                  {/* Right-Side Floating Node Number Badge (# number) on Selection */}
+                  {isSelected && (
+                    <div className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 z-40 pointer-events-none whitespace-nowrap animate-fadeIn">
+                      <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-900/95 backdrop-blur-md border border-cyan-400/80 text-cyan-300 rounded-full shadow-2xl font-mono text-xs font-black tracking-wide border-opacity-90 ring-1 ring-cyan-400/30">
+                        # {nodes.findIndex((n) => n.id === node.id) + 1}
+                      </div>
+                    </div>
+                  )}
                   {!hasChildren ? (
                     /* Single Row Layout for Child / Leaf Nodes (Truncate with ... after 300px max) */
                     <div className="flex items-center relative gap-2 w-full h-full min-w-0">
@@ -3358,6 +3580,43 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                               title="Open All / Close All Notes"
                             >
                               <StickyNote className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {/* Editable Tag Badge [ tag ] for non-last-child / parent nodes */}
+                          {editingTagNodeId === node.id ? (
+                            <input
+                              type="text"
+                              value={editingTagText}
+                              onChange={(e) => setEditingTagText(e.target.value)}
+                              onBlur={saveEditingTag}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEditingTag();
+                                if (e.key === 'Escape') setEditingTagNodeId(null);
+                              }}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              placeholder="e.g. step 1, process"
+                              className="bg-slate-950 text-cyan-300 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-cyan-400 outline-none w-24 shadow-inner shrink-0 z-30"
+                            />
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingTagNodeId(node.id);
+                                setEditingTagText(node.tag || '');
+                              }}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition border flex items-center gap-0.5 shrink-0 z-20 ${
+                                node.tag && node.tag.trim() !== ''
+                                  ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/30 hover:border-cyan-400 shadow-sm'
+                                  : 'bg-slate-800/40 border-slate-700/60 text-slate-400 hover:text-cyan-300 hover:border-slate-600'
+                              }`}
+                              title="Click to edit node tag (e.g. 'step 1', 'process')"
+                            >
+                              <span className="opacity-50 text-[9px]">[</span>
+                              <span className="truncate max-w-[85px]">{node.tag && node.tag.trim() !== '' ? node.tag : ''}</span>
+                              <span className="opacity-50 text-[9px]">]</span>
                             </button>
                           )}
                         </div>
@@ -3795,6 +4054,19 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   title="Open All / Close All Notes"
                 >
                   <StickyNote className="w-3.5 h-3.5 text-amber-400" />
+                </button>
+
+                {/* Option: Edit Node Tag [ tag ] */}
+                <button
+                  onClick={() => {
+                    setEditingTagNodeId(selectedNode.id);
+                    setEditingTagText(selectedNode.tag || '');
+                  }}
+                  className={`p-1.5 rounded-lg text-xs flex items-center gap-1 transition ${editingTagNodeId === selectedNode.id ? 'bg-cyan-500/20 text-cyan-400 font-bold' : 'hover:bg-slate-800 text-slate-300'
+                    }`}
+                  title="Edit Node Tag (e.g. 'step 1', 'process')"
+                >
+                  <Tag className="w-3.5 h-3.5 text-cyan-400" />
                 </button>
 
                 {/* Option 3 for Secondary: Arrow Color Picker */}

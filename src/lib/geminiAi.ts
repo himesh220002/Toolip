@@ -191,6 +191,7 @@ MANDATORY RULES FOR MAP UPGRADES & EXPANSIONS:
       "parentId": "node_1",
       "emoji": "🚀",
       "color": "#ff007f",
+      "tag": "step 1",
       "details": "Details here...",
       "note": "Notes here..."
     }
@@ -199,7 +200,7 @@ MANDATORY RULES FOR MAP UPGRADES & EXPANSIONS:
 
 4. Ensure EVERY node has a unique string "id" (e.g. node_1, node_2, node_3...).
 5. "parentId" of root node is null.
-6. Provide rich descriptions in "details" and bullet points in "note".
+6. Provide rich descriptions in "details" and bullet points in "note". For non-leaf parent/process/category nodes, assign a short categorizing tag e.g. "step 1", "process", "Phase 1", "Validation", "Strategy", etc. in the "tag" field.
 7. Use harmonious hex color codes (e.g. #00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6).`;
 
   let userPromptText = `Generate a complete, deeply detailed mind map for topic: "${prompt}"`;
