@@ -853,36 +853,6 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     };
   }, [isEmojiModalOpen]);
 
-  // Native non-passive wheel listener to stop page scroll when zooming/panning canvas
-  useEffect(() => {
-    const canvasEl = containerRef.current;
-    if (!canvasEl) return;
-
-    const handleNativeWheel = (e: WheelEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && target.closest('.scrollable-note, textarea, .overflow-y-auto, [contenteditable="true"]')) {
-        return; // Allow mouse scrolling inside note card text containers!
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (e.shiftKey) {
-        setPan((p) => ({
-          x: p.x - e.deltaY,
-          y: p.y
-        }));
-      } else {
-        const delta = e.deltaY < 0 ? 1.1 : 0.9;
-        setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
-      }
-    };
-
-    canvasEl.addEventListener('wheel', handleNativeWheel, { passive: false });
-    return () => {
-      canvasEl.removeEventListener('wheel', handleNativeWheel);
-    };
-  }, []);
 
   // Prevent outer document page scrolling when in Fullscreen Editor mode
   useEffect(() => {
@@ -2198,6 +2168,19 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       broadcastCursor(coords.x, coords.y);
     }
 
+    // Strict Left Click Drag Enforcement: deny panning/dragging if left click is not active
+    if (isPanning || draggedNodeId) {
+      if ((e.buttons & 1) !== 1) {
+        if (dragRafRef.current) {
+          cancelAnimationFrame(dragRafRef.current);
+          dragRafRef.current = null;
+        }
+        setIsPanning(false);
+        setDraggedNodeId(null);
+        return;
+      }
+    }
+
     // Only update mouse position state if connector mode is active (drawing line preview)
     if (connectorModeSourceId) {
       const coords = getCanvasCoords(clientX, clientY);
@@ -2232,7 +2215,29 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     setDraggedNodeId(null);
   };
 
-  // Native non-passive Wheel Zoom & Pan Handler for Canvas Draw Area
+  // Global window listener to ensure dragging/panning terminates immediately on left-click release anywhere
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (dragRafRef.current) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+      setIsPanning(false);
+      setDraggedNodeId(null);
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    window.addEventListener('blur', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener('blur', handleGlobalMouseUp);
+    };
+  }, []);
+
+  // Mind Map Drawing Canvas Interaction Control Mapping:
+  // - Normal Scroll (Wheel): Pan Up & Down
+  // - Shift + Scroll (Wheel): Pan Left & Right (Horizontal)
+  // - Ctrl + Scroll / Cmd + Scroll (Wheel): Zoom In & Out
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -2246,14 +2251,25 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       e.preventDefault();
       e.stopPropagation();
 
-      if (e.shiftKey) {
+      const isZooming = e.ctrlKey || e.metaKey;
+
+      if (isZooming) {
+        // Ctrl + Wheel / Cmd + Wheel -> Zoom Canvas In & Out
+        const delta = e.deltaY < 0 ? 1.1 : 0.9;
+        setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+      } else if (e.shiftKey) {
+        // Shift + Wheel -> Pan Left & Right (Horizontal)
+        const scrollDelta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
         setPan((p) => ({
-          x: p.x - e.deltaY,
+          x: p.x - scrollDelta,
           y: p.y,
         }));
       } else {
-        const delta = e.deltaY < 0 ? 1.1 : 0.9;
-        setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+        // Normal Scroll -> Pan Up & Down (Vertical) + 2D Trackpad Panning
+        setPan((p) => ({
+          x: p.x - (e.deltaX || 0),
+          y: p.y - e.deltaY,
+        }));
       }
     };
 
@@ -2272,14 +2288,22 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     e.preventDefault();
     e.stopPropagation();
 
-    if (e.shiftKey) {
+    const isZooming = e.ctrlKey || e.metaKey;
+
+    if (isZooming) {
+      const delta = e.deltaY < 0 ? 1.1 : 0.9;
+      setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+    } else if (e.shiftKey) {
+      const scrollDelta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
       setPan((p) => ({
-        x: p.x - e.deltaY,
+        x: p.x - scrollDelta,
         y: p.y,
       }));
     } else {
-      const delta = e.deltaY < 0 ? 1.1 : 0.9;
-      setZoom((z) => Math.min(Math.max(z * delta, 0.3), 3));
+      setPan((p) => ({
+        x: p.x - (e.deltaX || 0),
+        y: p.y - e.deltaY,
+      }));
     }
   };
 
@@ -2303,6 +2327,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   // Node Drag Start
   const handleNodeMouseDown = (e: React.MouseEvent, node: MindNode) => {
     e.stopPropagation();
+    if (e.button !== 0) return; // Deny dragging if non-left click (e.g. right click or middle click)
     setEmptyContextMenu(null);
     setSelectedEdgeId(null);
 
@@ -3238,7 +3263,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     minWidth: `${isRoot ? 180 : 120}px`,
                     maxWidth: '300px',
                     width: 'max-content',
-                    minHeight: `${calcHeight}px`,
+                    // minHeight: `${calcHeight}px`,
                     borderColor: isSelected ? '#00f2fe' : node.color || (isRoot ? '#00f2fe' : '#475569'),
                     boxShadow: isRoot ? `0 0 24px ${node.color || '#00f2fe'}44` : undefined
                   }}
@@ -3260,8 +3285,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     )}
                   {!hasChildren ? (
                     /* Single Row Layout for Child / Leaf Nodes (Truncate with ... after 300px max) */
-                    <div className="flex items-center gap-2 w-full h-full min-w-0">
-                      {node.emoji && <span className="text-2xl select-none leading-none shrink-0">{node.emoji}</span>}
+                    <div className="flex items-center relative gap-2 w-full h-full min-w-0">
+                      {node.emoji && <span className="text-2xl opacity-40 absolute top-0 -left-3 select-none leading-none shrink-0">{node.emoji}</span>}
                       {(hasNodeAnyNote(node) || activeNoteNodeId === node.id) && (
                         <button
                           onClick={(e) => {
@@ -3274,7 +3299,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                               setClosedNoteIndices([]);
                             }
                           }}
-                          className={`p-1 rounded-md transition border shrink-0 ${activeNoteNodeId === node.id
+                          className={`p-1 rounded-md transition border shrink-0 z-20 ${activeNoteNodeId === node.id
                             ? 'bg-amber-500/40 border-amber-400 text-amber-200'
                             : 'bg-amber-500/20 border-amber-500/40 text-amber-400'
                             }`}
@@ -3296,7 +3321,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                       ) : (
                         <span
                           title={node.text}
-                          className={`truncate max-w-[230px] font-bold ${node.depth === 1 ? 'text-base text-slate-100' : 'text-sm text-slate-200'
+                          className={`truncate max-w-[230px] font-bold ${node.depth === 1 ? 'text-base text-slate-100' : 'text-[12px] text-slate-200'
                             }`}
                         >
                           {node.text}
