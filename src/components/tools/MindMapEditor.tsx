@@ -2824,7 +2824,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   }`}
                 title="Arrange mind map horizontally (Left & Right Wings)"
               >
-                <span>↔️ Horizontal</span>
+                <span>↔️</span>
               </button>
 
               <button
@@ -2833,7 +2833,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                   }`}
                 title="Arrange mind map in 360° Free All Directions (Radial Starburst)"
               >
-                <span>🌐 Free 360°</span>
+                <span>🌐 360°</span>
               </button>
             </div>
 
@@ -2849,7 +2849,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 title={canUndo ? `Undo last call / change (Ctrl+Z) [${undoSize} items in stack]` : 'Undo stack is empty'}
               >
                 <Undo2 className={`w-3.5 h-3.5 ${canUndo ? 'text-indigo-400' : 'text-slate-600'}`} />
-                <span>Undo{undoSize > 0 ? ` (${undoSize})` : ''}</span>
+                <span>{undoSize > 0 ? ` (${undoSize})` : ''}</span>
               </button>
 
               <button
@@ -2862,7 +2862,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 title={canRedo ? `Redo last call / change (Ctrl+Y / Cmd+Shift+Z) [${redoSize} items in stack]` : 'Redo stack is empty'}
               >
                 <Redo2 className={`w-3.5 h-3.5 ${canRedo ? 'text-purple-400' : 'text-slate-600'}`} />
-                <span>Redo{redoSize > 0 ? ` (${redoSize})` : ''}</span>
+                <span>{redoSize > 0 ? ` (${redoSize})` : ''}</span>
               </button>
             </div>
 
@@ -2883,7 +2883,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               title="Load Personal Profile Mind Map (Motive, Education, Experience, Skill, Hobbies)"
             >
               <User className={isExpanded ? 'w-3 h-3 text-emerald-400' : 'w-3.5 h-3.5 text-emerald-400'} />
-              Profile Map
+              Map
             </button>
 
             <button
@@ -2919,7 +2919,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 }`}
             >
               <Download className={isExpanded ? 'w-3 h-3 text-slate-950' : 'w-3.5 h-3.5 text-slate-950'} />
-              Save mindmap.graphml
+              Save
             </button>
 
             <button
@@ -2939,11 +2939,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 <button
                   onClick={handleOpenCommitModal}
                   disabled={!hasUncommittedChanges}
-                  className={`flex items-center gap-1.5 font-bold rounded-lg transition shadow-lg ${
-                    hasUncommittedChanges
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-500/20 cursor-pointer'
-                      : 'bg-slate-800/80 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-60'
-                  } ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'}`}
+                  className={`flex items-center gap-1.5 font-bold rounded-lg transition shadow-lg ${hasUncommittedChanges
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-500/20 cursor-pointer'
+                    : 'bg-slate-800/80 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-60'
+                    } ${isExpanded ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'}`}
                   title={
                     hasUncommittedChanges
                       ? 'Commit version snapshot Git-style with commit message'
@@ -2986,7 +2985,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 <WandSparkles className="h-4 w-4 animate-pulse fill-current" />
               </div>
               <span className="font-extrabold text-white text-xs tracking-tight flex items-center gap-1.5">
-                {selectedNvidiaModel.startsWith('ollama/') ? 'Ollama AI MindMap Generator' : 'NVIDIA AI MindMap Generator'}
+                {selectedNvidiaModel.startsWith('ollama/') ? 'Ollama AI MindMap Generator' : 'Global AI MindMap Generator'}
                 <span className={`text-[9px] font-mono font-black border px-1.5 py-0.5 rounded ${selectedNvidiaModel.startsWith('ollama/')
                   ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
                   : 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
@@ -3491,7 +3490,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                         <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-950/95 border border-amber-400/80 text-amber-300 shadow-md text-[9px] font-black tracking-tight animate-bounce">
                           <span className="inline-block animate-[spin_0.8s_ease-in-out_infinite] text-xs">🔨</span>
                           <span className="font-mono uppercase text-amber-300 text-[8.5px] tracking-wider animate-pulse whitespace-nowrap">
-                            👷‍♂️ Hammering...
+                            👷‍♂️ Building...
                           </span>
                         </div>
                       </div>
@@ -3607,11 +3606,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                                 setEditingTagNodeId(node.id);
                                 setEditingTagText(node.tag || '');
                               }}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition border flex items-center gap-0.5 shrink-0 z-20 ${
-                                node.tag && node.tag.trim() !== ''
-                                  ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/30 hover:border-cyan-400 shadow-sm'
-                                  : 'bg-slate-800/40 border-slate-700/60 text-slate-400 hover:text-cyan-300 hover:border-slate-600'
-                              }`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition border flex items-center gap-0.5 shrink-0 z-20 ${node.tag && node.tag.trim() !== ''
+                                ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/30 hover:border-cyan-400 shadow-sm'
+                                : 'bg-slate-800/40 border-slate-700/60 text-slate-400 hover:text-cyan-300 hover:border-slate-600'
+                                }`}
                               title="Click to edit node tag (e.g. 'step 1', 'process')"
                             >
                               <span className="opacity-50 text-[9px]">[</span>

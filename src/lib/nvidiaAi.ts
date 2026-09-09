@@ -473,14 +473,51 @@ export function robustParseJson(rawText: string): any {
     str = codeBlockMatch[1].trim();
   }
 
-  // 2. Extract from first '{' to last '}' if conversational wrapper text exists
+  // 2. Extract exact matching top-level JSON object {...} starting from first '{'
   const firstBrace = str.indexOf('{');
-  const lastBrace = str.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    str = str.substring(firstBrace, lastBrace + 1).trim();
-  } else if (firstBrace !== -1 && lastBrace === -1) {
-    // Truncated response before closing brace
-    str = str.substring(firstBrace).trim();
+  if (firstBrace !== -1) {
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    let matchingEndIndex = -1;
+
+    for (let i = firstBrace; i < str.length; i++) {
+      const char = str[i];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (char === '\\') {
+        escape = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (!inString) {
+        if (char === '{') {
+          depth++;
+        } else if (char === '}') {
+          depth--;
+          if (depth === 0) {
+            matchingEndIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    if (matchingEndIndex !== -1) {
+      str = str.substring(firstBrace, matchingEndIndex + 1).trim();
+    } else {
+      const lastBrace = str.lastIndexOf('}');
+      if (lastBrace > firstBrace) {
+        str = str.substring(firstBrace, lastBrace + 1).trim();
+      } else {
+        str = str.substring(firstBrace).trim();
+      }
+    }
   }
 
   // 3. First attempt: Direct JSON.parse
@@ -500,15 +537,21 @@ export function robustParseJson(rawText: string): any {
     // c. Replace unescaped control characters & raw linebreaks inside quotes
     repaired = repaired.replace(/[\u0000-\u001F]+/g, ' ');
 
+    // d. Fix unescaped double quotes inside property string values (e.g. "note": "• Bad: "Full Stack"")
+    repaired = repaired.replace(/("(?:details|note|text|tag|emoji|color|id|parentId)")\s*:\s*"([\s\S]*?)"(?=\s*(?:,|\n|\r|\}))/g, (m, key, val) => {
+      const cleanVal = val.replace(/(?<!\\)"/g, "'");
+      return `${key}: "${cleanVal}"`;
+    });
+
     try {
       return JSON.parse(repaired);
     } catch (e2) {
-      // d. Remove dangling trailing comma before end of string
+      // e. Remove dangling trailing comma before end of string
       repaired = repaired.replace(/,\s*$/g, '');
       try {
         return JSON.parse(repaired);
       } catch (e3) {
-        // e. TRUNCATION REPAIR PASS: If AI output was cut off mid-array (hit maxTokens limit)
+        // f. TRUNCATION REPAIR PASS: If AI output was cut off mid-array (hit maxTokens limit)
         if (repaired.includes('"nodes"')) {
           const lastObjClose = repaired.lastIndexOf('}');
           if (lastObjClose !== -1) {
@@ -516,28 +559,26 @@ export function robustParseJson(rawText: string): any {
             if (truncated.endsWith(',')) {
               truncated = truncated.slice(0, -1).trim();
             }
-            if (!truncated.endsWith(']')) {
-              truncated += '\n  ]';
-            }
-            if (!truncated.endsWith('}')) {
-              truncated += '\n}';
-            }
-            try {
-              return JSON.parse(truncated);
-            } catch (e4) {
-              let patch = truncated;
-              const openBrackets = (patch.match(/\[/g) || []).length;
-              const closeBrackets = (patch.match(/\]/g) || []).length;
-              const openBraces = (patch.match(/\{/g) || []).length;
-              const closeBraces = (patch.match(/\}/g) || []).length;
 
-              for (let i = 0; i < openBrackets - closeBrackets; i++) patch += ']';
-              for (let i = 0; i < openBraces - closeBraces; i++) patch += '}';
-              try {
-                return JSON.parse(patch);
-              } catch (e5) {
-                // continue
-              }
+            // Sanitize quotes on truncated string
+            truncated = truncated.replace(/("(?:details|note|text|tag|emoji|color|id|parentId)")\s*:\s*"([\s\S]*?)"(?=\s*(?:,|\n|\r|\}))/g, (m, key, val) => {
+              const cleanVal = val.replace(/(?<!\\)"/g, "'");
+              return `${key}: "${cleanVal}"`;
+            });
+
+            let patch = truncated;
+            const openBrackets = (patch.match(/\[/g) || []).length;
+            const closeBrackets = (patch.match(/\]/g) || []).length;
+            const openBraces = (patch.match(/\{/g) || []).length;
+            const closeBraces = (patch.match(/\}/g) || []).length;
+
+            for (let i = 0; i < openBrackets - closeBrackets; i++) patch += '\n  ]';
+            for (let i = 0; i < openBraces - closeBraces; i++) patch += '\n}';
+
+            try {
+              return JSON.parse(patch);
+            } catch (e4) {
+              // continue
             }
           }
         }
@@ -617,8 +658,8 @@ Rules:
 3. Do NOT output existing unchanged ancestor nodes or root nodes.
 4. Assign appropriate emojis (e.g. 🧠, 💡, 🚀, 🎯, 🎨, 💻, ⚡, 🔥, 🏆, 📌) to every node.
 5. Assign vibrant hex colors from this palette (#00f2fe, #ff007f, #10b981, #f59e0b, #8b5cf6, #3b82f6, #ff5722) based on branch themes.
-6. Provide informative "details" and "note" content for each node.
-7. CRITICAL JSON RULES: Use double quotes for all JSON keys/strings. Never include trailing commas before closing braces/brackets. Return ONLY the raw JSON string matching the schema.`;
+6. Provide informative "details" and "note" content for each node. For non-leaf parent/process nodes, assign a short categorizing tag e.g. "step 1", "process", "Phase 1" in "tag" field.
+7. CRITICAL JSON RULES: Use double quotes for all JSON keys. Inside string values, NEVER use unescaped double quotes (") — use single quotes (') for quotes or titles inside values. Never include trailing commas before closing braces/brackets. Return ONLY the raw JSON string matching the schema.`;
 
   const userPromptText = hasExistingMap
     ? `${existingContext}USER PROMPT: "${prompt}"\n\nTask: Fulfill user prompt by generating new sub-nodes OR updating "details" and "note" on target node. Do NOT include unchanged existing nodes. Output the nodes JSON array.`
