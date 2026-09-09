@@ -300,16 +300,27 @@ Rules:
 
   let svgCode = rawText.trim();
 
-  // Extract <svg> block if model wrapped it in text or codeblocks
-  if (svgCode.includes('<svg') && svgCode.includes('</svg>')) {
-    const startIdx = svgCode.indexOf('<svg');
-    const endIdx = svgCode.lastIndexOf('</svg>') + 6;
-    svgCode = svgCode.substring(startIdx, endIdx);
-  } else if (svgCode.startsWith('```')) {
-    svgCode = svgCode.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+  // 1) Clean markdown code fences if present around response
+  svgCode = svgCode.replace(/^```[a-z]*\n?/gi, '').replace(/\n?```$/gi, '').trim();
+
+  // 2) Case-insensitive extraction of <svg>...</svg> block anywhere in the text
+  const svgMatch = svgCode.match(/<svg[\s\S]*?(?:<\/svg>|$)/i);
+  if (svgMatch) {
+    svgCode = svgMatch[0].trim();
+    // Ensure closing tag exists if output was truncated
+    if (!/<\/svg>/i.test(svgCode)) {
+      svgCode += '\n</svg>';
+    }
   }
 
-  if (!svgCode.startsWith('<svg')) {
+  // 3) Strip any leading XML declaration or text before <svg
+  const svgStartIdx = svgCode.search(/<svg/i);
+  if (svgStartIdx > 0) {
+    svgCode = svgCode.substring(svgStartIdx).trim();
+  }
+
+  if (!svgCode.toLowerCase().startsWith('<svg')) {
+    console.error('Failed to parse Gemini AI SVG response. Raw text was:', rawText);
     throw new Error('AI response did not contain a valid <svg> root element.');
   }
 

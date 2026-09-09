@@ -13,7 +13,6 @@ import {
   Layers,
   RotateCcw,
   Image as ImageIcon,
-  Wrench,
   Grid,
   Maximize2,
   Upload,
@@ -149,6 +148,10 @@ export const SvgCodeEditor: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
+    setNvidiaApiKeyInput(getNvidiaApiKey());
+    setGeminiApiKeyInput(getGeminiApiKey());
+    const savedModel = getNvidiaSelectedModel();
+    if (savedModel) setSelectedNvidiaModel(savedModel);
   }, []);
 
   // Local Ollama AI Health State
@@ -168,9 +171,9 @@ export const SvgCodeEditor: React.FC = () => {
 
   // NVIDIA & GEMINI BYOK AI Logo Generator State
   const [isNvidiaAiModalOpen, setIsNvidiaAiModalOpen] = useState(false);
-  const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState(() => getNvidiaApiKey());
-  const [geminiApiKeyInput, setGeminiApiKeyInput] = useState(() => getGeminiApiKey());
-  const [selectedNvidiaModel, setSelectedNvidiaModel] = useState(() => getNvidiaSelectedModel());
+  const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState('');
+  const [geminiApiKeyInput, setGeminiApiKeyInput] = useState('');
+  const [selectedNvidiaModel, setSelectedNvidiaModel] = useState(CLOUD_NVIDIA_MODELS[0].id);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiErrorMsg, setAiErrorMsg] = useState<string | null>(null);
@@ -628,20 +631,6 @@ export const SvgCodeEditor: React.FC = () => {
     setTimeout(() => setNoticeMsg(''), 3000);
   };
 
-  // Real-time SVGO Optimizer (Clean attributes, strip comments, round decimals)
-  const optimizeSvg = () => {
-    let clean = svgCode
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/xmlns:xlink="[^"]*"/g, '')
-      .replace(/\s(data-name|version|id|class)="[^"]*"/g, '')
-      .replace(/(\d+\.\d{3,})/g, (match) => parseFloat(match).toFixed(2))
-      .replace(/>\s+</g, '><')
-      .trim();
-    setSvgCode(clean);
-    setNoticeMsg('✓ SVGO Engine: Stripped redundant attributes & compressed precision!');
-    setTimeout(() => setNoticeMsg(''), 3500);
-  };
-
   // Multi-Format Export Handler (PNG, JPG, WebP, PDF, SVG)
   const exportAsFormat = (format: 'png' | 'jpg' | 'webp' | 'pdf' | 'svg') => {
     if (format === 'svg') {
@@ -804,14 +793,14 @@ export const SvgCodeEditor: React.FC = () => {
           </button>
 
           {/* XML Comment Toggle (Ctrl + /) */}
-          <button
+          {/* <button
             onClick={toggleXmlComment}
             title="Toggle XML Block Comment (Ctrl + /)"
             className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-300 font-semibold transition-colors cursor-pointer"
           >
             <MessageSquare className="h-3.5 w-3.5 text-amber-400" />
             <span>Comment (Ctrl+/)</span>
-          </button>
+          </button> */}
 
           {/* Minify / Expand Back Formatting Toggle */}
           <button
@@ -830,15 +819,6 @@ export const SvgCodeEditor: React.FC = () => {
           >
             <Sparkles className="h-3.5 w-3.5 text-sky-400" />
             <span>Expand Back (Beautify)</span>
-          </button>
-
-          <button
-            onClick={optimizeSvg}
-            title="SVGO Engine: Clean attributes, comments & float precision"
-            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-amber-950/50 hover:bg-amber-900/60 border border-amber-500/40 text-amber-300 font-semibold transition-colors"
-          >
-            <Wrench className="h-3.5 w-3.5 text-amber-400" />
-            <span>SVGO Optimize</span>
           </button>
 
           <button
@@ -905,8 +885,8 @@ export const SvgCodeEditor: React.FC = () => {
                 setOutputHeight(preset.size);
               }}
               className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${editorHeight === preset.size
-                  ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200'
+                ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
+                : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200'
                 }`}
             >
               {preset.label} ({preset.size}px)
@@ -960,10 +940,10 @@ export const SvgCodeEditor: React.FC = () => {
             <span className="font-extrabold text-white text-xs tracking-tight flex items-center gap-1.5">
               Global AI Vector Generator
               <span className={`text-[9px] font-mono font-black border px-1.5 py-0.5 rounded ${selectedNvidiaModel.startsWith('gemini-')
-                  ? 'text-blue-400 bg-blue-400/10 border-blue-400/30'
-                  : selectedNvidiaModel.startsWith('ollama/')
-                    ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
-                    : 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30'
+                ? 'text-blue-400 bg-blue-400/10 border-blue-400/30'
+                : selectedNvidiaModel.startsWith('ollama/')
+                  ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
+                  : 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30'
                 }`}>
                 {selectedNvidiaModel.startsWith('gemini-')
                   ? 'GEMINI ⚡'
@@ -1156,8 +1136,8 @@ export const SvgCodeEditor: React.FC = () => {
                       scrollToLine(layer.lineNumber);
                     }}
                     className={`p-2 rounded-lg text-xs font-mono flex items-center justify-between cursor-pointer border transition-all ${selectedLayerIdx === layer.id
-                        ? 'bg-purple-950/80 border-purple-500/60 text-purple-200 font-bold shadow-md'
-                        : 'bg-gray-950/60 border-gray-800/80 text-gray-300 hover:bg-gray-800/60'
+                      ? 'bg-purple-950/80 border-purple-500/60 text-purple-200 font-bold shadow-md'
+                      : 'bg-gray-950/60 border-gray-800/80 text-gray-300 hover:bg-gray-800/60'
                       }`}
                   >
                     <div className="flex items-center space-x-2 truncate">
@@ -1217,8 +1197,8 @@ export const SvgCodeEditor: React.FC = () => {
                       onMouseLeave={() => setHoveredShapeIdx(null)}
                       onClick={() => scrollToLine(lineNum)}
                       className={`h-5 cursor-pointer text-[10px] transition-all flex items-center justify-end ${isGlowing
-                          ? 'text-rose-400 font-bold bg-rose-500/20 scale-105 border-l-2 border-rose-400'
-                          : 'hover:text-sky-400'
+                        ? 'text-rose-400 font-bold bg-rose-500/20 scale-105 border-l-2 border-rose-400'
+                        : 'hover:text-sky-400'
                         }`}
                       title={`Click to jump to line ${lineNum}`}
                     >
