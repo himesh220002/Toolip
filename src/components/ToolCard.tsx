@@ -836,8 +836,8 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
 
         {/* Content block — lightweight, highly readable */}
         <div className="relative p-4 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="h-10 w-10 clip-chamfer-sm bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-halo-cyan/10 group-hover:border-halo-cyan/30 transition-colors">
                 {icon}
               </div>
@@ -845,9 +845,9 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool, onSelect }) => {
                 <h3 className="font-tech font-bold text-[18px] leading-tight tracking-[0.02em] text-white group-hover:text-halo-cyan transition-colors line-clamp-2">
                   {tool.title}
                 </h3>
-                <p className="font-mono text-[12.5px] leading-[1.5] text-white/65 line-clamp-2 mt-1.5">
+                {/* <p className="font-mono text-[12.5px] leading-[1.5] text-white/65 line-clamp-2 mt-1.5">
                   {tool.description}
-                </p>
+                </p> */}
               </div>
             </div>
             <div className="h-8 w-8 clip-chamfer-sm bg-white/[0.04] border border-white/10 flex items-center justify-center text-white/50 group-hover:bg-vice-pink group-hover:text-white group-hover:border-vice-pink transition-all shrink-0 mt-0.5">
