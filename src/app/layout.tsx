@@ -53,6 +53,11 @@ export const metadata: Metadata = {
       },
     ],
   },
+  icons: {
+    icon: '/images/Tooliplogo.svg',
+    shortcut: '/images/Tooliplogo.svg',
+    apple: '/images/Tooliplogo.svg',
+  },
   twitter: {
     card: 'summary_large_image',
     title: 'Toolip — 31+ Free Client-Side Productivity Utilities',

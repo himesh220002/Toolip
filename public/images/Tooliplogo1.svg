@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+    <!-- Definitions for Gradients and Shadows -->
+    <defs>
+        <!-- Background Radial Gradient for Depth -->
+        <radialGradient id="bgGlow" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stop-color="#222630" />
+            <stop offset="100%" stop-color="#0e1117" />
+        </radialGradient>
+
+        <!-- Electric Blue Accent Gradient -->
+        <linearGradient id="electricBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00E5FF" />
+            <stop offset="100%" stop-color="#0088FF" />
+        </linearGradient>
+
+        <!-- Subtle Glow Filter -->
+        <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="12" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+
+        <!-- Soft Drop Shadow for Depth -->
+        <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+            <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#000000" flood-opacity="0.6"/>
+        </filter>
+    </defs>
+
+    <!-- Canvas Background -->
+    <!-- <rect width="500" height="500" fill="url(#bgGlow)" /> -->
+
+    <!-- Central Logo Group -->
+    <g transform="translate(250, 250)" filter="url(#dropShadow)">
+
+        <!-- Outer Decorative Geometric Ring -->
+        <circle cx="0" cy="0" r="180" fill="fff" stroke="#fA3241" stroke-width="30" stroke-dasharray="26 6" />
+        <circle cx="0" cy="0" r="140" fill="" stroke="#2A3241" stroke-width="10" opacity="10.5" stroke-dasharray="4 4" />
+
+        <!-- Abstract Gear Base (Minimalist Segments) -->
+        <g>
+            <!-- Gear Tooth Top -->
+            <rect x="-16" y="-155" width="32" height="32" rx="8" fill="#1C22aD" stroke="#3A465B" stroke-width="2" />
+            <!-- Gear Tooth Bottom -->
+            <rect x="-16" y="125" width="32" height="32" rx="8" fill="#1C22aD" stroke="#3A465B" stroke-width="2" />
+            <!-- Gear Tooth Left -->
+            <rect x="-155" y="-16" width="32" height="32" rx="8" fill="#1C22aD" stroke="#3A465B" stroke-width="2" />
+            <!-- Gear Tooth Right -->
+            <rect x="125" y="-16" width="32" height="32" rx="8" fill="#1C22aD" stroke="#3A465B" stroke-width="2" />
+
+            <!-- Gear Tooth Top-Right -->
+            <rect x="84" y="-124" width="32" height="32" rx="8" transform="rotate(45 84 -100)" fill="#1C22aD" stroke="#3A465B" stroke-width="2" />
+            <!-- Gear Tooth Bottom-Left -->
+            <rect x="-114" y="94" width="32" height="32" rx="8" transform="rotate(45 -84 100)" fill="#1C22aD" stroke="#3A465B" stroke-width="2" />
+            <!-- Gear Tooth Top-Left -->
+            <rect x="-114" y="-114" width="32" height="32" rx="8" transform="rotate(-45 -100 -100)" fill="#1C22aD" stroke="#3A465B" stroke-width="2" />
+            <!-- Gear Tooth Bottom-Right -->
+            <rect x="80" y="80" width="32" height="32" rx="8" transform="rotate(-45 100 100)" fill="#1C22aD" stroke="#3A465B" stroke-width="2" />
+
+            <!-- Main Gear Body Circle -->
+            <circle cx="0" cy="0" r="105" fill="#16fB2a" stroke="#2C3545" stroke-width="4" />
+        </g>
+
+        <!-- Inner Utility Core (Interlocking Wrench & Geometric Node) -->
+        <g>
+            <!-- Background Shield/Hexagon Plate -->
+            <polygon points="0,-65 56,-32 56,32 0,65 -56,32 -56,-32" fill="#1C2331" stroke="#323F55" stroke-width="3" />
+
+            <!-- Abstract Wrench Blade (Angled Minimalist) -->
+            <!-- <path d="M-40,25 L25,-40 C33,-48 45,-48 53,-40 C61,-32 61,-20 53,-12 L-12,53 C-20,61 -32,61 -40,53 C-48,45 -48,33 -40,25 Z" fill="#242D3D" stroke="#3A4860" stroke-width="3" stroke-linejoin="round" /> -->
+
+            <!-- Electric Blue Accent: Dynamic Utility Spark / Center Node -->
+            <g filter="url(#neonGlow)">
+                <circle cx="0" cy="0" r="28" fill="url(#electricBlue)" />
+            </g>
+
+            <!-- Inner Cutout of the Center Node for Modern Precision Look -->
+            <circle cx="0" cy="0" r="12" fill="#11151C" />
+
+            <!-- Digital Micro-Nodes (Little Geometric Accents inside center) -->
+            <rect x="-3" y="-36" width="6" height="8" rx="2" fill="#FFFFFF" opacity="0.9" />
+            <rect x="-3" y="28" width="6" height="8" rx="2" fill="#FFFFFF" opacity="0.9" />
+            <rect x="28" y="-3" width="8" height="6" rx="2" fill="#FFFFFF" opacity="0.9" />
+            <rect x="-36" y="-3" width="8" height="6" rx="2" fill="#FFFFFF" opacity="0.9" />
+        </g>
+
+        <!-- Floating Accent Sparks / Digital Dots -->
+        <g>
+            <!-- Top Right Spark -->
+            <!-- <circle cx="155" cy="-85" r="5" fill="#00E5FF" filter="url(#neonGlow)" /> -->
+            <!-- <circle cx="155" cy="-85" r="2" fill="#FFFFFF" /> -->
+
+            <!-- Bottom Left Spark -->
+            <!-- <circle cx="-155" cy="85" r="4" fill="#00E5FF" opacity="0.7" /> -->
+
+            <!-- Top Left Spark -->
+            <!-- <circle cx="-120" cy="-120" r="3" fill="#FFFFFF" opacity="0.4" /> -->
+        </g>
+
+    </g>
+</svg>

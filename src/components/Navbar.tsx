@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCurrentContext } from '@/context/CurrentContext';
-import { Search, Crosshair, Hexagon, LogOut, ChevronDown, UserCheck } from 'lucide-react';
+import { Search, Hexagon, LogOut, ChevronDown, UserCheck } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { searchQuery, setSearchQuery } = useCurrentContext();
@@ -60,10 +61,15 @@ export const Navbar: React.FC = () => {
 
             {/* Left: Brand */}
             <Link href="/" className="flex items-center gap-3 shrink-0 hover:opacity-90 transition-opacity">
-              <div className="relative h-9 w-9 sm:h-10 sm:w-10 clip-chamfer bg-gradient-to-br from-halo-cyan to-halo-electric p-[1.5px] shadow-halo shrink-0">
-                <div className="h-full w-full clip-chamfer bg-gunmetal-700 flex items-center justify-center">
-                  <Crosshair className="h-5 w-5 text-halo-cyan" />
-                </div>
+              <div className="relative h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center shrink-0">
+                <Image
+                  src="/images/Tooliplogo.svg"
+                  alt="Toolip Logo"
+                  width={36}
+                  height={36}
+                  className="h-full w-full object-contain"
+                  priority
+                />
               </div>
               <div className="leading-none">
                 <div className="flex items-baseline gap-2">
