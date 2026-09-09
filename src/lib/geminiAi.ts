@@ -264,3 +264,55 @@ CRITICAL GENERATION RULES:
   onLog?.(`✨ Google Gemini MindMap updated successfully with ${finalNodes.length} nodes & ${finalEdges.length} connections!`);
   return { nodes: finalNodes, edges: finalEdges };
 }
+
+/**
+ * Generate clean SVG code for logos and graphics using Google Gemini API.
+ */
+export async function generateSvgWithGemini(
+  prompt: string,
+  apiKey?: string,
+  modelId?: string
+): Promise<string> {
+  const systemPrompt = `You are a master vector graphic artist & SVG code architect.
+Your job is to generate visually stunning, clean, self-contained XML SVG graphics and logos based on the user's request.
+
+Rules:
+1. Output ONLY valid <svg> ... </svg> code.
+2. Do NOT include markdown code fences like \`\`\`xml or \`\`\`svg if possible. If you use fences, output only the clean SVG inside.
+3. Make sure the SVG includes:
+   - Proper width, height, and viewBox attributes (e.g. width="240" height="240" viewBox="0 0 200 200").
+   - Modern aesthetics: smooth gradients (<linearGradient>), drop shadows, rounded corners, clean shapes (<circle>, <rect>, <polygon>, <path>, <text>).
+   - Rich colors (deep dark backgrounds or vibrant neon highlights).
+   - High contrast and crisp scaling.
+4. MANDATORY COMMENTING: ALWAYS add clear descriptive XML comments directly above EVERY element, group, and definition (e.g. <!-- Emblem Background -->, <!-- Rocket Body -->, <!-- Left Wing -->, <!-- Glow Gradient -->). Every component must be commented!
+5. Ensure all XML tags are correctly closed.`;
+
+  const rawText = await generateGeminiCompletion({
+    apiKey,
+    modelId: modelId || 'gemini-3.8-flash',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Design an SVG graphic for: ${prompt}` },
+    ],
+    temperature: 0.5,
+    maxTokens: 4000,
+  });
+
+  let svgCode = rawText.trim();
+
+  // Extract <svg> block if model wrapped it in text or codeblocks
+  if (svgCode.includes('<svg') && svgCode.includes('</svg>')) {
+    const startIdx = svgCode.indexOf('<svg');
+    const endIdx = svgCode.lastIndexOf('</svg>') + 6;
+    svgCode = svgCode.substring(startIdx, endIdx);
+  } else if (svgCode.startsWith('```')) {
+    svgCode = svgCode.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+  }
+
+  if (!svgCode.startsWith('<svg')) {
+    throw new Error('AI response did not contain a valid <svg> root element.');
+  }
+
+  return svgCode;
+}
+

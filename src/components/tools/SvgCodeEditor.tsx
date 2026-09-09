@@ -34,12 +34,24 @@ import {
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import {
   NVIDIA_MODELS,
+  CLOUD_NVIDIA_MODELS,
+  LOCAL_OLLAMA_MODELS,
+  getAllOllamaModels,
+  addCustomOllamaModel,
+  removeCustomOllamaModel,
+  checkOllamaHealth,
   getNvidiaApiKey,
   setNvidiaApiKey,
   getNvidiaSelectedModel,
   setNvidiaSelectedModel,
   generateSvgWithNvidia
 } from '@/lib/nvidiaAi';
+import {
+  CLOUD_GEMINI_MODELS,
+  generateSvgWithGemini,
+  getGeminiApiKey,
+  setGeminiApiKey
+} from '@/lib/geminiAi';
 
 const PRESET_SVGS: Record<string, string> = {
   Badge: `<svg width="240" height="240" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -139,18 +151,66 @@ export const SvgCodeEditor: React.FC = () => {
     setMounted(true);
   }, []);
 
-  // NVIDIA BYOK AI Logo Generator State
+  // Local Ollama AI Health State
+  const [isOllamaActive, setIsOllamaActive] = useState(false);
+  const [installedOllamaModels, setInstalledOllamaModels] = useState<string[]>([]);
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      const { active, models } = await checkOllamaHealth();
+      setIsOllamaActive(active);
+      setInstalledOllamaModels(models);
+    };
+    checkHealth();
+    const interval = setInterval(checkHealth, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // NVIDIA & GEMINI BYOK AI Logo Generator State
   const [isNvidiaAiModalOpen, setIsNvidiaAiModalOpen] = useState(false);
   const [nvidiaApiKeyInput, setNvidiaApiKeyInput] = useState(() => getNvidiaApiKey());
+  const [geminiApiKeyInput, setGeminiApiKeyInput] = useState(() => getGeminiApiKey());
   const [selectedNvidiaModel, setSelectedNvidiaModel] = useState(() => getNvidiaSelectedModel());
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiErrorMsg, setAiErrorMsg] = useState<string | null>(null);
 
+  // Custom Local Ollama Model State
+  const [customOllamaInput, setCustomOllamaInput] = useState('');
+  const [showOllamaGuide, setShowOllamaGuide] = useState(false);
+
+  const handleAddCustomModelSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!customOllamaInput.trim()) return;
+    const newModelId = addCustomOllamaModel(customOllamaInput);
+    if (newModelId) {
+      handleSelectNvidiaModel(newModelId);
+      setNoticeMsg(`✓ Added & selected custom local model: "${customOllamaInput.trim()}"`);
+      setTimeout(() => setNoticeMsg(''), 4000);
+      setCustomOllamaInput('');
+    }
+  };
+
+  const handleRemoveCustomModelClick = (modelId: string) => {
+    removeCustomOllamaModel(modelId);
+    setNoticeMsg(`Removed custom model: ${modelId}`);
+    setTimeout(() => setNoticeMsg(''), 4000);
+    if (selectedNvidiaModel === modelId) {
+      handleSelectNvidiaModel(CLOUD_NVIDIA_MODELS[0].id);
+    }
+  };
+
   const handleSaveNvidiaKey = (key: string) => {
     setNvidiaApiKey(key);
     setNvidiaApiKeyInput(key);
     setNoticeMsg(key.trim() ? '✓ Saved NVIDIA API Key to BYOK local storage' : 'Removed NVIDIA API Key');
+    setTimeout(() => setNoticeMsg(''), 3000);
+  };
+
+  const handleSaveGeminiKey = (key: string) => {
+    setGeminiApiKey(key);
+    setGeminiApiKeyInput(key);
+    setNoticeMsg(key.trim() ? '✓ Saved Google Gemini API Key to BYOK local storage' : 'Removed Gemini API Key');
     setTimeout(() => setNoticeMsg(''), 3000);
   };
 
@@ -165,8 +225,17 @@ export const SvgCodeEditor: React.FC = () => {
       setAiErrorMsg('Please enter a description or prompt for the vector graphic');
       return;
     }
-    if (!nvidiaApiKeyInput.trim()) {
-      setAiErrorMsg('NVIDIA API Key required. Please enter your BYOK key (nvapi-...).');
+
+    const isGeminiModel = selectedNvidiaModel.startsWith('gemini-');
+    const isLocalModel = selectedNvidiaModel.startsWith('ollama/');
+
+    if (isGeminiModel && !geminiApiKeyInput.trim()) {
+      setAiErrorMsg('Google Gemini API Key required. Please enter your key from Google AI Studio (https://aistudio.google.com/app/apikey).');
+      return;
+    }
+
+    if (!isLocalModel && !isGeminiModel && !nvidiaApiKeyInput.trim()) {
+      setAiErrorMsg('NVIDIA API Key required for Cloud Models. Please enter your BYOK key (nvapi-...).');
       return;
     }
 
@@ -174,25 +243,40 @@ export const SvgCodeEditor: React.FC = () => {
     setIsAiGenerating(true);
 
     try {
-      handleSaveNvidiaKey(nvidiaApiKeyInput);
-      const generatedSvg = await generateSvgWithNvidia(
-        aiPrompt.trim(),
-        nvidiaApiKeyInput.trim(),
-        selectedNvidiaModel
-      );
+      if (isGeminiModel) {
+        handleSaveGeminiKey(geminiApiKeyInput);
+      } else if (!isLocalModel) {
+        handleSaveNvidiaKey(nvidiaApiKeyInput);
+      }
+
+      let generatedSvg = '';
+      if (isGeminiModel) {
+        generatedSvg = await generateSvgWithGemini(
+          aiPrompt.trim(),
+          geminiApiKeyInput.trim(),
+          selectedNvidiaModel
+        );
+      } else {
+        generatedSvg = await generateSvgWithNvidia(
+          aiPrompt.trim(),
+          nvidiaApiKeyInput.trim(),
+          selectedNvidiaModel
+        );
+      }
 
       setSvgCode(generatedSvg);
       setHoveredShapeIdx(null);
       setCodeGlowLineIdx(null);
       setSelectedLayerIdx(null);
 
-      setNoticeMsg('✨ AI Vector Logo & Graphic successfully generated with NVIDIA NIM!');
+      const providerName = isGeminiModel ? 'Google Gemini' : isLocalModel ? 'Local Ollama' : 'NVIDIA NIM';
+      setNoticeMsg(`✨ AI Vector Logo & Graphic successfully generated with ${providerName}!`);
       setTimeout(() => setNoticeMsg(''), 4000);
       setIsNvidiaAiModalOpen(false);
       setAiPrompt('');
     } catch (err: any) {
-      console.error('NVIDIA AI Generation error:', err);
-      setAiErrorMsg(err.message || 'Failed to generate SVG with NVIDIA AI');
+      console.error('AI SVG Generation error:', err);
+      setAiErrorMsg(err.message || 'Failed to generate SVG with AI');
     } finally {
       setIsAiGenerating(false);
     }
@@ -339,8 +423,9 @@ export const SvgCodeEditor: React.FC = () => {
     window.addEventListener('touchend', onTouchEnd);
   };
 
-  // Parse SVG Layers & Groups with exact line numbers
+  // Parse SVG Layers & Groups with exact line numbers (SSR safe)
   const layersList: SvgLayerItem[] = useMemo(() => {
+    if (!mounted || typeof window === 'undefined') return [];
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(svgCode, 'image/svg+xml');
@@ -365,7 +450,7 @@ export const SvgCodeEditor: React.FC = () => {
     } catch (e) {
       return [];
     }
-  }, [svgCode, getElementLineNumber]);
+  }, [svgCode, getElementLineNumber, mounted]);
 
   // Re-bind shape interaction listeners with exact line number matching
   useEffect(() => {
@@ -663,7 +748,7 @@ export const SvgCodeEditor: React.FC = () => {
         setNoticeMsg(`✓ Updated fill color to ${colorHex} on <${targetLayer.tagName}> layer!`);
         setTimeout(() => setNoticeMsg(''), 2500);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   return (
@@ -714,7 +799,7 @@ export const SvgCodeEditor: React.FC = () => {
             title="Generate custom vector logos and SVG graphics with NVIDIA BYOK AI"
           >
             <Sparkles className="h-3.5 w-3.5 text-slate-950 animate-pulse fill-current" />
-            <span>NVIDIA AI Logo</span>
+            <span>AI Model</span>
             <span className="px-1 py-0.2 text-[9px] bg-slate-950/20 text-slate-950 font-mono rounded font-black">BYOK</span>
           </button>
 
@@ -819,11 +904,10 @@ export const SvgCodeEditor: React.FC = () => {
                 setEditorHeight(preset.size);
                 setOutputHeight(preset.size);
               }}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                editorHeight === preset.size
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${editorHeight === preset.size
                   ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
                   : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200'
-              }`}
+                }`}
             >
               {preset.label} ({preset.size}px)
             </button>
@@ -866,7 +950,7 @@ export const SvgCodeEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* Inline NVIDIA AI Prompt & Model Control Bar (Right Below Pane Height) */}
+      {/* Inline AI Prompt & Multi-Model Control Bar */}
       <div className="p-3 bg-gradient-to-r from-emerald-950/40 via-gray-900 to-slate-900 border border-emerald-500/30 rounded-2xl space-y-2 text-xs shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center space-x-2">
@@ -874,36 +958,94 @@ export const SvgCodeEditor: React.FC = () => {
               <Sparkles className="h-4 w-4 animate-pulse fill-current" />
             </div>
             <span className="font-extrabold text-white text-xs tracking-tight flex items-center gap-1.5">
-              NVIDIA AI Generator
-              <span className="text-[9px] font-mono font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded">BYOK</span>
+              Global AI Vector Generator
+              <span className={`text-[9px] font-mono font-black border px-1.5 py-0.5 rounded ${selectedNvidiaModel.startsWith('gemini-')
+                  ? 'text-blue-400 bg-blue-400/10 border-blue-400/30'
+                  : selectedNvidiaModel.startsWith('ollama/')
+                    ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
+                    : 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30'
+                }`}>
+                {selectedNvidiaModel.startsWith('gemini-')
+                  ? 'GEMINI ⚡'
+                  : selectedNvidiaModel.startsWith('ollama/')
+                    ? 'LOCAL OLLAMA 🏠'
+                    : 'NVIDIA BYOK 🌐'}
+              </span>
             </span>
           </div>
 
           <div className="flex items-center space-x-2">
             {/* Model Selector Dropdown */}
-            <div className="flex items-center bg-gray-950 border border-gray-800 rounded-xl px-2 py-1 space-x-1">
+            <div className="flex items-center bg-gray-950 border border-gray-800 rounded-xl px-2.5 py-1 space-x-1.5">
               <span className="text-[10px] text-gray-400 font-bold">Model:</span>
               <select
                 value={selectedNvidiaModel}
                 onChange={(e) => handleSelectNvidiaModel(e.target.value)}
-                className="bg-transparent text-emerald-300 text-xs font-semibold focus:outline-none cursor-pointer"
+                className="bg-transparent text-emerald-300 text-xs font-semibold focus:outline-none cursor-pointer max-w-[220px] sm:max-w-none"
               >
-                {NVIDIA_MODELS.map((m) => (
-                  <option key={m.id} value={m.id} className="bg-gray-900 text-white">
-                    {m.name} ({m.badge})
-                  </option>
-                ))}
+                <optgroup label="⚡ Direct Google Gemini Models (Instant Queue)" className="bg-slate-900 text-blue-400 font-bold">
+                  {CLOUD_GEMINI_MODELS.map((m) => (
+                    <option key={m.id} value={m.id} className="bg-slate-900 text-white font-medium">
+                      {m.name} ({m.badge})
+                    </option>
+                  ))}
+                </optgroup>
+
+                <optgroup label="🌐 NVIDIA Cloud Models (BYOK)" className="bg-slate-900 text-cyan-400 font-bold">
+                  {CLOUD_NVIDIA_MODELS.map((m) => (
+                    <option key={m.id} value={m.id} className="bg-slate-900 text-white font-medium">
+                      {m.name} ({m.badge})
+                    </option>
+                  ))}
+                </optgroup>
+
+                <optgroup
+                  label={isOllamaActive ? "🟢 Local Ollama Models (Active)" : "🔴 Local Ollama Models (Offline / Inactive)"}
+                  className={isOllamaActive ? "bg-slate-900 text-emerald-400 font-bold" : "bg-slate-900 text-slate-500 font-bold"}
+                >
+                  {getAllOllamaModels(installedOllamaModels).map((m) => {
+                    const isInstalled = installedOllamaModels.length === 0 || installedOllamaModels.some((name) => name.includes(m.ollamaModel || ''));
+                    const isAvailable = isOllamaActive && isInstalled;
+                    return (
+                      <option
+                        key={m.id}
+                        value={m.id}
+                        disabled={!isAvailable}
+                        className={isAvailable ? "bg-slate-900 text-emerald-300 font-semibold" : "bg-slate-900 text-slate-500 italic"}
+                      >
+                        {m.name} {isAvailable ? "🟢 (Local Active)" : "🔴 (Local - Ollama Offline)"}
+                      </option>
+                    );
+                  })}
+                </optgroup>
               </select>
             </div>
 
             {/* Key Status & Edit Button */}
             <button
+              type="button"
               onClick={() => setIsNvidiaAiModalOpen(true)}
               className="px-2.5 py-1 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 text-[11px] font-medium flex items-center space-x-1 cursor-pointer transition"
-              title="Configure NVIDIA BYOK API Key"
+              title={
+                selectedNvidiaModel.startsWith('ollama/')
+                  ? 'Local Ollama Model Active (No API Key Required)'
+                  : selectedNvidiaModel.startsWith('gemini-')
+                    ? 'Configure Google Gemini API Key'
+                    : 'Configure NVIDIA BYOK API Key'
+              }
             >
               <Lock className="h-3 w-3 text-emerald-400" />
-              <span>{mounted && nvidiaApiKeyInput ? 'Key Saved ⚙️' : 'Set Key 🔑'}</span>
+              <span>
+                {selectedNvidiaModel.startsWith('ollama/')
+                  ? 'Local Ollama 🏠'
+                  : selectedNvidiaModel.startsWith('gemini-')
+                    ? mounted && geminiApiKeyInput
+                      ? 'Gemini Key Saved ⚙️'
+                      : 'Set Gemini Key 🔑'
+                    : mounted && nvidiaApiKeyInput
+                      ? 'NVIDIA Key Saved ⚙️'
+                      : 'Set NVIDIA Key 🔑'}
+              </span>
             </button>
           </div>
         </div>
@@ -992,7 +1134,7 @@ export const SvgCodeEditor: React.FC = () => {
 
       {/* Main Layout Grid (Source Code + Visual Canvas + Optional Layers Sidebar) */}
       <div className={`grid grid-cols-1 ${showLayerSidebar ? 'lg:grid-cols-12' : 'md:grid-cols-2'} gap-4 items-start`}>
-        
+
         {/* Layer & Group Management Sidebar */}
         {showLayerSidebar && (
           <div className="lg:col-span-3 p-3 bg-gray-900 border border-gray-800 rounded-xl space-y-2.5">
@@ -1013,11 +1155,10 @@ export const SvgCodeEditor: React.FC = () => {
                       setSelectedLayerIdx(layer.id);
                       scrollToLine(layer.lineNumber);
                     }}
-                    className={`p-2 rounded-lg text-xs font-mono flex items-center justify-between cursor-pointer border transition-all ${
-                      selectedLayerIdx === layer.id
+                    className={`p-2 rounded-lg text-xs font-mono flex items-center justify-between cursor-pointer border transition-all ${selectedLayerIdx === layer.id
                         ? 'bg-purple-950/80 border-purple-500/60 text-purple-200 font-bold shadow-md'
                         : 'bg-gray-950/60 border-gray-800/80 text-gray-300 hover:bg-gray-800/60'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center space-x-2 truncate">
                       <span className="px-1.5 py-0.5 rounded bg-gray-800 text-[10px] text-sky-400 font-bold">
@@ -1075,11 +1216,10 @@ export const SvgCodeEditor: React.FC = () => {
                       onMouseEnter={() => setHoveredShapeIdx(idx)}
                       onMouseLeave={() => setHoveredShapeIdx(null)}
                       onClick={() => scrollToLine(lineNum)}
-                      className={`h-5 cursor-pointer text-[10px] transition-all flex items-center justify-end ${
-                        isGlowing
+                      className={`h-5 cursor-pointer text-[10px] transition-all flex items-center justify-end ${isGlowing
                           ? 'text-rose-400 font-bold bg-rose-500/20 scale-105 border-l-2 border-rose-400'
                           : 'hover:text-sky-400'
-                      }`}
+                        }`}
                       title={`Click to jump to line ${lineNum}`}
                     >
                       {lineNum}
@@ -1142,9 +1282,8 @@ export const SvgCodeEditor: React.FC = () => {
             <div
               ref={previewContainerRef}
               style={{ height: `${outputHeight}px` }}
-              className={`w-full p-6 border border-gray-800 rounded-xl flex items-center justify-center overflow-hidden relative shadow-inner transition-colors ${
-                canvasBg === 'light' ? 'bg-white' : 'bg-gray-950'
-              }`}
+              className={`w-full p-6 border border-gray-800 rounded-xl flex items-center justify-center overflow-hidden relative shadow-inner transition-colors ${canvasBg === 'light' ? 'bg-white' : 'bg-gray-950'
+                }`}
               dangerouslySetInnerHTML={{ __html: svgCode }}
             />
 
@@ -1171,7 +1310,7 @@ export const SvgCodeEditor: React.FC = () => {
           <div className="flex items-center space-x-2">
             <ImageIcon className="h-4 w-4 text-emerald-400" />
             <span className="font-extrabold text-white text-xs tracking-tight">
-              Saved SVGs Gallery ({savedSvgs.length})
+              Saved SVGs Gallery ({mounted ? savedSvgs.length : 0})
             </span>
             <span className="text-[10px] text-gray-500 font-mono">Click 40×40px tile to load SVG code into editor</span>
           </div>
@@ -1184,7 +1323,7 @@ export const SvgCodeEditor: React.FC = () => {
           </button>
         </div>
 
-        {savedSvgs.length === 0 ? (
+        {!mounted || savedSvgs.length === 0 ? (
           <div className="py-3 text-center text-gray-500 text-xs border border-dashed border-gray-800 rounded-xl">
             No saved SVGs yet. Click "+ Save Current SVG" or "Save SVG" above to store 40×40px thumbnail tiles here!
           </div>
@@ -1218,11 +1357,11 @@ export const SvgCodeEditor: React.FC = () => {
         )}
       </div>
 
-      {/* NVIDIA BYOK AI Logo Generator Modal Portal */}
+      {/* Unified BYOK & Local AI Vector Graphic Generator Modal Portal */}
       {isNvidiaAiModalOpen &&
         createPortal(
           <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="relative w-full max-w-2xl bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5 max-h-[90vh] flex flex-col">
+            <div className="relative w-full max-w-3xl bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5 max-h-[92vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div className="flex items-center space-x-3">
@@ -1231,10 +1370,10 @@ export const SvgCodeEditor: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                      NVIDIA NIM AI Logo & Graphic Generator
-                      <span className="text-[10px] font-mono font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 rounded-lg">BYOK</span>
+                      AI Vector Logo & Graphic Generator
+                      <span className="text-[10px] font-mono font-black text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 rounded-lg">ALL MODELS</span>
                     </h3>
-                    <p className="text-xs text-slate-400">Generate clean SVG vector logos & graphics with 3 NVIDIA NIM models</p>
+                    <p className="text-xs text-slate-400">Generate clean SVG vector logos & graphics with Google Gemini, NVIDIA Cloud, & Local Ollama models</p>
                   </div>
                 </div>
                 <button
@@ -1246,6 +1385,40 @@ export const SvgCodeEditor: React.FC = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                {/* Google Gemini BYOK API Key Section */}
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Google Gemini API Key (Direct API)</span>
+                    </label>
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-blue-400 hover:underline flex items-center gap-1"
+                    >
+                      Get Key from Google AI Studio ↗
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="password"
+                      value={geminiApiKeyInput}
+                      onChange={(e) => setGeminiApiKeyInput(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-blue-300 placeholder-slate-600 focus:outline-none focus:border-blue-400 transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSaveGeminiKey(geminiApiKeyInput)}
+                      className="px-3.5 py-2.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 font-bold text-xs rounded-xl border border-blue-500/40 transition cursor-pointer shrink-0"
+                    >
+                      Save Gemini Key
+                    </button>
+                  </div>
+                </div>
+
                 {/* NVIDIA BYOK API Key Section */}
                 <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
                   <div className="flex items-center justify-between">
@@ -1280,36 +1453,230 @@ export const SvgCodeEditor: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 3 Models Dropdown Switch */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
-                    <span>NVIDIA Model Selector (3 Models Supported)</span>
-                    <span className="text-[10px] font-mono text-cyan-400">Selected: {selectedNvidiaModel}</span>
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {NVIDIA_MODELS.map((model) => {
-                      const isSelected = selectedNvidiaModel === model.id;
-                      return (
-                        <button
-                          key={model.id}
-                          type="button"
-                          onClick={() => handleSelectNvidiaModel(model.id)}
-                          className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${
-                            isSelected
+                {/* Model Selector Cards */}
+                <div className="space-y-4">
+                  {/* Section 0: Direct Google Gemini Models */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-blue-400 font-extrabold">⚡ Direct Google Gemini AI Models</span>
+                      <span className="text-[10px] font-mono text-blue-400">Selected: {selectedNvidiaModel}</span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {CLOUD_GEMINI_MODELS.map((model) => {
+                        const isSelected = selectedNvidiaModel === model.id;
+                        return (
+                          <button
+                            key={model.id}
+                            type="button"
+                            onClick={() => handleSelectNvidiaModel(model.id)}
+                            className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${isSelected
+                              ? 'bg-blue-950/40 border-blue-400 text-white shadow-md shadow-blue-500/10'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                              }`}
+                          >
+                            <div>
+                              <span className="text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-blue-400 inline-block mb-1">
+                                {model.badge}
+                              </span>
+                              <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                            </div>
+                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Section 1: Cloud NVIDIA Models */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-cyan-400 font-extrabold">🌐 NVIDIA Cloud AI Models (BYOK Key Required)</span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {CLOUD_NVIDIA_MODELS.map((model) => {
+                        const isSelected = selectedNvidiaModel === model.id;
+                        return (
+                          <button
+                            key={model.id}
+                            type="button"
+                            onClick={() => handleSelectNvidiaModel(model.id)}
+                            className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-2 ${isSelected
                               ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
                               : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-                          }`}
-                        >
-                          <div>
-                            <span className="text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 inline-block mb-1">
-                              {model.badge}
-                            </span>
-                            <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                              }`}
+                          >
+                            <div>
+                              <span className="text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 inline-block mb-1">
+                                {model.badge}
+                              </span>
+                              <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
+                            </div>
+                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Section 2: Local Ollama Models */}
+                  <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <span className="text-emerald-400 font-black">🏠 Local Ollama Models (No API Key Required)</span>
+                      </label>
+                      <span className={`text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full border ${isOllamaActive
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-slate-800 text-slate-500 border-slate-700'
+                        }`}>
+                        {isOllamaActive ? '🟢 Ollama Active (http://localhost:11434)' : '🔴 Ollama Service Offline'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {getAllOllamaModels(installedOllamaModels).map((model) => {
+                        const isSelected = selectedNvidiaModel === model.id;
+                        const isInstalled = installedOllamaModels.length === 0 || installedOllamaModels.some((name) => name.includes(model.ollamaModel || ''));
+                        const isAvailable = isOllamaActive && isInstalled;
+                        const isCustom = model.badge === 'Custom Local';
+
+                        return (
+                          <div
+                            key={model.id}
+                            className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between space-y-2 ${!isAvailable
+                              ? 'bg-slate-950/60 border-slate-800 text-slate-600 opacity-60 grayscale'
+                              : isSelected
+                                ? 'bg-emerald-950/40 border-emerald-400 text-white shadow-md shadow-emerald-500/10'
+                                : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+                              }`}
+                          >
+                            <div
+                              onClick={() => isAvailable && handleSelectNvidiaModel(model.id)}
+                              className="cursor-pointer space-y-1.5"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[10px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded border ${isAvailable
+                                  ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                                  : 'bg-slate-800 border-slate-700 text-slate-500'
+                                  }`}>
+                                  {model.badge}
+                                </span>
+                                <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${isAvailable ? 'bg-emerald-400/20 text-emerald-400' : 'bg-slate-800 text-slate-500'
+                                  }`}>
+                                  {isAvailable ? '🟢 Active' : '🔴 Offline'}
+                                </span>
+                              </div>
+                              <h4 className="text-xs font-black text-slate-100 flex items-center justify-between">
+                                <span>{model.name}</span>
+                                {isSelected && <span className="text-[10px] text-emerald-400 font-bold">✓ Selected</span>}
+                              </h4>
+                              <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                            </div>
+
+                            {isCustom && (
+                              <div className="pt-1 flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveCustomModelClick(model.id);
+                                  }}
+                                  className="text-[10px] text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Remove Custom Model
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add Custom Local Model Form */}
+                    <form onSubmit={handleAddCustomModelSubmit} className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                      <input
+                        type="text"
+                        value={customOllamaInput}
+                        onChange={(e) => setCustomOllamaInput(e.target.value)}
+                        placeholder="Add custom model name (e.g. mistral:7b, llama3.2:3b)..."
+                        className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-emerald-300 placeholder-slate-600 focus:outline-none focus:border-emerald-400"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow transition shrink-0 cursor-pointer"
+                      >
+                        + Add Local Model
+                      </button>
+                    </form>
+
+                    {/* Interactive Step-by-Step Local Ollama Setup & Usage Guide */}
+                    <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3 mt-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-black text-slate-100 uppercase tracking-wider">
+                            📖 How to Setup & Run Custom Local Ollama Models (Step-by-Step Guide)
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowOllamaGuide(!showOllamaGuide)}
+                          className="text-[10px] font-mono text-emerald-400 hover:underline cursor-pointer"
+                        >
+                          {showOllamaGuide ? 'Collapse Guide ▲' : 'Show Setup Guide 📖'}
                         </button>
-                      );
-                    })}
+                      </div>
+
+                      {showOllamaGuide && (
+                        <div className="space-y-3 text-xs text-slate-300 leading-relaxed pt-1 border-t border-slate-800/80">
+                          {/* Step 1 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">1</span>
+                              <span>Download & Install Ollama</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                              Download Ollama for Linux, macOS, or Windows from{' '}
+                              <a href="https://ollama.com" target="_blank" rel="noreferrer" className="text-emerald-400 underline font-semibold">
+                                ollama.com ↗
+                              </a>
+                            </p>
+                          </div>
+
+                          {/* Step 2 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">2</span>
+                              <span>Choose a Suitable Model for Your PC Specs</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                              Research and pick an efficient model suited for your RAM / VRAM (e.g. 7B models like <code className="text-emerald-300">qwen2.5-coder:7b</code> for 8GB-16GB RAM, or 3B models for low VRAM PCs).
+                            </p>
+                          </div>
+
+                          {/* Step 3 */}
+                          <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                            <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black">3</span>
+                              <span>Pull Model via Terminal</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mb-1">Open your terminal and pull your chosen model:</p>
+                            <div className="flex items-center justify-between p-2 bg-slate-950 border border-slate-800 rounded-lg font-mono text-[11px]">
+                              <span className="text-amber-300">ollama pull qwen2.5-coder:7b</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText('ollama pull qwen2.5-coder:7b');
+                                  setNoticeMsg('Copied: ollama pull qwen2.5-coder:7b');
+                                  setTimeout(() => setNoticeMsg(''), 2500);
+                                }}
+                                className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 cursor-pointer"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1374,7 +1741,7 @@ export const SvgCodeEditor: React.FC = () => {
                   {isAiGenerating ? (
                     <>
                       <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
-                      <span>Generating SVG Graphic with NVIDIA AI...</span>
+                      <span>Generating SVG Graphic with {selectedNvidiaModel.startsWith('gemini-') ? 'Google Gemini' : selectedNvidiaModel.startsWith('ollama/') ? 'Local Ollama' : 'NVIDIA AI'}...</span>
                     </>
                   ) : (
                     <>

@@ -740,16 +740,29 @@ Rules:
 4. MANDATORY COMMENTING: ALWAYS add clear descriptive XML comments directly above EVERY element, group, and definition (e.g. <!-- Emblem Background -->, <!-- Rocket Body -->, <!-- Left Wing -->, <!-- Glow Gradient -->). Every component must be commented!
 5. Ensure all XML tags are correctly closed.`;
 
-  const rawText = await generateNvidiaCompletion({
-    apiKey,
-    modelId,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Design an SVG graphic for: ${prompt}` },
-    ],
-    temperature: 0.5,
-    maxTokens: 3000,
-  });
+  const isOllamaModel = (modelId || '').startsWith('ollama/');
+  let rawText = '';
+  if (isOllamaModel) {
+    const rawOllamaName = (modelId || '').replace(/^ollama\//i, '');
+    rawText = await generateOllamaCompletion({
+      model: rawOllamaName,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Design an SVG graphic for: ${prompt}` },
+      ],
+    });
+  } else {
+    rawText = await generateNvidiaCompletion({
+      apiKey,
+      modelId,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Design an SVG graphic for: ${prompt}` },
+      ],
+      temperature: 0.5,
+      maxTokens: 3000,
+    });
+  }
 
   let svgCode = rawText.trim();
 
