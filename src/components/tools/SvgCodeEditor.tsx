@@ -1341,7 +1341,7 @@ export const SvgCodeEditor: React.FC = () => {
       {isNvidiaAiModalOpen &&
         createPortal(
           <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="relative w-full max-w-3xl bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5 max-h-[92vh] flex flex-col">
+            <div className="relative w-full max-w-4xl bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5 max-h-[92vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div className="flex items-center space-x-3">
@@ -1460,7 +1460,7 @@ export const SvgCodeEditor: React.FC = () => {
                               </span>
                               <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
                             </div>
-                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                            {/* <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p> */}
                           </button>
                         );
                       })}
@@ -1491,7 +1491,7 @@ export const SvgCodeEditor: React.FC = () => {
                               </span>
                               <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
                             </div>
-                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                            {/* <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p> */}
                           </button>
                         );
                       })}
@@ -1661,7 +1661,7 @@ export const SvgCodeEditor: React.FC = () => {
                 </div>
 
                 {/* Prompt Text Area */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-200">
                     Logo / Graphic Prompt
                   </label>
@@ -1673,7 +1673,6 @@ export const SvgCodeEditor: React.FC = () => {
                     className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
                   />
 
-                  {/* Quick Suggestion Pills */}
                   <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                     <span className="text-slate-400 text-[10px]">Quick Prompts:</span>
                     {[
@@ -1692,7 +1691,7 @@ export const SvgCodeEditor: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Error Banner */}
                 {aiErrorMsg && (
@@ -1704,7 +1703,7 @@ export const SvgCodeEditor: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800 shrink-0">
+              {/* <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsNvidiaAiModalOpen(false)}
@@ -1730,7 +1729,7 @@ export const SvgCodeEditor: React.FC = () => {
                     </>
                   )}
                 </button>
-              </div>
+              </div> */}
             </div>
           </div>,
           document.body

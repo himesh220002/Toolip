@@ -4811,7 +4811,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       {isNvidiaAiModalOpen &&
         createPortal(
           <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="relative w-full max-w-2xl bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5 max-h-[90vh] flex flex-col">
+            <div className="relative w-full max-w-4xl bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 text-slate-100 space-y-5 max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div className="flex items-center space-x-3">
@@ -4929,7 +4929,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                               </span>
                               <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
                             </div>
-                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                            {/* <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p> */}
                           </button>
                         );
                       })}
@@ -4960,7 +4960,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                               </span>
                               <h4 className="text-xs font-black text-slate-100">{model.name}</h4>
                             </div>
-                            <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p>
+                            {/* <p className="text-[10px] leading-relaxed opacity-80">{model.description}</p> */}
                           </button>
                         );
                       })}
