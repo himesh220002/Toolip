@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { LogIn, UserPlus, X, Mail, Lock, User, Sparkles, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -56,7 +57,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const backendUrl = getApiBaseUrl();
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
       const payload = mode === 'login' ? { email, password } : { name, email, password };
 

@@ -1,10 +1,11 @@
 import { io, Socket } from 'socket.io-client';
+import { getSocketUrl } from './apiConfig';
 
 let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
-    const backendUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+    const backendUrl = getSocketUrl();
     socket = io(backendUrl, {
       autoConnect: false,
       reconnection: true,

@@ -3372,7 +3372,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           </div>
 
           {/* Prompt Form */}
-          <form onSubmit={handleGenerateAiMindMap} className="flex items-center gap-2">
+          <form onSubmit={handleGenerateAiMindMap} className="flex flex-col sm:flex-row items-center gap-2">
             <input
               type="text"
               value={aiPrompt}
@@ -3400,7 +3400,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 className="px-2 sm:px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-xs sm:text-lg rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer shrink-0"
               >
                 <ArrowBigUpDash className="h-3.5 w-3.5 text-slate-950 fill-current" />
-                <span>{nodes.length > 0 ? 'Upg' : 'go'}</span>
+                <span>{nodes.length > 0 ? 'Upgrade' : 'Create'}</span>
               </button>
             )}
           </form>

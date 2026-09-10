@@ -1,4 +1,5 @@
 import { mergeIncrementalMindMap } from './mindMapMerger';
+import { getApiBaseUrl } from './apiConfig';
 
 export interface AiModelItem {
   id: string;
@@ -394,7 +395,7 @@ export async function generateNvidiaCompletion({
   // 2) Fallback to Express backend if Next.js route is not mounted
   if (!response) {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const backendUrl = getApiBaseUrl();
       const expressRes = await fetch(`${backendUrl}/api/nvidia/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

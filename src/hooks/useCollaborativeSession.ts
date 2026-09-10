@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSocket } from '../lib/socketClient';
+import { getApiBaseUrl } from '../lib/apiConfig';
 
 export interface ActiveUser {
   socketId: string;
@@ -99,7 +100,7 @@ export function useCollaborativeSession({
   const fetchRoomData = useCallback(async (targetRoomId: string) => {
     setIsHydrating(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const backendUrl = getApiBaseUrl();
       const res = await fetch(`${backendUrl}/api/rooms/${targetRoomId}`).catch(() => null);
       if (res && res.ok) {
         const json = await res.json();
@@ -148,7 +149,7 @@ export function useCollaborativeSession({
     }
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const backendUrl = getApiBaseUrl();
       const url = `${backendUrl}/api/rooms/user/my-rooms?ownerId=${targetOwner}&toolId=${toolId}&roomIds=${localRoomIdsStr}`;
       const res = await fetch(url).catch(() => null);
       if (res && res.ok) {
@@ -315,7 +316,7 @@ export function useCollaborativeSession({
   // Create Room action with custom title and ownerId
   const createSharedRoom = useCallback(async (dataState: any, customTitle?: string) => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const backendUrl = getApiBaseUrl();
       const ownerId = authUser?.id || 'guest';
       const title = customTitle?.trim() || `${toolId.toUpperCase()} Workspace`;
 
@@ -352,7 +353,7 @@ export function useCollaborativeSession({
     if (!token) {
       throw new Error('Authentication required - please login to push a version commit');
     }
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = getApiBaseUrl();
     const res = await fetch(`${backendUrl}/api/rooms/${targetRoomId}/commit`, {
       method: 'POST',
       headers: {
@@ -390,7 +391,7 @@ export function useCollaborativeSession({
 
   // Auth actions
   const loginUser = async (email: string, password: string) => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = getApiBaseUrl();
     const res = await fetch(`${backendUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -412,7 +413,7 @@ export function useCollaborativeSession({
   };
 
   const registerUser = async (name: string, email: string, password: string) => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = getApiBaseUrl();
     const res = await fetch(`${backendUrl}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -451,7 +452,7 @@ export function useCollaborativeSession({
 
   // Fetch logs for a specific room (per-graph, login-gated)
   const fetchRoomLogs = useCallback(async (targetRoomId: string, limit = 50, skip = 0) => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = getApiBaseUrl();
     const t = typeof window !== 'undefined' ? localStorage.getItem('toolip_auth_token') : null;
     if (!t) throw new Error('Please login to view logs');
     const res = await fetch(`${backendUrl}/api/rooms/${targetRoomId}/logs?limit=${limit}&skip=${skip}`, {
