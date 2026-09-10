@@ -111,6 +111,20 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
   const handleHeaderLogout = () => {
     localStorage.removeItem('toolip_auth_token');
     localStorage.removeItem('toolip_user_data');
+    if (typeof window !== 'undefined') {
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('toolip_active_room_') || key === 'toolip_my_room_ids' || key.startsWith('toolip_mindmap_'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+      } catch (e) {
+        // ignore
+      }
+    }
     window.dispatchEvent(new Event('toolip_auth_change'));
     if (window.location.search.includes('room=')) {
       window.history.pushState({ path: window.location.pathname }, '', window.location.pathname);

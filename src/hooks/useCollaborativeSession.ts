@@ -72,6 +72,23 @@ export function useCollaborativeSession({
   });
 
   const socketRef = useRef(getSocket());
+  const prevAuthUserIdRef = useRef<string | null>(null);
+
+  const clearAllToolipRoomStorage = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('toolip_active_room_') || key === 'toolip_my_room_ids' || key.startsWith('toolip_mindmap_'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
 
   // Restore Auth Token & User from localStorage and listen to global auth change events
   useEffect(() => {
@@ -81,16 +98,30 @@ export function useCollaborativeSession({
         const savedUserStr = localStorage.getItem('toolip_user_data');
         if (savedUserStr && savedToken) {
           const parsed = JSON.parse(savedUserStr);
-          if (parsed && !parsed.isGuest) {
+          if (parsed && !parsed.isGuest && parsed.id) {
+            const currentUserId = String(parsed.id);
+            if (prevAuthUserIdRef.current && prevAuthUserIdRef.current !== currentUserId) {
+              clearAllToolipRoomStorage();
+              setRoomId(null);
+              setRoomOwnerId(null);
+            }
+            prevAuthUserIdRef.current = currentUserId;
             setAuthUser(parsed);
             setToken(savedToken);
             return;
           }
         }
+        if (prevAuthUserIdRef.current) {
+          clearAllToolipRoomStorage();
+          setRoomId(null);
+          setRoomOwnerId(null);
+        }
+        prevAuthUserIdRef.current = null;
         setAuthUser(null);
         setToken(null);
         setUserRooms([]);
       } catch (e) {
+        prevAuthUserIdRef.current = null;
         setAuthUser(null);
         setToken(null);
         setUserRooms([]);
@@ -106,7 +137,7 @@ export function useCollaborativeSession({
       window.removeEventListener('toolip_auth_change', syncAuth);
       window.removeEventListener('storage', syncAuth);
     };
-  }, []);
+  }, [clearAllToolipRoomStorage]);
 
   // Generate random avatar color & user display name
   useEffect(() => {
@@ -403,16 +434,24 @@ export function useCollaborativeSession({
 
   const unloadWorkspace = useCallback(() => {
     setRoomId(null);
+    setRoomOwnerId(null);
+    setRoomTitle('Shared Workspace');
+    setAccessRole('public_edit');
     setIsCollaborating(false);
     setActiveUsers([]);
     setPeerCursors(new Map());
     if (typeof window !== 'undefined') {
       localStorage.removeItem(`toolip_active_room_${toolId}`);
-      const cleanUrl = window.location.pathname;
-      window.history.pushState({ path: cleanUrl }, '', cleanUrl);
+      if (window.location.search.includes('room=')) {
+        const cleanUrl = window.location.pathname;
+        window.history.pushState({ path: cleanUrl }, '', cleanUrl);
+      }
+    }
+    if (onRemoteStateChange) {
+      onRemoteStateChange(null);
     }
     fetchUserRooms();
-  }, [toolId, fetchUserRooms]);
+  }, [toolId, fetchUserRooms, onRemoteStateChange]);
 
   // Auth actions
   const loginUser = async (email: string, password: string) => {
@@ -426,8 +465,19 @@ export function useCollaborativeSession({
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Login failed');
 
+    if (typeof window !== 'undefined') {
+      const urlParam = new URLSearchParams(window.location.search).get('room');
+      if (!urlParam) {
+        clearAllToolipRoomStorage();
+      }
+    }
+    unloadWorkspace();
+
     setToken(json.token);
     setAuthUser(json.user);
+    if (json.user && json.user.id) {
+      prevAuthUserIdRef.current = String(json.user.id);
+    }
     localStorage.setItem('toolip_auth_token', json.token);
     localStorage.setItem('toolip_user_data', JSON.stringify(json.user));
     if (typeof window !== 'undefined') {
@@ -448,8 +498,19 @@ export function useCollaborativeSession({
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Registration failed');
 
+    if (typeof window !== 'undefined') {
+      const urlParam = new URLSearchParams(window.location.search).get('room');
+      if (!urlParam) {
+        clearAllToolipRoomStorage();
+      }
+    }
+    unloadWorkspace();
+
     setToken(json.token);
     setAuthUser(json.user);
+    if (json.user && json.user.id) {
+      prevAuthUserIdRef.current = String(json.user.id);
+    }
     localStorage.setItem('toolip_auth_token', json.token);
     localStorage.setItem('toolip_user_data', JSON.stringify(json.user));
     if (typeof window !== 'undefined') {
@@ -464,15 +525,16 @@ export function useCollaborativeSession({
     setAuthUser(null);
     setRoomOwnerId(null);
     setUserRooms([]);
+    prevAuthUserIdRef.current = null;
     localStorage.removeItem('toolip_auth_token');
     localStorage.removeItem('toolip_user_data');
-    localStorage.removeItem('toolip_my_room_ids');
+    clearAllToolipRoomStorage();
     unloadWorkspace();
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('toolip_auth_change'));
     }
     fetchUserRooms('guest');
-  }, [unloadWorkspace, fetchUserRooms]);
+  }, [unloadWorkspace, fetchUserRooms, clearAllToolipRoomStorage]);
 
   // Check if current auth user is owner of the active room
   const isRoomOwner = !!authUser && !authUser.isGuest && roomOwnerId !== null && String(authUser.id) === String(roomOwnerId);

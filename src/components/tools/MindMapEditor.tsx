@@ -609,7 +609,14 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const isRemoteUpdateRef = useRef(false);
 
   const handleRemoteStateChange = useCallback((newState: any) => {
-    if (!newState) return;
+    if (!newState) {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNodeId(null);
+      setSelectedEdgeId(null);
+      setLastCommittedSnapshot(null);
+      return;
+    }
 
     let parsedState = newState;
     if (typeof newState === 'string') {
@@ -631,8 +638,6 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       : Array.isArray(parsedState.e)
       ? parsedState.e
       : [];
-
-    if (rawNodes.length === 0) return;
 
     isRemoteUpdateRef.current = true;
     setSelectedNodeId(null);
@@ -1020,7 +1025,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           return str.replace(/<[^>]*>/g, '').trim() !== '';
         });
       }
-      const str = String(node.note);
+      const str = typeof node.note === 'object' ? JSON.stringify(node.note) : String(node.note);
       return str.replace(/<[^>]*>/g, '').trim() !== '';
     }
     return false;
