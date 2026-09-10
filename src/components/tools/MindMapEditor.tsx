@@ -609,15 +609,44 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const isRemoteUpdateRef = useRef(false);
 
   const handleRemoteStateChange = useCallback((newState: any) => {
-    // If collaborative room has no data yet (first load), keep current canvas (fallback to local/default) — prevents blank
-    if (!newState || !Array.isArray(newState.nodes) || newState.nodes.length === 0) {
-      return;
+    if (!newState) return;
+
+    let parsedState = newState;
+    if (typeof newState === 'string') {
+      try {
+        parsedState = JSON.parse(newState);
+      } catch (e) {
+        return;
+      }
     }
+
+    const rawNodes: MindNode[] = Array.isArray(parsedState.nodes)
+      ? parsedState.nodes
+      : Array.isArray(parsedState.n)
+      ? parsedState.n
+      : [];
+
+    const rawEdges: MindEdge[] = Array.isArray(parsedState.edges)
+      ? parsedState.edges
+      : Array.isArray(parsedState.e)
+      ? parsedState.e
+      : [];
+
+    if (rawNodes.length === 0) return;
+
     isRemoteUpdateRef.current = true;
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
-    setNodes(newState.nodes);
-    setEdges(Array.isArray(newState.edges) ? newState.edges : []);
+    setNodes(rawNodes);
+    setEdges(rawEdges);
+
+    // Auto-center canvas view on root node of loaded workspace
+    const rootNode = rawNodes.find((n) => n.isRoot || n.id === 'root' || n.id === 'root_1');
+    if (rootNode && typeof window !== 'undefined') {
+      const targetX = Math.round((window.innerWidth / 2) - ((rootNode.x || 0) * 0.6));
+      const targetY = Math.round((window.innerHeight / 2) - ((rootNode.y || 0) * 0.6));
+      setPan({ x: targetX, y: targetY });
+    }
   }, []);
 
   const handleRemoteNodeChange = useCallback((updatedNode: any) => {

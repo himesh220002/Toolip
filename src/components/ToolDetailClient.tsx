@@ -385,7 +385,7 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
               : "relative clip-chamfer p-[1.5px] bg-gradient-to-br from-white/10 via-white/5 to-transparent"
           }
         >
-          <div className={`relative bg-[#0A0F1F] flex flex-col w-full ${isWorkspaceExpanded ? 'min-h-screen rounded-none flex-1 overflow-y-auto' : 'overflow-hidden clip-chamfer'}`}>
+          <div className={`relative bg-[#0A0F1F] flex flex-col w-full ${isWorkspaceExpanded ? 'min-h-screen rounded-none flex-1 overflow-y-hidden' : 'overflow-hidden clip-chamfer'}`}>
             {/* Terminal header */}
             <div className={`flex items-center justify-between bg-gunmetal-900 border-b border-white/10 shrink-0 transition-all ${isWorkspaceExpanded ? 'px-4 sm:px-10 lg:px-20 py-2 min-h-[38px]' : 'px-4 sm:px-6 py-3.5'}`}>
               <div className="flex items-center gap-3">

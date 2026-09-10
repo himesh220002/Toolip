@@ -504,7 +504,14 @@ app.post('/api/rooms/:roomId/commit', authenticateToken, async (req, res) => {
 app.get('/api/rooms/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
-    const room = await SharedRoom.findOne({ roomId });
+    const cleanId = (roomId || '').trim();
+    const room = await SharedRoom.findOne({
+      $or: [
+        { roomId: cleanId },
+        { roomId: `room_${cleanId}` },
+        { roomId: `room_mindmap_${cleanId}` },
+      ],
+    });
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
     }
