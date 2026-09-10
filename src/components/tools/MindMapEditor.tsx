@@ -218,6 +218,31 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [mouseCanvasPos, setMouseCanvasPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  // Mobile / Tablet Touch Gestures Ref (< xl screen touch pan & pinch zoom)
+  const touchStateRef = useRef<{
+    isTouchPanning: boolean;
+    isTouchPinching: boolean;
+    isTouchDraggingNode: boolean;
+    touchPanStart: { x: number; y: number };
+    initialPinchDist: number;
+    initialZoom: number;
+    initialPan: { x: number; y: number };
+    initialMidPoint: { x: number; y: number };
+    touchDraggedNodeId: string | null;
+    touchDragOffset: { x: number; y: number };
+  }>({
+    isTouchPanning: false,
+    isTouchPinching: false,
+    isTouchDraggingNode: false,
+    touchPanStart: { x: 0, y: 0 },
+    initialPinchDist: 0,
+    initialZoom: 0.6,
+    initialPan: { x: 600, y: 400 },
+    initialMidPoint: { x: 0, y: 0 },
+    touchDraggedNodeId: null,
+    touchDragOffset: { x: 0, y: 0 },
+  });
+
   // Context Menus & Sub-menus State
   const [emptyContextMenu, setEmptyContextMenu] = useState<{ x: number; y: number; canvasX: number; canvasY: number } | null>(null);
   const [connectorModeSourceId, setConnectorModeSourceId] = useState<string | null>(null);
@@ -2309,8 +2334,11 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
   // Mouse Handlers for Pan & Drag
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    // If clicked on canvas background
-    if (e.target === containerRef.current || (e.target as HTMLElement).tagName === 'svg' || (e.target as HTMLElement).id === 'grid-pattern') {
+    const target = e.target as HTMLElement | SVGElement | null;
+    const isInteractive = target && target.closest('.group, button, input, textarea, select, [contenteditable="true"], .pointer-events-auto');
+
+    // If clicked on canvas background (or svg / rect background)
+    if (!isInteractive || target === containerRef.current || target?.tagName?.toLowerCase() === 'rect' || target?.tagName?.toLowerCase() === 'svg' || target?.id === 'grid-pattern') {
       setSelectedNodeId(null);
       setSelectedEdgeId(null);
       setActiveSubMenu(null);
@@ -2331,19 +2359,6 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     if (isCollaborating && containerRef.current) {
       const coords = getCanvasCoords(clientX, clientY);
       broadcastCursor(coords.x, coords.y);
-    }
-
-    // Strict Left Click Drag Enforcement: deny panning/dragging if left click is not active
-    if (isPanning || draggedNodeId) {
-      if ((e.buttons & 1) !== 1) {
-        if (dragRafRef.current) {
-          cancelAnimationFrame(dragRafRef.current);
-          dragRafRef.current = null;
-        }
-        setIsPanning(false);
-        setDraggedNodeId(null);
-        return;
-      }
     }
 
     // Only update mouse position state if connector mode is active (drawing line preview)
@@ -2380,8 +2395,27 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     setDraggedNodeId(null);
   };
 
-  // Global window listener to ensure dragging/panning terminates immediately on left-click release anywhere
+  // Global window listener for seamless mouse panning & node dragging across the entire window
   useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isPanning) {
+        setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+      } else if (draggedNodeId) {
+        if (dragRafRef.current) {
+          cancelAnimationFrame(dragRafRef.current);
+        }
+        dragRafRef.current = requestAnimationFrame(() => {
+          const coords = getCanvasCoords(e.clientX, e.clientY);
+          const targetX = Math.round(coords.x - dragOffset.x);
+          const targetY = Math.round(coords.y - dragOffset.y);
+
+          setNodes((prev) =>
+            prev.map((n) => (n.id === draggedNodeId ? { ...n, x: targetX, y: targetY } : n))
+          );
+        });
+      }
+    };
+
     const handleGlobalMouseUp = () => {
       if (dragRafRef.current) {
         cancelAnimationFrame(dragRafRef.current);
@@ -2391,13 +2425,16 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       setDraggedNodeId(null);
     };
 
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    window.addEventListener('blur', handleGlobalMouseUp);
+    if (isPanning || draggedNodeId) {
+      window.addEventListener('mousemove', handleGlobalMouseMove);
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
     return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
-      window.removeEventListener('blur', handleGlobalMouseUp);
     };
-  }, []);
+  }, [isPanning, draggedNodeId, panStart, dragOffset, zoom]);
 
   // Mind Map Drawing Canvas Interaction Control Mapping:
   // - Normal Scroll (Wheel): Pan Up & Down
@@ -2458,6 +2495,160 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       container.removeEventListener('wheel', onNativeWheel);
     };
   }, []);
+
+  // Touch Gestures Event Listeners for Mobile & Tablet Devices (< xl breakpoint)
+  // Handles 1-finger touch pan, 1-finger node dragging, and 2-finger pinch zoom (in/out) + pan
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const getDistance = (t1: Touch, t2: Touch) => {
+      return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    };
+
+    const getMidPoint = (t1: Touch, t2: Touch) => {
+      const rect = container.getBoundingClientRect();
+      return {
+        x: (t1.clientX + t2.clientX) / 2 - rect.left,
+        y: (t1.clientY + t2.clientY) / 2 - rect.top,
+      };
+    };
+
+    const handleNativeTouchStart = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        target.closest(
+          'input, textarea, select, button, .scrollable-note, [contenteditable="true"], .custom-scrollbar, .note-modal-scroll'
+        )
+      ) {
+        return;
+      }
+
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const isBg =
+          target === container ||
+          target?.tagName === 'svg' ||
+          target?.id === 'grid-pattern' ||
+          target?.classList.contains('canvas-background') ||
+          (target && container.contains(target) && !target.closest('.group'));
+
+        if (isBg) {
+          touchStateRef.current.isTouchPanning = true;
+          touchStateRef.current.isTouchPinching = false;
+          touchStateRef.current.touchPanStart = {
+            x: touch.clientX - pan.x,
+            y: touch.clientY - pan.y,
+          };
+          if (e.cancelable) e.preventDefault();
+        }
+      } else if (e.touches.length === 2) {
+        // 2-Finger Pinch Zooming & Panning
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const dist = getDistance(t1, t2);
+        const midPoint = getMidPoint(t1, t2);
+
+        touchStateRef.current.isTouchPanning = false;
+        touchStateRef.current.isTouchPinching = true;
+        touchStateRef.current.initialPinchDist = dist;
+        touchStateRef.current.initialZoom = zoom;
+        touchStateRef.current.initialPan = { ...pan };
+        touchStateRef.current.initialMidPoint = midPoint;
+      }
+    };
+
+    const handleNativeTouchMove = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        target.closest(
+          'input, textarea, select, button, .scrollable-note, [contenteditable="true"], .custom-scrollbar, .note-modal-scroll'
+        )
+      ) {
+        return;
+      }
+
+      if (touchStateRef.current.isTouchPinching && e.touches.length >= 2) {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const currentDist = getDistance(t1, t2);
+        const currentMidPoint = getMidPoint(t1, t2);
+        const initialDist = touchStateRef.current.initialPinchDist;
+
+        if (initialDist > 0) {
+          const scale = currentDist / initialDist;
+          const initialZoom = touchStateRef.current.initialZoom;
+          const newZoom = Math.min(Math.max(initialZoom * scale, 0.2), 4.0);
+
+          const midX = currentMidPoint.x;
+          const midY = currentMidPoint.y;
+          const initialMidX = touchStateRef.current.initialMidPoint.x;
+          const initialMidY = touchStateRef.current.initialMidPoint.y;
+          const initialPan = touchStateRef.current.initialPan;
+
+          const newPanX = midX - (initialMidX - initialPan.x) * (newZoom / initialZoom);
+          const newPanY = midY - (initialMidY - initialPan.y) * (newZoom / initialZoom);
+
+          setZoom(newZoom);
+          setPan({ x: newPanX, y: newPanY });
+        }
+      } else if (touchStateRef.current.isTouchPanning && e.touches.length === 1) {
+        if (e.cancelable) e.preventDefault();
+        const touch = e.touches[0];
+        setPan({
+          x: touch.clientX - touchStateRef.current.touchPanStart.x,
+          y: touch.clientY - touchStateRef.current.touchPanStart.y,
+        });
+      } else if (
+        touchStateRef.current.isTouchDraggingNode &&
+        e.touches.length === 1 &&
+        touchStateRef.current.touchDraggedNodeId
+      ) {
+        if (e.cancelable) e.preventDefault();
+        const touch = e.touches[0];
+        const targetNodeId = touchStateRef.current.touchDraggedNodeId;
+        const rect = container.getBoundingClientRect();
+        const coords = {
+          x: (touch.clientX - rect.left - pan.x) / zoom,
+          y: (touch.clientY - rect.top - pan.y) / zoom,
+        };
+        const targetX = Math.round(coords.x - touchStateRef.current.touchDragOffset.x);
+        const targetY = Math.round(coords.y - touchStateRef.current.touchDragOffset.y);
+
+        setNodes((prev) =>
+          prev.map((n) => (n.id === targetNodeId ? { ...n, x: targetX, y: targetY } : n))
+        );
+      }
+    };
+
+    const handleNativeTouchEnd = () => {
+      touchStateRef.current.isTouchPanning = false;
+      touchStateRef.current.isTouchPinching = false;
+      touchStateRef.current.isTouchDraggingNode = false;
+      touchStateRef.current.touchDraggedNodeId = null;
+      setDraggedNodeId(null);
+    };
+
+    container.addEventListener('touchstart', handleNativeTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleNativeTouchMove, { passive: false });
+    container.addEventListener('touchend', handleNativeTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', handleNativeTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener('touchstart', handleNativeTouchStart);
+      container.removeEventListener('touchmove', handleNativeTouchMove);
+      container.removeEventListener('touchend', handleNativeTouchEnd);
+      container.removeEventListener('touchcancel', handleNativeTouchEnd);
+    };
+  }, [pan, zoom]);
 
   const handleCanvasWheel = (e: React.WheelEvent) => {
     const target = e.target as HTMLElement | null;
@@ -2569,6 +2760,35 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
     const coords = getCanvasCoords(e.clientX, e.clientY);
     setDraggedNodeId(node.id);
     setDragOffset({ x: coords.x - node.x, y: coords.y - node.y });
+  };
+
+  // Touch Handler for Node Drag Start (1-Finger Touch on Mobile / Tablet)
+  const handleNodeTouchStart = (e: React.TouchEvent, node: MindNode) => {
+    e.stopPropagation();
+    setEmptyContextMenu(null);
+    setSelectedEdgeId(null);
+    setSelectedNodeId(node.id);
+    setActiveSubMenu(null);
+
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const coords = getCanvasCoords(touch.clientX, touch.clientY);
+
+      touchStateRef.current.isTouchDraggingNode = true;
+      touchStateRef.current.isTouchPanning = false;
+      touchStateRef.current.isTouchPinching = false;
+      touchStateRef.current.touchDraggedNodeId = node.id;
+      touchStateRef.current.touchDragOffset = {
+        x: coords.x - node.x,
+        y: coords.y - node.y,
+      };
+
+      setDraggedNodeId(node.id);
+      setDragOffset({
+        x: coords.x - node.x,
+        y: coords.y - node.y,
+      });
+    }
   };
 
   // Edge Selection & Management
@@ -3000,7 +3220,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               </span>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-center space-x-2">
               {/* Model Selector Dropdown */}
               <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1 space-x-1.5">
                 <span className="text-[10px] text-slate-400 font-bold">Model:</span>
@@ -3091,10 +3311,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
             ) : (
               <button
                 type="submit"
-                className="px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-lg rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                className="px-2 sm:px-4 py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-xs sm:text-lg rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer shrink-0"
               >
                 <ArrowBigUpDash className="h-3.5 w-3.5 text-slate-950 fill-current" />
-                <span>{nodes.length > 0 ? 'Upgrade Map' : 'Generate MindMap'}</span>
+                <span>{nodes.length > 0 ? 'Upg' : 'go'}</span>
               </button>
             )}
           </form>
@@ -3221,7 +3441,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         {/* Canvas Area */}
         <div
           ref={containerRef}
-          className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden bg-slate-950 overscroll-contain"
+          className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden bg-slate-950 overscroll-contain touch-none"
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
@@ -3461,6 +3681,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                 <div
                   key={`${node.id}_${idx}`}
                   onMouseDown={(e) => handleNodeMouseDown(e, node)}
+                  onTouchStart={(e) => handleNodeTouchStart(e, node)}
                   onDoubleClick={(e) => handleNodeDoubleClick(e, node)}
                   className={`absolute pointer-events-auto flex flex-col justify-between px-4 py-2.5 rounded-2xl ${draggedNodeId === node.id ? 'transition-none' : 'transition-colors transition-shadow'
                     } shadow-xl group cursor-move ${isRoot
@@ -4309,7 +4530,13 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           )}
 
           {/* Bottom Left Floating Zoom & Canvas Controls */}
-          <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-1.5 rounded-xl shadow-xl">
+          <div className="absolute bottom-4 left-4 z-20 flex flex-wrap items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-1.5 rounded-xl shadow-xl max-w-[calc(100vw-2rem)]">
+            {/* Touch Gesture Guidance Badge for Mobile & Tablet screens (< xl) */}
+            <div className="flex xl:hidden items-center gap-1.5 px-2 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-[10px] font-mono text-cyan-300 mr-1">
+              <Move className="w-3 h-3 text-cyan-400 shrink-0 animate-pulse" />
+              <span className="font-bold hidden sm:inline">TOUCH:</span>
+              <span className="opacity-90">👆 Drag • ✌️ Pinch Zoom</span>
+            </div>
             <button
               onClick={() => handleAutoArrangeGraph('horizontal')}
               className="p-1.5 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition flex items-center gap-1 px-2 font-mono text-[11px] font-bold"

@@ -4,11 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCurrentContext } from '@/context/CurrentContext';
-import { Search, Hexagon, LogOut, ChevronDown, UserCheck } from 'lucide-react';
+import { Search, Hexagon, LogOut, ChevronDown, UserCheck, LogIn, UserPlus } from 'lucide-react';
+import { AuthModal } from '@/components/AuthModal';
 
 export const Navbar: React.FC = () => {
   const { searchQuery, setSearchQuery } = useCurrentContext();
   const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   const syncUser = useCallback(() => {
     try {
@@ -28,11 +31,22 @@ export const Navbar: React.FC = () => {
 
   useEffect(() => {
     syncUser();
+
+    const handleOpenAuth = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const mode = customEvent.detail?.mode || 'login';
+      setAuthMode(mode);
+      setIsAuthModalOpen(true);
+    };
+
     window.addEventListener('toolip_auth_change', syncUser);
     window.addEventListener('storage', syncUser);
+    window.addEventListener('toolip_open_auth', handleOpenAuth);
+
     return () => {
       window.removeEventListener('toolip_auth_change', syncUser);
       window.removeEventListener('storage', syncUser);
+      window.removeEventListener('toolip_open_auth', handleOpenAuth);
     };
   }, [syncUser]);
 
@@ -111,7 +125,7 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Mobile search & User Profile Profile Dropdown */}
+            {/* Right: Mobile search & User Profile / Login Action */}
             <div className="flex items-center gap-3 shrink-0">
               <div className="flex md:hidden items-center">
                 <div className="relative">
@@ -120,7 +134,7 @@ export const Navbar: React.FC = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search..."
-                    className="w-32 sm:w-40 pl-7 pr-2 py-2 bg-[#0D1222] border border-white/10 clip-chamfer-sm font-mono text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-halo-cyan/30"
+                    className="w-28 sm:w-40 pl-7 pr-2 py-2 bg-[#0D1222] border border-white/10 clip-chamfer-sm font-mono text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-halo-cyan/30"
                   />
                 </div>
               </div>
@@ -169,15 +183,47 @@ export const Navbar: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="hidden sm:flex items-center gap-1.5 pl-3 border-l border-white/10">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" />
-                  <span className="font-mono text-[9px] tracking-[0.16em] font-bold text-white/30">ONLINE</span>
+                <div className="flex items-center gap-2 pl-3 border-l border-white/10">
+                  <button
+                    onClick={() => {
+                      setAuthMode('login');
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 py-1.5 px-3 sm:px-4 bg-gradient-to-r from-cyan-500/15 via-halo-cyan/20 to-indigo-500/15 hover:from-cyan-500/25 hover:to-indigo-500/25 border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl font-tech font-bold text-xs text-white shadow-[0_0_15px_rgba(6,182,212,0.15)] transition cursor-pointer group"
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                    <span className="tracking-wide">LOG IN</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAuthMode('register');
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="hidden sm:flex items-center gap-1.5 py-1.5 px-3 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 rounded-xl font-tech font-bold text-xs text-white/80 hover:text-white transition cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 text-white/50" />
+                    <span>SIGN UP</span>
+                  </button>
+
+                  <div className="hidden lg:flex items-center gap-1.5 ml-1">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" />
+                    <span className="font-mono text-[9px] tracking-[0.16em] font-bold text-white/30">ONLINE</span>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Global Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authMode}
+      />
     </header>
   );
 };
+

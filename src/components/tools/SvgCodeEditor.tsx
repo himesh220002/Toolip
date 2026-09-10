@@ -954,7 +954,7 @@ export const SvgCodeEditor: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row items-center space-x-2">
             {/* Model Selector Dropdown */}
             <div className="flex items-center bg-gray-950 border border-gray-800 rounded-xl px-2.5 py-1 space-x-1.5">
               <span className="text-[10px] text-gray-400 font-bold">Model:</span>

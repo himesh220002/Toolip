@@ -4,10 +4,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useCurrentContext, ToolStatus, ToolItem } from '@/context/CurrentContext';
-import { ArrowLeft, Tag, Share2, Check, Crosshair, Shield, Hexagon, Activity, Zap, Maximize2, Minimize2, LogOut, UserCheck, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Tag, Share2, Check, Crosshair, Shield, Hexagon, Activity, Zap, Maximize2, Minimize2, LogOut, UserCheck, ChevronDown, LogIn } from 'lucide-react';
 import { ToolSeoSection } from '@/components/ToolSeoSection';
 import { getToolSeoData } from '@/lib/seoData';
 import { Footer } from '@/components/Footer';
+import { AuthModal } from '@/components/AuthModal';
 
 // Tool Components Imports
 import { PdfTools } from '@/components/tools/PdfTools';
@@ -66,6 +67,7 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState<boolean>(false);
   const [headerUser, setHeaderUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
@@ -90,11 +92,19 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
 
   useEffect(() => {
     syncHeaderUser();
+
+    const handleOpenAuth = () => {
+      setIsAuthModalOpen(true);
+    };
+
     window.addEventListener('toolip_auth_change', syncHeaderUser);
     window.addEventListener('storage', syncHeaderUser);
+    window.addEventListener('toolip_open_auth', handleOpenAuth);
+
     return () => {
       window.removeEventListener('toolip_auth_change', syncHeaderUser);
       window.removeEventListener('storage', syncHeaderUser);
+      window.removeEventListener('toolip_open_auth', handleOpenAuth);
     };
   }, [syncHeaderUser]);
 
@@ -275,9 +285,23 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
                   </div>
                 </div>
               ) : (
-                <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-white/10">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" />
-                  <span className="font-mono text-[9px] tracking-[0.16em] font-bold text-white/30">ONLINE</span>
+                <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+                  <button
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('toolip_open_auth', { detail: { mode: 'login' } }));
+                      }
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 py-1 px-3 bg-gradient-to-r from-cyan-500/15 via-halo-cyan/20 to-indigo-500/15 hover:from-cyan-500/25 hover:to-indigo-500/25 border border-cyan-500/30 hover:border-cyan-400/60 rounded-lg font-tech font-bold text-xs text-white shadow-[0_0_12px_rgba(6,182,212,0.15)] transition cursor-pointer group"
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                    <span className="tracking-wide">LOG IN</span>
+                  </button>
+                  <div className="hidden lg:flex items-center gap-1.5 ml-1">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" />
+                    <span className="font-mono text-[9px] tracking-[0.16em] font-bold text-white/30">ONLINE</span>
+                  </div>
                 </div>
               )}
 
@@ -427,6 +451,12 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
 
       {/* Global Site Footer */}
       <Footer />
+
+      {/* Global Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 };
