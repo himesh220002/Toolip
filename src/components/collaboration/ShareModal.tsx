@@ -106,8 +106,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     }
     if (onSelectSavedRoom) {
       onSelectSavedRoom(cleanId);
-      setActiveTab('share');
       setJoinInputRoomId('');
+      onClose();
     }
   };
 
@@ -181,61 +181,61 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 text-slate-100 space-y-6">
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-2.5 sm:p-6 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden p-4 sm:p-7 text-slate-100 space-y-4 sm:space-y-6 max-h-[92vh] flex flex-col">
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 flex items-center justify-center text-slate-950 shadow-lg shadow-cyan-500/25 shrink-0">
-              <Share2 className="w-6 h-6" />
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800 shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 flex items-center justify-center text-slate-950 shadow-lg shadow-cyan-500/25 shrink-0">
+              <Share2 className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">Real-Time Team Collaboration</h3>
-              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Multi-user live sync backed by MongoDB Atlas & WSS</p>
+              <h3 className="text-base sm:text-2xl font-black text-white tracking-tight">Team Collaboration</h3>
+              <p className="text-[11px] sm:text-sm text-slate-400 mt-0.5">Multi-user live sync backed by MongoDB Atlas & WSS</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2.5 rounded-2xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Navigation Tabs Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 bg-slate-950/90 border border-slate-800 rounded-2xl">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 p-2 sm:p-2.5 bg-slate-950/90 border border-slate-800 rounded-2xl shrink-0">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto w-full sm:w-auto pb-0.5 sm:pb-0">
             <button
               onClick={() => setActiveTab('share')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-2 transition cursor-pointer ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-1.5 transition shrink-0 cursor-pointer ${
                 activeTab === 'share'
                   ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-md'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>{roomId ? 'Active Room' : 'New Room'}</span>
             </button>
 
             <button
               onClick={() => setActiveTab('saved')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-2 transition cursor-pointer ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-1.5 transition shrink-0 cursor-pointer ${
                 activeTab === 'saved'
                   ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-md'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
-              <FolderKanban className="w-4 h-4 text-indigo-400" />
-              <span>Saved Workspaces ({userRooms.length})</span>
+              <FolderKanban className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
+              <span>Workspaces ({userRooms.length})</span>
             </button>
           </div>
 
           {/* User Auth Status */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 shrink-0">
             {authUser && !authUser.isGuest ? (
-              <div className="flex items-center space-x-2.5 bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-700/80">
-                <UserCheck className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs sm:text-sm font-bold text-slate-200">{authUser.name}</span>
+              <div className="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700/80">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-xs sm:text-sm font-bold text-slate-200 max-w-[100px] sm:max-w-[140px] truncate">{authUser.name}</span>
                 {onLogout && (
                   <button
                     onClick={onLogout}
@@ -253,9 +253,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   setAuthMode('login');
                   setActiveTab('auth');
                 }}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-bold text-cyan-300 flex items-center space-x-1.5 transition border border-slate-700 cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-bold text-cyan-300 flex items-center space-x-1.5 transition border border-slate-700 cursor-pointer"
               >
-                <LogIn className="w-4 h-4" />
+                <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Login / Register</span>
               </button>
             )}
@@ -525,60 +525,61 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   return (
                     <div
                       key={room._id}
-                      className={`p-4 rounded-2xl border transition flex items-center justify-between gap-3 ${
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
                         isCurrent
                           ? 'bg-slate-800/90 border-cyan-400/80 shadow-lg shadow-cyan-500/10'
                           : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
                       }`}
                     >
-                      <div className="min-w-0 flex-1 space-y-1">
+                      <div className="min-w-0 flex-1 space-y-1 w-full sm:w-auto">
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-bold text-white truncate">{room.title}</span>
                           {isCurrent && (
-                            <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[11px] font-bold border border-emerald-500/30 shrink-0">
                               Active Loaded
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-slate-400 truncate">
-                          ID: <span className="text-cyan-300 font-mono">{room.roomId}</span> • Last active: {new Date(room.lastActiveAt).toLocaleDateString()}
+                          ID: <span className="text-cyan-300 font-mono">{room.roomId}</span> • {new Date(room.lastActiveAt).toLocaleDateString()}
                         </p>
                       </div>
 
-                      <div className="flex items-center space-x-2 shrink-0">
+                      <div className="flex items-center justify-end space-x-2 shrink-0 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
                         <button
                           onClick={() => handleCopyLink(itemUrl, room.roomId)}
-                          className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-bold text-slate-200 rounded-xl flex items-center space-x-1.5 transition border border-slate-700 cursor-pointer"
+                          className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-bold text-slate-200 rounded-xl flex items-center space-x-1.5 transition border border-slate-700 cursor-pointer"
                         >
                           {copiedRoomId === room.roomId ? (
-                            <Check className="w-4 h-4 text-emerald-400" />
+                            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
                           ) : (
-                            <Copy className="w-4 h-4 text-cyan-400" />
+                            <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
                           )}
                           <span>Copy</span>
                         </button>
 
-                        {/* If clicked on currently loaded workspace, clicking it again UNLOADS it! */}
+                        {/* If clicked on currently loaded workspace, clicking it again UNLOADS it and closes modal! */}
                         {isCurrent ? (
                           <button
                             onClick={() => {
                               if (onUnloadWorkspace) onUnloadWorkspace();
+                              onClose();
                             }}
-                            className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold text-xs sm:text-sm rounded-xl flex items-center space-x-1.5 transition shadow-sm cursor-pointer"
+                            className="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold text-xs sm:text-sm rounded-xl flex items-center space-x-1.5 transition shadow-sm cursor-pointer"
                             title="Click to unload workspace and return to local canvas"
                           >
-                            <UnloadIcon className="w-4 h-4" />
+                            <UnloadIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             <span>Unload</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => {
                               if (onSelectSavedRoom) onSelectSavedRoom(room.roomId);
-                              setActiveTab('share');
+                              onClose();
                             }}
-                            className="px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs sm:text-sm rounded-xl flex items-center space-x-1.5 transition shadow-md shadow-cyan-500/20 cursor-pointer"
+                            className="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs sm:text-sm rounded-xl flex items-center space-x-1.5 transition shadow-md shadow-cyan-500/20 cursor-pointer"
                           >
-                            <ExternalLink className="w-4 h-4" />
+                            <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             <span>Load</span>
                           </button>
                         )}
