@@ -593,93 +593,76 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
         {/* TAB 3: Auth (Login / Register) View */}
         {activeTab === 'auth' && (
-          <div className="py-2 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setAuthMode('login')}
-                  className={`text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer ${
-                    authMode === 'login' ? 'bg-slate-800 text-cyan-400 border border-slate-700' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => setAuthMode('register')}
-                  className={`text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer ${
-                    authMode === 'register' ? 'bg-slate-800 text-cyan-400 border border-slate-700' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Create Account
-                </button>
-              </div>
-            </div>
+          <div className="py-4 space-y-5">
+            {authUser && !authUser.isGuest ? (
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center space-x-3 pb-3 border-b border-slate-800">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-400 to-indigo-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-md">
+                    {authUser.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">{authUser.name}</h4>
+                    <p className="text-xs text-slate-400 font-mono">{authUser.email}</p>
+                  </div>
+                </div>
 
-            {authError && (
-              <div className="p-3.5 bg-rose-500/20 border border-rose-500/40 rounded-xl text-xs sm:text-sm text-rose-300">
-                {authError}
+                <div className="flex items-center justify-between text-xs text-emerald-400 font-mono bg-emerald-500/10 px-3 py-2 rounded-xl border border-emerald-500/20">
+                  <span className="flex items-center gap-1.5 font-bold">
+                    <UserCheck className="w-4 h-4" /> SIGNED IN TO CLOUD
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+
+                {onLogout && (
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      setActiveTab('share');
+                    }}
+                    className="w-full py-3 px-4 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out & Unload Session</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 text-center space-y-4">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-500/10">
+                  <UserCheck className="w-7 h-7" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-base">Sign In to Toolip Account</h4>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Log in to save your mindmaps to the cloud, access private team graphs, and sync across PC & mobile.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      onClose();
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('toolip_open_auth', { detail: { mode: 'login' } }));
+                      }
+                    }}
+                    className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-indigo-600 text-slate-950 font-black text-xs sm:text-sm rounded-xl flex items-center gap-2 hover:from-cyan-300 hover:to-indigo-500 transition shadow-lg shadow-cyan-500/20 cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4" /> Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('toolip_open_auth', { detail: { mode: 'register' } }));
+                      }
+                    }}
+                    className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm rounded-xl border border-slate-700 transition cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4 inline mr-1" /> Create Account
+                  </button>
+                </div>
               </div>
             )}
-
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
-              {authMode === 'register' && (
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-bold text-slate-200">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
-                    placeholder="Himesh Satyam"
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-400"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label className="text-xs sm:text-sm font-bold text-slate-200">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-400"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs sm:text-sm font-bold text-slate-200">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-400"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-400 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 text-slate-950 font-black text-sm sm:text-base shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer"
-              >
-                {authLoading ? (
-                  <div className="w-5 h-5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
-                ) : authMode === 'login' ? (
-                  <>
-                    <LogIn className="w-5 h-5" />
-                    <span>Sign In to Account</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-5 h-5" />
-                    <span>Register Account</span>
-                  </>
-                )}
-              </button>
-            </form>
           </div>
         )}
       </div>

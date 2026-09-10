@@ -67,7 +67,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get('content-type') || '';
+
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        if (text.trim().startsWith('<') || text.includes('<!DOCTYPE')) {
+          throw new Error('Backend server is waking up or unavailable. Please try again in a few seconds.');
+        }
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(`Server error (${res.status}): ${res.statusText || 'Unexpected response'}`);
+        }
+      }
 
       if (!res.ok) {
         throw new Error(data.error || `${mode === 'login' ? 'Login' : 'Registration'} failed. Please try again.`);

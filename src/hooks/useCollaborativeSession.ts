@@ -73,19 +73,39 @@ export function useCollaborativeSession({
 
   const socketRef = useRef(getSocket());
 
-  // Restore Auth Token & User from localStorage
+  // Restore Auth Token & User from localStorage and listen to global auth change events
   useEffect(() => {
-    try {
-      const savedToken = localStorage.getItem('toolip_auth_token');
-      const savedUserStr = localStorage.getItem('toolip_user_data');
-      if (savedUserStr) {
-        const parsed = JSON.parse(savedUserStr);
-        setAuthUser(parsed);
-        setToken(savedToken);
+    const syncAuth = () => {
+      try {
+        const savedToken = localStorage.getItem('toolip_auth_token');
+        const savedUserStr = localStorage.getItem('toolip_user_data');
+        if (savedUserStr && savedToken) {
+          const parsed = JSON.parse(savedUserStr);
+          if (parsed && !parsed.isGuest) {
+            setAuthUser(parsed);
+            setToken(savedToken);
+            return;
+          }
+        }
+        setAuthUser(null);
+        setToken(null);
+        setUserRooms([]);
+      } catch (e) {
+        setAuthUser(null);
+        setToken(null);
+        setUserRooms([]);
       }
-    } catch (e) {
-      console.warn('Failed to restore auth from localStorage', e);
-    }
+    };
+
+    syncAuth();
+
+    window.addEventListener('toolip_auth_change', syncAuth);
+    window.addEventListener('storage', syncAuth);
+
+    return () => {
+      window.removeEventListener('toolip_auth_change', syncAuth);
+      window.removeEventListener('storage', syncAuth);
+    };
   }, []);
 
   // Generate random avatar color & user display name
@@ -137,15 +157,20 @@ export function useCollaborativeSession({
   // Fetch user's saved rooms from backend
   const fetchUserRooms = useCallback(async (ownerId?: string) => {
     const targetOwner = ownerId || authUser?.id || 'guest';
+    const isAuthUser = authUser && authUser.id && !authUser.isGuest;
     let localRoomIdsStr = '';
-    try {
-      if (typeof window !== 'undefined') {
-        const existing = localStorage.getItem('toolip_my_room_ids');
-        const list: string[] = existing ? JSON.parse(existing) : [];
-        localRoomIdsStr = list.join(',');
+
+    // Only include local tracking room IDs for guest users, never for authenticated accounts
+    if (!isAuthUser && targetOwner === 'guest') {
+      try {
+        if (typeof window !== 'undefined') {
+          const existing = localStorage.getItem('toolip_my_room_ids');
+          const list: string[] = existing ? JSON.parse(existing) : [];
+          localRoomIdsStr = list.join(',');
+        }
+      } catch (e) {
+        // ignore
       }
-    } catch (e) {
-      // ignore
     }
 
     try {
@@ -438,8 +463,10 @@ export function useCollaborativeSession({
     setToken(null);
     setAuthUser(null);
     setRoomOwnerId(null);
+    setUserRooms([]);
     localStorage.removeItem('toolip_auth_token');
     localStorage.removeItem('toolip_user_data');
+    localStorage.removeItem('toolip_my_room_ids');
     unloadWorkspace();
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('toolip_auth_change'));

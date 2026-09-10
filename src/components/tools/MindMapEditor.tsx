@@ -5067,7 +5067,9 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
         isLoggedIn={!!authUser && !authUser.isGuest}
         onLoginClick={() => {
           setIsLogModalOpen(false);
-          setIsShareModalOpen(true);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('toolip_open_auth', { detail: { mode: 'login' } }));
+          }
         }}
         onRestoreCommitSnapshot={handleRestoreCommitSnapshot}
       />

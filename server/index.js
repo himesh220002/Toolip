@@ -33,7 +33,15 @@ const io = new Server(httpServer, {
 setupSocketHandlers(io);
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true,
+  })
+);
+app.options('*', cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -374,18 +382,18 @@ app.get('/api/rooms/user/my-rooms', async (req, res) => {
     const roomIdsStr = req.query.roomIds || '';
     const roomIds = roomIdsStr.split(',').map((s) => s.trim()).filter(Boolean);
 
-    const conditions = [];
+    let filter = {};
+
     if (ownerId && ownerId !== 'guest') {
-      conditions.push({ ownerId });
-    }
-    if (roomIds.length > 0) {
-      conditions.push({ roomId: { $in: roomIds } });
-    }
-    if (conditions.length === 0) {
-      conditions.push({ ownerId: 'guest' });
+      // Authenticated user: strict ownership filter to prevent cross-account leaks
+      filter = { ownerId };
+    } else if (roomIds.length > 0) {
+      // Guest user: filter by explicitly tracked roomIds on local device
+      filter = { roomId: { $in: roomIds } };
+    } else {
+      filter = { ownerId: 'guest' };
     }
 
-    const filter = { $or: conditions };
     if (toolId) {
       filter.toolId = toolId;
     }

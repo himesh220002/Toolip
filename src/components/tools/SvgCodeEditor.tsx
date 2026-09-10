@@ -1082,13 +1082,7 @@ export const SvgCodeEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* Notice Banner */}
-      {noticeMsg && (
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center space-x-2">
-          <Check className="h-4 w-4" />
-          <span>{noticeMsg}</span>
-        </div>
-      )}
+
 
       {/* Bi-Directional Indicator & Quick Color Picker Bar */}
       <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-xs text-sky-300 flex flex-wrap items-center justify-between gap-2">
@@ -1286,6 +1280,13 @@ export const SvgCodeEditor: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Notice Banner */}
+      {noticeMsg && (
+        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center space-x-2">
+          <Check className="h-4 w-4" />
+          <span>{noticeMsg}</span>
+        </div>
+      )}
 
       {/* Saved SVGs Gallery Section (40x40px Flex Row Wrap Tiles) */}
       <div className="p-4 bg-gray-900/90 border border-gray-800 rounded-2xl space-y-2.5 text-xs shadow-lg">
