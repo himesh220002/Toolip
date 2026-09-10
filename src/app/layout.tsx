@@ -8,7 +8,7 @@ const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-TOOLIP2026';
 export const metadata: Metadata = {
   metadataBase: new URL('https://toolip.app'),
   title: {
-    default: 'Toolip — 31+ Free Client-Side Productivity Utilities & Developer Tools',
+    default: 'Toolip — 32+ Free Client-Side Productivity Utilities & Developer Tools',
     template: '%s | Toolip',
   },
   description:
@@ -41,9 +41,9 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://toolip.app',
     siteName: 'Toolip',
-    title: 'Toolip — 31+ Free Client-Side Productivity Utilities',
+    title: 'Toolip — 32+ Free Client-Side Productivity Utilities',
     description:
-      '31 fast, private everyday utilities for PDFs, images, calculators, and developer tasks. 100% client-side, zero server uploads.',
+      '32 fast, private everyday utilities for PDFs, images, calculators, and developer tasks. 100% client-side, zero server uploads.',
     images: [
       {
         url: 'https://toolip.app/images/og-image.png',
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Toolip — 31+ Free Client-Side Productivity Utilities',
+    title: 'Toolip — 32+ Free Client-Side Productivity Utilities',
     description:
       'Fast, private everyday utilities for PDFs, images, calculators, and developer tasks.',
     images: ['https://toolip.app/images/og-image.png'],

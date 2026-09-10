@@ -73,7 +73,7 @@ export default function Home() {
                       </span>
                     </h1>
                     <p className="font-tech font-semibold text-[13px] sm:text-[14px] tracking-[0.18em] text-white/50">
-                      31 INSTANT UTILITIES — FAST • PRIVATE • READY
+                      32 INSTANT UTILITIES — FAST • PRIVATE • READY
                     </p>
                   </div>
 
@@ -114,7 +114,7 @@ export default function Home() {
                         <span className="font-mono text-[8px] tracking-[0.16em] font-black text-white">FEATURED • POPULAR</span>
                       </div>
                       <div className="mt-4 flex items-end gap-3">
-                        <span className="font-display text-[62px] sm:text-[68px] leading-[0.8] text-white">31</span>
+                        <span className="font-display text-[62px] sm:text-[68px] leading-[0.8] text-white">32</span>
                         <div className="pb-1.5">
                           <div className="font-display text-[20px] sm:text-[22px] leading-none tracking-[0.06em] text-white">TOOLS</div>
                           <div className="font-mono text-[10px] tracking-[0.16em] font-bold text-vice-neon">READY TO USE</div>
