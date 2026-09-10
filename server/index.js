@@ -565,6 +565,52 @@ app.post('/api/pdf/merge', (req, res) => {
   });
 });
 
+// Helper to sanitize XML strings
+function escapeXml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+// Convert JSON nodes and edges to standard GraphML XML
+function nodesAndEdgesToGraphML(nodes = [], edges = [], title = 'MindMap Workspace') {
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+  xml += `<graphml xmlns="http://graphml.graphdrawing.org/xmlns"\n`;
+  xml += `         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n`;
+  xml += `         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">\n`;
+  xml += `  <key id="d0" for="node" attr.name="label" attr.type="string"/>\n`;
+  xml += `  <key id="d1" for="node" attr.name="color" attr.type="string"/>\n`;
+  xml += `  <key id="d2" for="node" attr.name="emoji" attr.type="string"/>\n`;
+  xml += `  <key id="d3" for="node" attr.name="details" attr.type="string"/>\n`;
+  xml += `  <key id="d4" for="node" attr.name="note" attr.type="string"/>\n`;
+  xml += `  <graph id="${escapeXml(title)}" edgedefault="directed">\n`;
+
+  for (const node of nodes) {
+    if (!node || !node.id) continue;
+    xml += `    <node id="${escapeXml(node.id)}">\n`;
+    if (node.text) xml += `      <data key="d0">${escapeXml(node.text)}</data>\n`;
+    if (node.color) xml += `      <data key="d1">${escapeXml(node.color)}</data>\n`;
+    if (node.emoji) xml += `      <data key="d2">${escapeXml(node.emoji)}</data>\n`;
+    if (node.details) xml += `      <data key="d3">${escapeXml(node.details)}</data>\n`;
+    if (node.note || node.notes) xml += `      <data key="d4">${escapeXml(node.note || node.notes)}</data>\n`;
+    xml += `    </node>\n`;
+  }
+
+  for (const edge of edges) {
+    if (!edge || !edge.source || !edge.target) continue;
+    const edgeId = edge.id || `e_${edge.source}_${edge.target}`;
+    xml += `    <edge id="${escapeXml(edgeId)}" source="${escapeXml(edge.source)}" target="${escapeXml(edge.target)}"/>\n`;
+  }
+
+  xml += `  </graph>\n`;
+  xml += `</graphml>`;
+  return xml;
+}
+
 // Helper to sanitize mindmap ID for file path
 function getGraphMLFilePath(mindMapId) {
   if (!mindMapId || mindMapId === 'default') {
@@ -591,18 +637,49 @@ app.get('/api/mindmap/:mindMapId?', async (req, res) => {
         return res.send(xmlContent);
       }
 
-      // 2. Check MongoDB Atlas SharedRoom for graphmlXml state
+      // 2. Check MongoDB Atlas SharedRoom by roomId or clean ID
       const room = await SharedRoom.findOne({
-        $or: [{ roomId: mindMapId }, { roomId: `room_${mindMapId}` }, { roomId: `room_mindmap_${safeId}` }],
+        $or: [
+          { roomId: mindMapId },
+          { roomId: `room_${mindMapId}` },
+          { roomId: `room_mindmap_${mindMapId}` },
+          { roomId: `room_mindmap_${safeId}` },
+          { roomId: safeId },
+        ],
       });
 
-      if (room && room.dataState && room.dataState.graphmlXml) {
-        res.setHeader('Content-Type', 'application/xml');
-        return res.send(room.dataState.graphmlXml);
+      if (room && room.dataState) {
+        if (req.query.format === 'json') {
+          return res.json({ success: true, room });
+        }
+
+        // Return pre-formatted graphmlXml if present
+        if (room.dataState.graphmlXml) {
+          res.setHeader('Content-Type', 'application/xml');
+          return res.send(room.dataState.graphmlXml);
+        }
+
+        // Dynamically convert MongoDB room nodes and edges to standard GraphML XML
+        const rawNodes = Array.isArray(room.dataState.nodes)
+          ? room.dataState.nodes
+          : Array.isArray(room.dataState.n)
+          ? room.dataState.n
+          : [];
+        const rawEdges = Array.isArray(room.dataState.edges)
+          ? room.dataState.edges
+          : Array.isArray(room.dataState.e)
+          ? room.dataState.e
+          : [];
+
+        if (rawNodes.length > 0) {
+          const generatedXml = nodesAndEdgesToGraphML(rawNodes, rawEdges, room.title || mindMapId);
+          res.setHeader('Content-Type', 'application/xml');
+          return res.send(generatedXml);
+        }
       }
     }
 
-    // Default template fallback
+    // Default template fallback when no specific room ID is provided
     if (fs.existsSync(defaultPath)) {
       const xmlContent = fs.readFileSync(defaultPath, 'utf8');
       res.setHeader('Content-Type', 'application/xml');
