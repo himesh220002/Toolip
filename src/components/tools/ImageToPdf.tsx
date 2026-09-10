@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import {
   Upload,
@@ -49,6 +49,17 @@ export const ImageToPdf: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
+
+  // Clean up object URLs on component unmount
+  useEffect(() => {
+    return () => {
+      images.forEach((img) => {
+        if (img.preview && img.preview.startsWith('blob:')) {
+          URL.revokeObjectURL(img.preview);
+        }
+      });
+    };
+  }, [images]);
 
   // Get Effective Per-Image Margin
   const getItemMargin = (item?: ImageItem): number => {
@@ -371,6 +382,7 @@ export const ImageToPdf: React.FC = () => {
         a.href = url;
         a.download = `images_combined_${Date.now()}.pdf`;
         a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         setStatusMsg(`✓ Combined PDF (${images.length} pages) generated & downloaded!`);
       } else {
         // Generate separate individual PDF files for each image
@@ -418,6 +430,7 @@ export const ImageToPdf: React.FC = () => {
           a.href = url;
           a.download = `${item.file.name.replace(/\.[^/.]+$/, '')}_page_${i + 1}.pdf`;
           a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
         setStatusMsg(`✓ ${images.length} individual PDF files generated & downloaded!`);
       }

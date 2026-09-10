@@ -59,6 +59,7 @@ export const PdfTools: React.FC = () => {
       a.href = url;
       a.download = `merged_${Date.now()}.pdf`;
       a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
       setStatusMsg('✓ Merged PDF generated and downloaded successfully!');
     } catch (err: any) {
@@ -123,6 +124,7 @@ export const PdfTools: React.FC = () => {
       a.href = url;
       a.download = `split_pages_${splitRange.replace(/\s+/g, '')}.pdf`;
       a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
       setStatusMsg(`✓ Extracted ${indices.length} pages into new PDF successfully!`);
     } catch (err: any) {

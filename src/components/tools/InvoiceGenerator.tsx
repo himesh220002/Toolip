@@ -289,6 +289,7 @@ export const InvoiceGenerator: React.FC = () => {
     a.href = url;
     a.download = `invoice_template_${companyName.toLowerCase().replace(/\s+/g, '_')}.json`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // Import Template from .JSON File

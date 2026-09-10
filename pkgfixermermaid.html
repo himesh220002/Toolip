@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid Demo</title>
+
+    <!-- Load Mermaid via CDN (ES Module version) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: "default" });
+    </script> -->
+    <script type="module">
+        import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+        mermaid.initialize({ startOnLoad: true, theme: "default" });
+    </script>
+
+
+</head>
+
+<body>
+    <h2>Mermaid Flowchart Example</h2>
+
+    <!-- Mermaid diagram block -->
+    <pre class="mermaid">
+    flowchart TD
+
+    A[Start: Scan Project Files] --> B[Parse requirements.txt / pom.xml / package.json]
+    B --> C[Build Dependency Graph]
+    C --> D[Detect Conflicts]
+
+    D -->|Conflict Found| E[Trigger: dependency-check command]
+    D -->|No Conflict| F[Proceed: lock environment]
+
+    E --> G[Suggest Minimal Upgrade]
+    G -->|Upgrade Specific Package| H["Trigger: package-upgrade &lt;pkg-name&gt;"]
+    G -->|Downgrade Specific Package| I["Trigger: package-downgrade &lt;pkg-name&gt;"]
+    G -->|Replace Package| J["Trigger: package-swap &lt;old&gt; &lt;new&gt;"]
+
+    H --> K[Rebuild Dependency Graph]
+    I --> K
+    J --> K
+
+    K --> L[Trigger: dependency-resolver --verify]
+    L --> M{Conflicts Remaining?}
+    M -->|Yes| G
+    M -->|No| N[Trigger: lockfile-generate command]
+
+    N --> O[End: Stable Environment Ready]
+  </pre>
+</body>
+
+</html>

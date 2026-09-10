@@ -70,6 +70,11 @@ export const SpeechToText: React.FC = () => {
 
   useEffect(() => {
     loadAudioDevices();
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
   }, []);
 
   // Initialize Speech Recognition
@@ -179,8 +184,10 @@ export const SpeechToText: React.FC = () => {
         const mimeType = recorder.mimeType || 'audio/webm';
         const blob = new Blob(audioChunksRef.current, { type: mimeType });
         setAudioBlob(blob);
-        const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
+        setAudioUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(blob);
+        });
       };
 
       recorder.start(500); // 500ms timeslice chunks
@@ -248,7 +255,10 @@ export const SpeechToText: React.FC = () => {
 
   const startRecording = async () => {
     setErrorMsg('');
-    setAudioUrl(null);
+    setAudioUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setAudioBlob(null);
 
     await startAudioStreams();
@@ -339,6 +349,7 @@ LANGUAGE DETECTED: ${selectedLang}
     a.href = url;
     a.download = `${(transcriptTitle || 'transcript').toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.txt`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const downloadRecordedAudio = () => {
@@ -540,7 +551,10 @@ LANGUAGE DETECTED: ${selectedLang}
             onClick={() => {
               setFinalTranscript('');
               setInterimTranscript('');
-              setAudioUrl(null);
+              setAudioUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return null;
+              });
               setAudioBlob(null);
             }}
             className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-400 hover:text-white text-xs border border-slate-700/60 transition-colors"

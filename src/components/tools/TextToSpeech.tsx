@@ -31,6 +31,12 @@ export const TextToSpeech: React.FC = () => {
     } else {
       setErrorMsg('Web Speech Synthesis API is not supported in this browser.');
     }
+
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   const handlePlay = () => {
@@ -120,6 +126,7 @@ export const TextToSpeech: React.FC = () => {
       a.href = url;
       a.download = `speech_audio_${Date.now()}.wav`;
       a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err: any) {
       setErrorMsg('Error generating download: ' + (err.message || 'Audio export failed'));
     } finally {

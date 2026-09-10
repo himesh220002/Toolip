@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid Demo</title>
+
+    <!-- Load Mermaid via CDN (non-module version for simplicity) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: "default" });
+    </script> -->
+    <script type="module">
+        import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+        mermaid.initialize({ startOnLoad: true, theme: "default" });
+    </script>
+</head>
+
+<body>
+    <h2>Mermaid Flowchart Example</h2>
+
+    <!-- Mermaid diagram block -->
+    <pre class="mermaid">
+    flowchart TD
+
+    A[Start: Read package.json] --> B[Load lockfile.json 4000+ lines]
+    B --> C[Build Dependency Graph]
+    C --> D[Detect Conflicts: version mismatches]
+
+    D -->|Conflict Found| E[Trigger: npm ls --json]
+    D -->|No Conflict| F[Proceed: npm ci clean install]
+
+    E --> G[Suggest Minimal Fix]
+    G -->|Upgrade Specific Package| H[Trigger: npm install &lt;pkg&gt;@latest]
+    G -->|Downgrade Specific Package| I[Trigger: npm install &lt;pkg&gt;@&lt;version&gt;]
+    G -->|Replace Package| J[Trigger: npm uninstall &lt;old&gt; && npm install &lt;new&gt;]
+
+    H --> K[Rebuild Graph: npm ls]
+    I --> K
+    J --> K
+
+    K --> L[Trigger: npm dedupe]
+    L --> M{Conflicts Remaining?}
+    M -->|Yes| G
+    M -->|No| N[Trigger: npm shrinkwrap / lockfile update]
+
+    N --> O[End: Stable Environment Ready]
+  </pre>
+</body>
+
+</html>

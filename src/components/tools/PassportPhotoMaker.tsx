@@ -123,20 +123,32 @@ export const PassportPhotoMaker: React.FC = () => {
     resetPositionAndZoom();
   };
 
-  // Stop camera when unmounting
+  // Stop camera & revoke object URLs when unmounting or changing files
   useEffect(() => {
     return () => {
       stopCamera();
+      if (selectedImage && selectedImage.startsWith('blob:')) {
+        URL.revokeObjectURL(selectedImage);
+      }
+      if (outputUrl && outputUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(outputUrl);
+      }
     };
-  }, []);
+  }, [selectedImage, outputUrl]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setOriginalFileName(file.name);
-      const url = URL.createObjectURL(file);
-      setSelectedImage(url);
+
+      setSelectedImage((prev) => {
+        if (prev && prev.startsWith('blob:')) {
+          URL.revokeObjectURL(prev);
+        }
+        return URL.createObjectURL(file);
+      });
       resetPositionAndZoom();
+      e.target.value = '';
     }
   };
 
@@ -282,7 +294,12 @@ export const PassportPhotoMaker: React.FC = () => {
                 compressToTarget();
               } else {
                 const url = URL.createObjectURL(blob);
-                setOutputUrl(url);
+                setOutputUrl((prevUrl) => {
+                  if (prevUrl && prevUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(prevUrl);
+                  }
+                  return url;
+                });
                 setOutputSizeKb(Number(sizeKb.toFixed(1)));
                 setIsProcessing(false);
               }

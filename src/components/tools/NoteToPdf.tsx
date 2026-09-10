@@ -818,6 +818,7 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
       a.href = url;
       a.download = `${(noteTitle || 'note_document').toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.pdf`;
       a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
       setStatusMsg(`✓ Multi-page PDF (${totalPdfPages} Pages) generated & downloaded!`);
     } catch (err: any) {
@@ -1007,6 +1008,7 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
         a.href = url;
         a.download = `micro_${gridFormat}in1_${(uploadedPdfName || 'document').replace(/\.pdf$/i, '')}.pdf`;
         a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         setMicroStatusMsg(`✓ Micro PDF (${spec.label}) created successfully!`);
       } else {
         // Mode: From Note Text (sequential cell filling across multiple A4 sheets with 0 text truncation)
@@ -1080,6 +1082,7 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
         a.href = url;
         a.download = `micro_${gridFormat}in1_${(noteTitle || 'note').toLowerCase().replace(/\s+/g, '_')}.pdf`;
         a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         setMicroStatusMsg(`✓ Micro PDF (${spec.label}, ${totalSheets} Sheet${totalSheets > 1 ? 's' : ''}) generated & downloaded!`);
       }
     } catch (err: any) {

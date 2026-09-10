@@ -465,23 +465,47 @@ export async function generateNvidiaCompletion({
  * (e.g. trailing commas, single quotes, unquoted keys, control chars, markdown wrappers, truncated responses).
  */
 export function robustParseJson(rawText: string): any {
-  let str = rawText.trim();
+  if (!rawText || !rawText.trim()) {
+    throw new Error('AI returned an empty completion string.');
+  }
 
-  // 1. Extract content inside markdown code block if present
+  // 1. Strip out reasoning blocks (<think>...</think> or unclosed <think>...)
+  let str = rawText
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
+    .trim();
+
+  // 2. Extract content inside markdown code block if present
   const codeBlockMatch = str.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   if (codeBlockMatch && codeBlockMatch[1]) {
     str = codeBlockMatch[1].trim();
   }
 
-  // 2. Extract exact matching top-level JSON object {...} starting from first '{'
+  // 3. Extract exact matching top-level JSON object {...} or JSON array [...]
   const firstBrace = str.indexOf('{');
-  if (firstBrace !== -1) {
+  const firstBracket = str.indexOf('[');
+
+  let startIndex = -1;
+  let startChar: '{' | '[' | null = null;
+  let endChar: '}' | ']' | null = null;
+
+  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    startIndex = firstBrace;
+    startChar = '{';
+    endChar = '}';
+  } else if (firstBracket !== -1) {
+    startIndex = firstBracket;
+    startChar = '[';
+    endChar = ']';
+  }
+
+  if (startIndex !== -1 && startChar && endChar) {
     let depth = 0;
     let inString = false;
     let escape = false;
     let matchingEndIndex = -1;
 
-    for (let i = firstBrace; i < str.length; i++) {
+    for (let i = startIndex; i < str.length; i++) {
       const char = str[i];
       if (escape) {
         escape = false;
@@ -496,9 +520,9 @@ export function robustParseJson(rawText: string): any {
         continue;
       }
       if (!inString) {
-        if (char === '{') {
+        if (char === startChar) {
           depth++;
-        } else if (char === '}') {
+        } else if (char === endChar) {
           depth--;
           if (depth === 0) {
             matchingEndIndex = i;
@@ -509,62 +533,55 @@ export function robustParseJson(rawText: string): any {
     }
 
     if (matchingEndIndex !== -1) {
-      str = str.substring(firstBrace, matchingEndIndex + 1).trim();
+      str = str.substring(startIndex, matchingEndIndex + 1).trim();
     } else {
-      const lastBrace = str.lastIndexOf('}');
-      if (lastBrace > firstBrace) {
-        str = str.substring(firstBrace, lastBrace + 1).trim();
+      const lastEnd = str.lastIndexOf(endChar);
+      if (lastEnd > startIndex) {
+        str = str.substring(startIndex, lastEnd + 1).trim();
       } else {
-        str = str.substring(firstBrace).trim();
+        str = str.substring(startIndex).trim();
       }
     }
   }
 
-  // 3. First attempt: Direct JSON.parse
-  try {
-    return JSON.parse(str);
-  } catch (e1) {
-    // 4. Auto-repair pass for common LLM JSON syntax errors:
-    let repaired = str;
-
-    // a. Strip trailing commas before } or ]
-    repaired = repaired.replace(/,\s*([}\]])/g, '$1');
-
-    // b. Convert single-quoted keys/strings to double-quoted JSON strings
-    repaired = repaired.replace(/([{,]\s*)'([^']+)'\s*:/g, '$1"$2":');
-    repaired = repaired.replace(/:\s*'([^']*)'/g, ': "$1"');
-
-    // c. Replace unescaped control characters & raw linebreaks inside quotes
-    repaired = repaired.replace(/[\u0000-\u001F]+/g, ' ');
-
-    // d. Fix unescaped double quotes inside property string values (e.g. "note": "• Bad: "Full Stack"")
-    repaired = repaired.replace(/("(?:details|note|text|tag|emoji|color|id|parentId)")\s*:\s*"([\s\S]*?)"(?=\s*(?:,|\n|\r|\}))/g, (m, key, val) => {
-      const cleanVal = val.replace(/(?<!\\)"/g, "'");
-      return `${key}: "${cleanVal}"`;
-    });
-
+  // Helper function to attempt parsing and auto-repairing JSON strings
+  const tryParseAndRepair = (inputStr: string): any => {
     try {
-      return JSON.parse(repaired);
-    } catch (e2) {
-      // e. Remove dangling trailing comma before end of string
-      repaired = repaired.replace(/,\s*$/g, '');
+      return JSON.parse(inputStr);
+    } catch (e1) {
+      let repaired = inputStr;
+
+      // a. Strip trailing commas before } or ]
+      repaired = repaired.replace(/,\s*([}\]])/g, '$1');
+
+      // b. Convert single-quoted keys/strings to double-quoted JSON strings
+      repaired = repaired.replace(/([{,]\s*)'([^']+)'\s*:/g, '$1"$2":');
+      repaired = repaired.replace(/:\s*'([^']*)'/g, ': "$1"');
+
+      // c. Replace unescaped control characters & raw linebreaks inside quotes
+      repaired = repaired.replace(/[\u0000-\u001F]+/g, ' ');
+
+      // d. Fix unescaped double quotes inside property string values
+      repaired = repaired.replace(
+        /("(?:details|note|text|tag|emoji|color|id|parentId)")\s*:\s*"([\s\S]*?)"(?=\s*(?:,|\n|\r|\}))/g,
+        (m, key, val) => {
+          const cleanVal = val.replace(/(?<!\\)"/g, "'");
+          return `${key}: "${cleanVal}"`;
+        }
+      );
+
       try {
         return JSON.parse(repaired);
-      } catch (e3) {
-        // f. TRUNCATION REPAIR PASS: If AI output was cut off mid-array (hit maxTokens limit)
-        if (repaired.includes('"nodes"')) {
-          const lastObjClose = repaired.lastIndexOf('}');
+      } catch (e2) {
+        repaired = repaired.replace(/,\s*$/g, '');
+        try {
+          return JSON.parse(repaired);
+        } catch (e3) {
+          // Truncation repair pass for truncated arrays or objects
+          const lastObjClose = Math.max(repaired.lastIndexOf('}'), repaired.lastIndexOf(']'));
           if (lastObjClose !== -1) {
             let truncated = repaired.substring(0, lastObjClose + 1).trim();
-            if (truncated.endsWith(',')) {
-              truncated = truncated.slice(0, -1).trim();
-            }
-
-            // Sanitize quotes on truncated string
-            truncated = truncated.replace(/("(?:details|note|text|tag|emoji|color|id|parentId)")\s*:\s*"([\s\S]*?)"(?=\s*(?:,|\n|\r|\}))/g, (m, key, val) => {
-              const cleanVal = val.replace(/(?<!\\)"/g, "'");
-              return `${key}: "${cleanVal}"`;
-            });
+            if (truncated.endsWith(',')) truncated = truncated.slice(0, -1).trim();
 
             let patch = truncated;
             const openBrackets = (patch.match(/\[/g) || []).length;
@@ -581,15 +598,47 @@ export function robustParseJson(rawText: string): any {
               // continue
             }
           }
+          return null;
         }
-
-        console.error('Failed to parse AI JSON:', { rawText, repaired });
-        throw new Error(
-          `AI JSON Syntax Error: ${(e3 as Error).message}. The model response was received but contained malformed JSON formatting.`
-        );
       }
     }
+  };
+
+  let parsed = tryParseAndRepair(str);
+
+  // Fallback: if extracting via startIndex failed, try rawText directly after stripping think tags
+  if (!parsed) {
+    const cleanRaw = rawText
+      .replace(/<think>[\s\S]*?<\/think>/gi, '')
+      .replace(/<think>[\s\S]*$/gi, '')
+      .trim();
+    parsed = tryParseAndRepair(cleanRaw);
   }
+
+  if (!parsed) {
+    console.error('Failed to parse AI JSON:', { rawText, str });
+    throw new Error('AI response could not be parsed as valid JSON.');
+  }
+
+  // Normalize parsed result into { nodes: [...] } structure
+  if (Array.isArray(parsed)) {
+    return { nodes: parsed };
+  }
+
+  if (parsed && typeof parsed === 'object') {
+    if (Array.isArray(parsed.nodes)) return parsed;
+    if (Array.isArray(parsed.data)) return { ...parsed, nodes: parsed.data };
+    if (Array.isArray(parsed.items)) return { ...parsed, nodes: parsed.items };
+    if (Array.isArray(parsed.mindmap)) return { ...parsed, nodes: parsed.mindmap };
+    if (Array.isArray(parsed.graph)) return { ...parsed, nodes: parsed.graph };
+
+    // If a single node object was returned by the AI
+    if (parsed.text || parsed.id) {
+      return { nodes: [parsed] };
+    }
+  }
+
+  return parsed;
 }
 
 /**

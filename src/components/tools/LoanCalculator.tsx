@@ -121,6 +121,7 @@ export const LoanCalculator: React.FC = () => {
     a.href = url;
     a.download = `loan_emi_schedule_${Date.now()}.csv`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const copySummaryText = () => {

@@ -104,6 +104,7 @@ export const MeetingScheduler: React.FC = () => {
     a.href = url;
     a.download = `${title.toLowerCase().replace(/\s+/g, '_')}.ics`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // Formatted Group Chat Invitation Message Copy (WhatsApp / Slack / Teams)

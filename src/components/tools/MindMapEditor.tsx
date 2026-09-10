@@ -954,21 +954,47 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
   // Helper to retrieve notes array for a node
   const getNodeNotes = (node: MindNode): string[] => {
+    if (!node) return [''];
     if (Array.isArray(node.notes) && node.notes.length > 0) {
-      return node.notes;
+      return node.notes.map((n) => (typeof n === 'string' ? n : String(n ?? '')));
     }
-    if (node.note && node.note.trim() !== '') {
-      return [node.note];
+    if (Array.isArray(node.note) && (node.note as any[]).length > 0) {
+      return (node.note as any[]).map((n) => (typeof n === 'string' ? n : String(n ?? '')));
+    }
+    if (node.note !== undefined && node.note !== null) {
+      const noteStr = typeof node.note === 'string' ? node.note : String(node.note);
+      if (noteStr.trim() !== '') {
+        return [noteStr];
+      }
     }
     return [''];
   };
 
   // Helper to check if node has any non-empty note content
   const hasNodeAnyNote = (node: MindNode): boolean => {
+    if (!node) return false;
     if (Array.isArray(node.notes) && node.notes.length > 0) {
-      return node.notes.some((n) => n && n.replace(/<[^>]*>/g, '').trim() !== '');
+      return node.notes.some((n) => {
+        if (!n) return false;
+        const str = typeof n === 'string' ? n : String(n);
+        return str.replace(/<[^>]*>/g, '').trim() !== '';
+      });
     }
-    return !!(node.note && node.note.replace(/<[^>]*>/g, '').trim() !== '');
+    if (node.note !== undefined && node.note !== null) {
+      if (typeof node.note === 'string') {
+        return node.note.replace(/<[^>]*>/g, '').trim() !== '';
+      }
+      if (Array.isArray(node.note)) {
+        return (node.note as any[]).some((n) => {
+          if (!n) return false;
+          const str = typeof n === 'string' ? n : String(n);
+          return str.replace(/<[^>]*>/g, '').trim() !== '';
+        });
+      }
+      const str = String(node.note);
+      return str.replace(/<[^>]*>/g, '').trim() !== '';
+    }
+    return false;
   };
 
   // Node Details & Note Helper Functions
@@ -2346,6 +2372,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       setConnectorModeSourceId(null); // Cancel connector arrow mode if clicked anywhere on canvas background
 
       if (e.button === 0) {
+        if (typeof window !== 'undefined' && window.getSelection) {
+          window.getSelection()?.removeAllRanges();
+        }
+        e.preventDefault(); // Prevent native browser text selection & ghost dragging
         setIsPanning(true);
         setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
       }
@@ -2425,16 +2455,59 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       setDraggedNodeId(null);
     };
 
+    const preventSelect = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('input, textarea, select, [contenteditable="true"]')) {
+        e.preventDefault();
+      }
+    };
+
     if (isPanning || draggedNodeId) {
       window.addEventListener('mousemove', handleGlobalMouseMove);
       window.addEventListener('mouseup', handleGlobalMouseUp);
+      window.addEventListener('selectstart', preventSelect);
     }
 
     return () => {
       window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener('selectstart', preventSelect);
     };
   }, [isPanning, draggedNodeId, panStart, dragOffset, zoom]);
+
+  // Automated Selection Guard: disable text range selection ONLY inside drawing area unless actively focused in an input
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const activeEl = document.activeElement;
+      const isEditing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || (activeEl as HTMLElement).isContentEditable);
+      if (!isEditing && typeof window !== 'undefined' && window.getSelection && window.getSelection()?.toString()) {
+        const sel = window.getSelection();
+        if (sel && sel.anchorNode) {
+          const anchorEl = (sel.anchorNode.nodeType === Node.ELEMENT_NODE ? sel.anchorNode : sel.anchorNode.parentElement) as HTMLElement | null;
+          if (anchorEl && anchorEl.closest('.mindmap-draw-area')) {
+            sel.removeAllRanges();
+          }
+        }
+      }
+    };
+
+    const handleNativeDragStart = (e: DragEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('.mindmap-draw-area')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    window.addEventListener('dragstart', handleNativeDragStart, { capture: true });
+
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      window.removeEventListener('dragstart', handleNativeDragStart, { capture: true });
+    };
+  }, []);
 
   // Mind Map Drawing Canvas Interaction Control Mapping:
   // - Normal Scroll (Wheel): Pan Up & Down
@@ -2716,6 +2789,15 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   const handleNodeMouseDown = (e: React.MouseEvent, node: MindNode) => {
     e.stopPropagation();
     if (e.button !== 0) return; // Deny dragging if non-left click (e.g. right click or middle click)
+
+    const target = e.target as HTMLElement | null;
+    if (!target?.closest('input, textarea, select, button, [contenteditable="true"]')) {
+      if (typeof window !== 'undefined' && window.getSelection) {
+        window.getSelection()?.removeAllRanges();
+      }
+      e.preventDefault(); // Prevent native text selection & ghost dragging
+    }
+
     setEmptyContextMenu(null);
     setSelectedEdgeId(null);
 
@@ -2816,6 +2898,10 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
   // Inline Label Editing
   const handleNodeDoubleClick = (e: React.MouseEvent, node: MindNode) => {
     e.stopPropagation();
+    e.preventDefault();
+    if (typeof window !== 'undefined' && window.getSelection) {
+      window.getSelection()?.removeAllRanges();
+    }
     setEditingNodeId(node.id);
     setEditingText(node.text);
   };
@@ -3437,11 +3523,35 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
       </div>
 
       {/* Pure Drawing Canvas Card (Dedicated ONLY to Map Graph & Nodes) */}
-      <div className="flex flex-col w-full flex-1 h-[100vh] min-h-[90vh] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden relative shadow-2xl">
+      <div className="flex flex-col w-full flex-1 h-[100vh] min-h-[90vh] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden relative shadow-2xl select-none" onDragStart={(e) => e.preventDefault()}>
+        {/* Global CSS enforcement to disable text selection and native drag feedback inside draw area */}
+        <style>{`
+          .mindmap-draw-area,
+          .mindmap-draw-area *:not(input):not(textarea):not([contenteditable="true"]) {
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+            -webkit-user-drag: none !important;
+            user-drag: none !important;
+          }
+          .mindmap-draw-area input,
+          .mindmap-draw-area textarea,
+          .mindmap-draw-area [contenteditable="true"] {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+          }
+        `}</style>
+
         {/* Canvas Area */}
         <div
           ref={containerRef}
-          className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden bg-slate-950 overscroll-contain touch-none"
+          draggable={false}
+          style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitUserDrag: 'none' } as any}
+          className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing overflow-hidden bg-slate-950 overscroll-contain touch-none select-none mindmap-draw-area"
+          onDragStart={(e) => e.preventDefault()}
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
@@ -3449,7 +3559,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
           onWheel={handleCanvasWheel}
         >
           {/* SVG Grid & Edge Connections Layer */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0 select-none" onDragStart={(e) => e.preventDefault()}>
             <defs>
               <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
                 <circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.07)" />
@@ -3642,7 +3752,8 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
 
           {/* Nodes Layer */}
           <div
-            className="absolute inset-0 pointer-events-none z-10"
+            className="absolute inset-0 pointer-events-none z-10 select-none"
+            onDragStart={(e) => e.preventDefault()}
             style={{
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
               transformOrigin: '0 0'
@@ -3680,10 +3791,12 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
               return (
                 <div
                   key={`${node.id}_${idx}`}
+                  draggable={false}
                   onMouseDown={(e) => handleNodeMouseDown(e, node)}
                   onTouchStart={(e) => handleNodeTouchStart(e, node)}
                   onDoubleClick={(e) => handleNodeDoubleClick(e, node)}
-                  className={`absolute pointer-events-auto flex flex-col justify-between px-4 py-2.5 rounded-2xl ${draggedNodeId === node.id ? 'transition-none' : 'transition-colors transition-shadow'
+                  onDragStart={(e) => e.preventDefault()}
+                  className={`absolute pointer-events-auto select-none flex flex-col justify-between px-4 py-2.5 rounded-2xl ${draggedNodeId === node.id ? 'transition-none' : 'transition-colors transition-shadow'
                     } shadow-xl group cursor-move ${isRoot
                       ? 'bg-slate-900 border-2 text-white font-extrabold'
                       : node.depth === 1
@@ -3696,10 +3809,13 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                     minWidth: `${isRoot ? 180 : 120}px`,
                     maxWidth: '300px',
                     width: 'max-content',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    WebkitUserDrag: 'none',
                     // minHeight: `${calcHeight}px`,
                     borderColor: isSelected ? '#00f2fe' : node.color || (isRoot ? '#00f2fe' : '#475569'),
                     boxShadow: isRoot ? `0 0 24px ${node.color || '#00f2fe'}44` : undefined
-                  }}
+                  } as any}
                 >
                   {/* Real-time Hammering Worker Building Animation (Positioned BELOW Node) */}
                   {isAiGenerating && (
@@ -3758,7 +3874,7 @@ export const MindMapEditor: React.FC<MindMapEditorProps> = ({ isExpanded = false
                           onBlur={saveEditingText}
                           onKeyDown={(e) => e.key === 'Enter' && saveEditingText()}
                           autoFocus
-                          className="bg-slate-950 text-white text-base font-bold px-2 py-1 rounded-lg border border-cyan-400 outline-none w-full max-w-[230px]"
+                          className="bg-slate-950 text-white text-base font-bold px-2 py-1 rounded-lg border border-cyan-400 outline-none w-full max-w-[230px] select-text"
                         />
                       ) : (
                         <span

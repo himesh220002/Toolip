@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Upload, Download, Sparkles, Check, RefreshCw } from 'lucide-react';
 
 export const PhotoCompressor: React.FC = () => {
@@ -17,9 +17,30 @@ export const PhotoCompressor: React.FC = () => {
   } | null>(null);
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
+  // Safely cleanup object URLs on component unmount
+  useEffect(() => {
+    return () => {
+      if (selectedImage?.preview) {
+        URL.revokeObjectURL(selectedImage.preview);
+      }
+      if (compressedResult?.url) {
+        URL.revokeObjectURL(compressedResult.url);
+      }
+    };
+  }, [selectedImage?.preview, compressedResult?.url]);
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+
+      // Cleanup existing preview & compressed result object URLs to prevent memory leaks
+      if (selectedImage?.preview) {
+        URL.revokeObjectURL(selectedImage.preview);
+      }
+      if (compressedResult?.url) {
+        URL.revokeObjectURL(compressedResult.url);
+      }
+
       const preview = URL.createObjectURL(file);
       setSelectedImage({
         file,
@@ -27,6 +48,9 @@ export const PhotoCompressor: React.FC = () => {
         originalSize: file.size,
       });
       setCompressedResult(null);
+
+      // Reset input value so re-selecting the same file fires onChange
+      e.target.value = '';
     }
   };
 
@@ -58,10 +82,14 @@ export const PhotoCompressor: React.FC = () => {
         canvas.toBlob(
           (blob) => {
             if (blob) {
-              const url = URL.createObjectURL(blob);
-              setCompressedResult({
-                url,
-                size: blob.size,
+              setCompressedResult((prev) => {
+                if (prev?.url) {
+                  URL.revokeObjectURL(prev.url);
+                }
+                return {
+                  url: URL.createObjectURL(blob),
+                  size: blob.size,
+                };
               });
             }
             setIsCompressing(false);
@@ -69,8 +97,25 @@ export const PhotoCompressor: React.FC = () => {
           mimeType,
           quality / 100
         );
+      } else {
+        setIsCompressing(false);
       }
     };
+
+    img.onerror = () => {
+      setIsCompressing(false);
+    };
+  };
+
+  const handleReset = () => {
+    if (selectedImage?.preview) {
+      URL.revokeObjectURL(selectedImage.preview);
+    }
+    if (compressedResult?.url) {
+      URL.revokeObjectURL(compressedResult.url);
+    }
+    setSelectedImage(null);
+    setCompressedResult(null);
   };
 
   const formatSize = (bytes: number) => {

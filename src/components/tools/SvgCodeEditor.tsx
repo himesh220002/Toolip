@@ -688,6 +688,9 @@ export const SvgCodeEditor: React.FC = () => {
         }
         URL.revokeObjectURL(url);
       };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+      };
       img.src = url;
     } catch (err: any) {
       alert('Error exporting image format: ' + err.message);
