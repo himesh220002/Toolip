@@ -93,6 +93,8 @@ function getStatusPayload(req) {
       userRooms: 'GET /api/rooms/user/my-rooms',
       authRegister: 'POST /api/auth/register',
       authLogin: 'POST /api/auth/login',
+      getMindMap: 'GET /api/mindmap/:mindMapId?',
+      saveMindMap: 'POST /api/mindmap/:mindMapId?/save',
       nvidiaProxy: 'POST /api/nvidia/generate',
     },
   };
@@ -556,27 +558,88 @@ app.post('/api/pdf/merge', (req, res) => {
   });
 });
 
-// Mindmap GraphML endpoints
-app.get('/api/mindmap', (req, res) => {
-  const filePath = path.join(__dirname, '..', 'mindmap.graphml');
-  if (fs.existsSync(filePath)) {
-    const xmlContent = fs.readFileSync(filePath, 'utf8');
-    res.setHeader('Content-Type', 'application/xml');
-    res.send(xmlContent);
-  } else {
-    res.status(404).json({ error: 'mindmap.graphml not found' });
+// Helper to sanitize mindmap ID for file path
+function getGraphMLFilePath(mindMapId) {
+  if (!mindMapId || mindMapId === 'default') {
+    return path.join(__dirname, '..', 'mindmap.graphml');
+  }
+  const safeId = mindMapId.replace(/[^a-zA-Z0-9_-]/g, '');
+  return path.join(__dirname, '..', `mindmap_${safeId}.graphml`);
+}
+
+// Mindmap GraphML Endpoints (Default & ID-based)
+app.get('/api/mindmap/:mindMapId?', async (req, res) => {
+  try {
+    const mindMapId = req.params.mindMapId;
+    const filePath = getGraphMLFilePath(mindMapId);
+    const defaultPath = path.join(__dirname, '..', 'mindmap.graphml');
+
+    if (mindMapId && mindMapId !== 'default') {
+      const safeId = mindMapId.replace(/[^a-zA-Z0-9_-]/g, '');
+
+      // 1. Check local file storage first
+      if (fs.existsSync(filePath)) {
+        const xmlContent = fs.readFileSync(filePath, 'utf8');
+        res.setHeader('Content-Type', 'application/xml');
+        return res.send(xmlContent);
+      }
+
+      // 2. Check MongoDB Atlas SharedRoom for graphmlXml state
+      const room = await SharedRoom.findOne({
+        $or: [{ roomId: mindMapId }, { roomId: `room_${mindMapId}` }, { roomId: `room_mindmap_${safeId}` }],
+      });
+
+      if (room && room.dataState && room.dataState.graphmlXml) {
+        res.setHeader('Content-Type', 'application/xml');
+        return res.send(room.dataState.graphmlXml);
+      }
+    }
+
+    // Default template fallback
+    if (fs.existsSync(defaultPath)) {
+      const xmlContent = fs.readFileSync(defaultPath, 'utf8');
+      res.setHeader('Content-Type', 'application/xml');
+      return res.send(xmlContent);
+    }
+
+    return res.status(404).json({ error: `GraphML file for "${mindMapId || 'default'}" not found` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/mindmap/save', (req, res) => {
+app.post(['/api/mindmap/save', '/api/mindmap/:mindMapId/save'], async (req, res) => {
   try {
-    const { xmlContent } = req.body;
+    const { xmlContent, mindMapId: bodyId, roomId } = req.body;
+    const mindMapId = req.params.mindMapId || bodyId || roomId;
+
     if (!xmlContent) {
       return res.status(400).json({ error: 'xmlContent is required' });
     }
-    const filePath = path.join(__dirname, '..', 'mindmap.graphml');
+
+    const filePath = getGraphMLFilePath(mindMapId);
     fs.writeFileSync(filePath, xmlContent, 'utf8');
-    res.json({ success: true, message: 'mindmap.graphml saved successfully' });
+
+    // Sync to MongoDB Atlas room if room exists
+    if (mindMapId && mindMapId !== 'default') {
+      const safeId = mindMapId.replace(/[^a-zA-Z0-9_-]/g, '');
+      await SharedRoom.findOneAndUpdate(
+        { $or: [{ roomId: mindMapId }, { roomId: `room_${mindMapId}` }, { roomId: `room_mindmap_${safeId}` }] },
+        {
+          $set: {
+            'dataState.graphmlXml': xmlContent,
+            lastActiveAt: new Date(),
+          },
+        }
+      ).catch(() => null);
+    }
+
+    res.json({
+      success: true,
+      message: `GraphML saved successfully for "${mindMapId || 'default'}"`,
+      mindMapId: mindMapId || 'default',
+      fileName: path.basename(filePath),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
