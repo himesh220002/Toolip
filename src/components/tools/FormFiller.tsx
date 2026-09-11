@@ -40,26 +40,26 @@ export interface FormFieldItem {
 
 const DEFAULT_FIELDS: FormFieldItem[] = [
   // 1. Personal Details
-  { id: 'first_name', label: 'First Name', value: 'Himesh', category: 'personal' },
-  { id: 'last_name', label: 'Last Name', value: 'Satyam', category: 'personal' },
-  { id: 'full_name', label: 'Full Name', value: 'Himesh Satyam', category: 'personal' },
-  { id: 'email', label: 'Email Address', value: 'satyamhimesh@gmail.com', category: 'personal' },
-  { id: 'phone', label: 'Phone Number', value: '+91 81055 42318', category: 'personal' },
-  { id: 'linkedin', label: 'LinkedIn URL', value: 'https://www.linkedin.com/in/himesh-satyam', category: 'personal' },
-  { id: 'github', label: 'GitHub URL', value: 'https://github.com/himesh220002', category: 'personal' },
-  { id: 'portfolio', label: 'Portfolio / Website', value: 'https://cyphertech.online', category: 'personal' },
+  { id: 'first_name', label: 'First Name', value: '', category: 'personal' },
+  { id: 'last_name', label: 'Last Name', value: '', category: 'personal' },
+  { id: 'full_name', label: 'Full Name', value: '', category: 'personal' },
+  { id: 'email', label: 'Email Address', value: '', category: 'personal' },
+  { id: 'phone', label: 'Phone Number', value: '', category: 'personal' },
+  { id: 'linkedin', label: 'LinkedIn URL', value: '', category: 'personal' },
+  { id: 'github', label: 'GitHub URL', value: '', category: 'personal' },
+  { id: 'portfolio', label: 'Portfolio / Website', value: '', category: 'personal' },
 
   // 2. Address Details
-  { id: 'country', label: 'Country', value: 'India', category: 'address' },
-  { id: 'address_line1', label: 'Address Line 1', value: '123 Tech Park Avenue', category: 'address' },
-  { id: 'address_line2', label: 'Address Line 2', value: 'Suite 400, Innovation Hub', category: 'address' },
-  { id: 'town_city', label: 'Town / City', value: 'Bengaluru', category: 'address' },
-  { id: 'state_province', label: 'State / Province', value: 'Karnataka', category: 'address' },
-  { id: 'postcode_zip', label: 'Postcode / Zip Code', value: '560001', category: 'address' },
+  { id: 'country', label: 'Country', value: '', category: 'address' },
+  { id: 'address_line1', label: 'Address Line 1', value: '', category: 'address' },
+  { id: 'address_line2', label: 'Address Line 2', value: '', category: 'address' },
+  { id: 'town_city', label: 'Town / City', value: '', category: 'address' },
+  { id: 'state_province', label: 'State / Province', value: '', category: 'address' },
+  { id: 'postcode_zip', label: 'Postcode / Zip Code', value: '', category: 'address' },
 
   // 3. Work & Profile
   { id: 'job_title', label: 'Current / Desired Job Title', value: 'Platform Software Engineer', category: 'work' },
-  { id: 'company', label: 'Current / Recent Company', value: 'Toolip Technologies', category: 'work' },
+  { id: 'company', label: 'Current / Recent Company', value: '', category: 'work' },
   { id: 'years_exp', label: 'Years of Experience', value: '4+ Years', category: 'work' },
   { id: 'notice_period', label: 'Notice Period / Availability', value: 'Immediate / 15 Days', category: 'work' },
   { id: 'target_salary', label: 'Expected Salary / Rate', value: 'Competitive / Open for Discussion', category: 'work' },
@@ -136,8 +136,8 @@ I thrive in collaborative, fast-paced environments where software quality, clean
 Thank you for your time and consideration.
 
 Sincerely,
-Himesh Satyam
-satyamhimesh@gmail.com | +91 81055 42318`,
+Name
+email@gmail.com | +91 phone number`,
     category: 'cover_letter',
   },
   {
@@ -152,8 +152,8 @@ Throughout my software engineering career, I have worked heavily with Linux serv
 I am eager to bring my backend engineering skills and passion for high-reliability systems to your team. Thank you for considering my application.
 
 Best regards,
-Himesh Satyam
-satyamhimesh@gmail.com`,
+Name
+email@gmail.com`,
     category: 'cover_letter',
   },
   {
@@ -166,7 +166,7 @@ I am a Software Engineer with extensive experience building production-ready web
 I am eager to contribute to your engineering goals and would love to connect to discuss how my background fits your team. Thank you!
 
 Best,
-Himesh Satyam`,
+Name`,
     category: 'cover_letter',
   },
 ];
@@ -621,8 +621,8 @@ export const FormFiller: React.FC = () => {
               onClick={handleReset}
               title={isModifiedFromDefault ? 'Reset modified fields back to default' : 'Reset to default sample profile'}
               className={`p-2 rounded-xl border transition-colors ${isModifiedFromDefault
-                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-400 hover:bg-amber-900/60'
-                  : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-rose-400'
+                ? 'bg-amber-950/40 border-amber-500/40 text-amber-400 hover:bg-amber-900/60'
+                : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-rose-400'
                 }`}
             >
               <RotateCcw className="h-4 w-4" />
@@ -722,8 +722,8 @@ export const FormFiller: React.FC = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${isActive
-                      ? 'bg-halo-cyan/20 border border-halo-cyan/50 text-halo-cyan shadow-[0_0_12px_rgba(0,242,254,0.2)]'
-                      : 'bg-gray-800/60 hover:bg-gray-800 border border-white/5 text-gray-400 hover:text-white'
+                    ? 'bg-halo-cyan/20 border border-halo-cyan/50 text-halo-cyan shadow-[0_0_12px_rgba(0,242,254,0.2)]'
+                    : 'bg-gray-800/60 hover:bg-gray-800 border border-white/5 text-gray-400 hover:text-white'
                     }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -834,8 +834,8 @@ export const FormFiller: React.FC = () => {
             <button
               onClick={handleSimulateAutoFill}
               className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all ${testAutoFilled
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-gradient-to-r from-halo-cyan to-vice-pink text-black hover:brightness-110'
+                ? 'bg-emerald-500 text-white'
+                : 'bg-gradient-to-r from-halo-cyan to-vice-pink text-black hover:brightness-110'
                 }`}
             >
               <Zap className="h-4 w-4" />
@@ -843,7 +843,7 @@ export const FormFiller: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+          <div className="grid grid-cols-1 md:grid-cols-2  gap-5 text-left">
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-halo-cyan border-b border-halo-cyan/20 pb-1">
                 1. Personal Details
@@ -1050,8 +1050,8 @@ export const FormFiller: React.FC = () => {
                       <button
                         onClick={() => handleCopy(field.id, field.value)}
                         className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${isCopied
-                            ? 'bg-emerald-500 text-white shadow-md'
-                            : 'bg-halo-cyan/10 hover:bg-halo-cyan/20 text-halo-cyan border border-halo-cyan/30'
+                          ? 'bg-emerald-500 text-white shadow-md'
+                          : 'bg-halo-cyan/10 hover:bg-halo-cyan/20 text-halo-cyan border border-halo-cyan/30'
                           }`}
                       >
                         {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}

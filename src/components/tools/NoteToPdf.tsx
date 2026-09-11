@@ -601,7 +601,7 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
               <h1 class="title">${noteTitle || 'Untitled Note'}</h1>
               ${noteSubtitle ? `<div class="subtitle">${noteSubtitle}</div>` : ''}
               <div class="meta-bar">
-                <span>Author: ${authorName || 'Anonymous'}</span>
+                <span>Name: ${authorName || 'Anonymous'}</span>
                 <span>Date: ${new Date().toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
               </div>
             </div>
@@ -611,12 +611,12 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
             </div>
 
             ${showFooterDate
-              ? `<div class="footer-stamp">
+        ? `<div class="footer-stamp">
                   <span>Generated via Toolip Note</span>
                   <span>Date: ${new Date().toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
                 </div>`
-              : ''
-            }
+        : ''
+      }
           </div>
           <script>
             window.onload = function() {
@@ -730,7 +730,7 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
             yCursor -= 18;
           }
 
-          page.drawText(sanitizePdfText(`Author: ${authorName} | Date: ${new Date().toLocaleDateString('en-US', { dateStyle: 'medium' })}`), {
+          page.drawText(sanitizePdfText(`Name: ${authorName} | Date: ${new Date().toLocaleDateString('en-US', { dateStyle: 'medium' })}`), {
             x: pad,
             y: yCursor,
             size: 9,
@@ -1164,7 +1164,7 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-300">Author Name:</label>
+                <label className="text-xs font-semibold text-gray-300">Name:</label>
                 <input
                   type="text"
                   value={authorName}
@@ -1195,11 +1195,10 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
                     <button
                       key={preset.label}
                       onClick={() => setNoteBodyHeight(preset.size)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
-                        noteBodyHeight === preset.size
-                          ? 'bg-sky-600 text-white border-sky-400'
-                          : 'bg-slate-900 border-slate-800 text-gray-400 hover:text-white'
-                      }`}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${noteBodyHeight === preset.size
+                        ? 'bg-sky-600 text-white border-sky-400'
+                        : 'bg-slate-900 border-slate-800 text-gray-400 hover:text-white'
+                        }`}
                     >
                       {preset.label}
                     </button>
@@ -1244,9 +1243,8 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
                 onChange={(e) => setNoteBody(e.target.value)}
                 style={{ height: `${noteBodyHeight}px` }}
                 placeholder="Type your notes, meeting bullet points, or document draft here..."
-                className={`w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-gray-200 focus:outline-none leading-relaxed font-mono whitespace-pre-wrap shadow-inner ${
-                  cornerDragEnabled ? 'resize-y' : 'resize-none'
-                }`}
+                className={`w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-gray-200 focus:outline-none leading-relaxed font-mono whitespace-pre-wrap shadow-inner ${cornerDragEnabled ? 'resize-y' : 'resize-none'
+                  }`}
               />
               {/* Custom Bottom-Right Corner Drag Handle */}
               {cornerDragEnabled && (
@@ -1622,7 +1620,7 @@ Auto Math Formula Structuring parses LaTeX equations and math symbols into forma
                         )}
 
                         <div className="text-[10px] opacity-70 font-mono flex justify-between" style={{ color: activeBodyColor }}>
-                          <span>Author: <strong style={{ color: activeTitleColor }}>{authorName || 'Anonymous'}</strong></span>
+                          <span>Name: <strong style={{ color: activeTitleColor }}>{authorName || 'Anonymous'}</strong></span>
                           <span suppressHydrationWarning>Date: {new Date().toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
                         </div>
                       </div>
