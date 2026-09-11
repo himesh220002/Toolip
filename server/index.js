@@ -730,23 +730,37 @@ app.post(['/api/mindmap/save', '/api/mindmap/:mindMapId/save'], async (req, res)
   }
 });
 
-// Optional / Dev-friendly auth middleware for form filler profile
+// Production-safe dev-friendly auth middleware for form filler profile
 function optionalDevAuth(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
+
   if (token && token !== 'null' && token !== 'undefined' && token !== 'dev_guest_token') {
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    return jwt.verify(token, JWT_SECRET, (err, user) => {
       if (!err && user) {
         req.user = user;
         return next();
       }
-      req.user = { userId: 'guest_dev_user_001' };
-      next();
+      return res.status(401).json({ error: 'Invalid or expired authentication token. Please log in again.' });
     });
-  } else {
-    req.user = { userId: 'guest_dev_user_001' };
-    next();
   }
+
+  // Strictly enforce authentication in production mode or for non-localhost hosts
+  const host = req.hostname || (req.headers.host ? req.headers.host.split(':')[0] : '');
+  const isLocalHostReq =
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.startsWith('192.168.') ||
+    host.startsWith('10.');
+
+  const isDevMode = process.env.NODE_ENV !== 'production';
+
+  if (isDevMode && isLocalHostReq) {
+    req.user = { userId: 'guest_dev_user_001' };
+    return next();
+  }
+
+  return res.status(401).json({ error: 'Authentication required. Please log in to sync cloud profile.' });
 }
 
 // Form Filler Profile Cloud Sync Endpoints (Supports both Authenticated Users and Localhost Dev Mode)

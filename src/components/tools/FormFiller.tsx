@@ -206,19 +206,27 @@ export const FormFiller: React.FC = () => {
   });
   const [testAutoFilled, setTestAutoFilled] = useState(false);
 
-  // Detect if running on localhost / dev environment
-  const isLocalHost = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return (
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.hostname.startsWith('192.168.') ||
-      window.location.hostname.startsWith('10.')
-    );
+  // Component Mount Hydration Guard
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsMounted(true);
   }, []);
 
+  // Detect if running on localhost / dev environment
+  const isLocalHost = useMemo(() => {
+    if (!isMounted || typeof window === 'undefined') return false;
+    return (
+      process.env.NODE_ENV !== 'production' &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.') ||
+        window.location.hostname.startsWith('10.'))
+    );
+  }, [isMounted]);
+
   // Always allow sync options on localhost for testing & development
-  const isSyncAllowed = isLocalHost || !!authUser;
+  const isSyncAllowed = isMounted && (isLocalHost || !!authUser);
 
   // Sync auth user state from localStorage and listen to global login/logout events
   useEffect(() => {
