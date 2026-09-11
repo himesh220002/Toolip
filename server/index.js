@@ -538,7 +538,7 @@ app.put('/api/rooms/:roomId', async (req, res) => {
         },
         $inc: { version: 1 },
       },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
 
     res.json({ success: true, room });
@@ -786,7 +786,7 @@ app.post('/api/form-filler/profile', optionalDevAuth, async (req, res) => {
     const profile = await FormProfile.findOneAndUpdate(
       { userId: req.user.userId },
       { fields, updatedAt: new Date() },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
 
     res.json({ success: true, fields: profile.fields, updatedAt: profile.updatedAt });
