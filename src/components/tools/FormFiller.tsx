@@ -562,7 +562,7 @@ export const FormFiller: React.FC = () => {
           <div className="flex items-center flex-wrap gap-2">
             <button
               onClick={() => setIsAddingField(true)}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-halo-cyan to-vice-purple text-black font-bold text-xs shadow-lg hover:brightness-110 transition-all transform hover:-translate-y-0.5"
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-br from-halo-cyan to-vice-purple text-black font-bold text-xs shadow-lg hover:brightness-110 transition-all transform hover:-translate-y-0.5"
             >
               <Plus className="h-4 w-4" />
               <span>Add Custom Field</span>
@@ -596,8 +596,8 @@ export const FormFiller: React.FC = () => {
               onClick={handleReset}
               title={isModifiedFromDefault ? 'Reset modified fields back to default' : 'Reset to default sample profile'}
               className={`p-2 rounded-xl border transition-colors ${isModifiedFromDefault
-                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-400 hover:bg-amber-900/60'
-                  : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-rose-400'
+                ? 'bg-amber-950/40 border-amber-500/40 text-amber-400 hover:bg-amber-900/60'
+                : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-rose-400'
                 }`}
             >
               <RotateCcw className="h-4 w-4" />
@@ -689,8 +689,8 @@ export const FormFiller: React.FC = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${isActive
-                      ? 'bg-halo-cyan/20 border border-halo-cyan/50 text-halo-cyan shadow-[0_0_12px_rgba(0,242,254,0.2)]'
-                      : 'bg-gray-800/60 hover:bg-gray-800 border border-white/5 text-gray-400 hover:text-white'
+                    ? 'bg-halo-cyan/20 border border-halo-cyan/50 text-halo-cyan shadow-[0_0_12px_rgba(0,242,254,0.2)]'
+                    : 'bg-gray-800/60 hover:bg-gray-800 border border-white/5 text-gray-400 hover:text-white'
                     }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -801,8 +801,8 @@ export const FormFiller: React.FC = () => {
             <button
               onClick={handleSimulateAutoFill}
               className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all ${testAutoFilled
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-gradient-to-r from-halo-cyan to-vice-pink text-black hover:brightness-110'
+                ? 'bg-emerald-500 text-white'
+                : 'bg-gradient-to-r from-halo-cyan to-vice-pink text-black hover:brightness-110'
                 }`}
             >
               <Zap className="h-4 w-4" />
@@ -1017,8 +1017,8 @@ export const FormFiller: React.FC = () => {
                       <button
                         onClick={() => handleCopy(field.id, field.value)}
                         className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${isCopied
-                            ? 'bg-emerald-500 text-white shadow-md'
-                            : 'bg-halo-cyan/10 hover:bg-halo-cyan/20 text-halo-cyan border border-halo-cyan/30'
+                          ? 'bg-emerald-500 text-white shadow-md'
+                          : 'bg-halo-cyan/10 hover:bg-halo-cyan/20 text-halo-cyan border border-halo-cyan/30'
                           }`}
                       >
                         {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
