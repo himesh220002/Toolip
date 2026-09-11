@@ -15,6 +15,7 @@ const connectDB = require('./db');
 const User = require('./models/User');
 const SharedRoom = require('./models/SharedRoom');
 const RoomLog = require('./models/RoomLog');
+const FormProfile = require('./models/FormProfile');
 const setupSocketHandlers = require('./socketHandler');
 
 const app = express();
@@ -726,6 +727,38 @@ app.post(['/api/mindmap/save', '/api/mindmap/:mindMapId/save'], async (req, res)
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Form Filler Profile Cloud Sync Endpoints
+app.get('/api/form-filler/profile', authenticateToken, async (req, res) => {
+  try {
+    const profile = await FormProfile.findOne({ userId: req.user.userId });
+    if (!profile) {
+      return res.json({ success: true, fields: [] });
+    }
+    res.json({ success: true, fields: profile.fields, updatedAt: profile.updatedAt });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch form filler profile from MongoDB' });
+  }
+});
+
+app.post('/api/form-filler/profile', authenticateToken, async (req, res) => {
+  try {
+    const { fields } = req.body;
+    if (!Array.isArray(fields)) {
+      return res.status(400).json({ error: 'fields must be an array' });
+    }
+
+    const profile = await FormProfile.findOneAndUpdate(
+      { userId: req.user.userId },
+      { fields, updatedAt: new Date() },
+      { new: true, upsert: true }
+    );
+
+    res.json({ success: true, fields: profile.fields, updatedAt: profile.updatedAt });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save form filler profile to MongoDB' });
   }
 });
 

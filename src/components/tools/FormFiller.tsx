@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   User,
   Copy,
@@ -20,8 +20,15 @@ import {
   ShieldCheck,
   FileCode2,
   FileText,
+  CloudDownload,
+  CloudUpload,
+  RefreshCw,
+  Lock,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 
 export interface FormFieldItem {
   id: string;
@@ -40,7 +47,7 @@ const DEFAULT_FIELDS: FormFieldItem[] = [
   { id: 'phone', label: 'Phone Number', value: '+91 81055 42318', category: 'personal' },
   { id: 'linkedin', label: 'LinkedIn URL', value: 'https://www.linkedin.com/in/himesh-satyam', category: 'personal' },
   { id: 'github', label: 'GitHub URL', value: 'https://github.com/himesh220002', category: 'personal' },
-  { id: 'portfolio', label: 'Portfolio / Website', value: 'https://toolip.app', category: 'personal' },
+  { id: 'portfolio', label: 'Portfolio / Website', value: 'https://cyphertech.online', category: 'personal' },
 
   // 2. Address Details
   { id: 'country', label: 'Country', value: 'India', category: 'address' },
@@ -170,6 +177,11 @@ export const FormFiller: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Auth User & Sync State
+  const [authUser, setAuthUser] = useState<{ id?: string; name?: string; email?: string } | null>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncNotification, setSyncNotification] = useState<string | null>(null);
+
   // New Custom Field Form state
   const [newLabel, setNewLabel] = useState('');
   const [newValue, setNewValue] = useState('');
@@ -193,6 +205,41 @@ export const FormFiller: React.FC = () => {
     coverLetter: '',
   });
   const [testAutoFilled, setTestAutoFilled] = useState(false);
+
+  // Sync auth user state from localStorage and listen to global login/logout events
+  useEffect(() => {
+    const checkAuth = () => {
+      if (typeof window !== 'undefined') {
+        const u = localStorage.getItem('toolip_user_data');
+        if (u) {
+          try {
+            setAuthUser(JSON.parse(u));
+          } catch (e) {
+            setAuthUser(null);
+          }
+        } else {
+          setAuthUser(null);
+        }
+      }
+    };
+    checkAuth();
+    window.addEventListener('toolip_auth_change', checkAuth);
+    window.addEventListener('storage', checkAuth);
+    return () => {
+      window.removeEventListener('toolip_auth_change', checkAuth);
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
+
+  // Check if current fields are modified from default values
+  const isModifiedFromDefault = useMemo(() => {
+    if (fields.length !== DEFAULT_FIELDS.length) return true;
+    return fields.some((f, idx) => {
+      const d = DEFAULT_FIELDS[idx];
+      if (!d) return true;
+      return f.id !== d.id || f.label !== d.label || f.value !== d.value || f.category !== d.category;
+    });
+  }, [fields]);
 
   // Filtered fields by tab and search query
   const filteredFields = useMemo(() => {
@@ -264,11 +311,147 @@ export const FormFiller: React.FC = () => {
     }
   };
 
-  // Reset profile to default
+  // Reset profile to default (Strict Confirmation if fields modified!)
   const handleReset = () => {
-    if (confirm('Reset form filler profile back to default sample fields and cover letters? Custom added fields will be cleared.')) {
-      setFields(DEFAULT_FIELDS);
-      setSearchQuery('');
+    if (isModifiedFromDefault) {
+      const confirmed = confirm(
+        '⚠️ CONFIRM RESET: You have custom edits or added fields in your profile!\n\nResetting will discard ALL your custom changes, added fields, and cover letters, reverting everything back to original defaults.\n\nAre you sure you want to reset?'
+      );
+      if (!confirmed) return;
+    } else {
+      const confirmed = confirm('Reset form filler profile back to default sample fields?');
+      if (!confirmed) return;
+    }
+
+    setFields(DEFAULT_FIELDS);
+    setSearchQuery('');
+    setSyncNotification('Profile reset to original default values.');
+    setTimeout(() => setSyncNotification(null), 3000);
+  };
+
+  // 1. Pull: MongoDB -> localStorage
+  const handlePullServerData = async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('toolip_auth_token') : null;
+    if (!token) {
+      alert('Please log in to pull profile from MongoDB cloud storage.');
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const backendUrl = getApiBaseUrl();
+      const res = await fetch(`${backendUrl}/api/form-filler/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.fields) && json.fields.length > 0) {
+        setFields(json.fields);
+        setSyncNotification('📥 Successfully pulled profile from MongoDB cloud to device!');
+      } else {
+        setSyncNotification('ℹ️ No saved profile found on MongoDB server yet. Click Push to upload current profile.');
+      }
+    } catch (e) {
+      setSyncNotification('❌ Failed to pull from server. Check network connection.');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncNotification(null), 4000);
+    }
+  };
+
+  // 2. Push: localStorage -> MongoDB
+  const handlePushServerData = async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('toolip_auth_token') : null;
+    if (!token) {
+      alert('Please log in to push profile to MongoDB cloud storage.');
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const backendUrl = getApiBaseUrl();
+      const res = await fetch(`${backendUrl}/api/form-filler/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ fields }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setSyncNotification('📤 Successfully pushed local profile fields to MongoDB cloud!');
+      } else {
+        setSyncNotification(`❌ Push failed: ${json.error || 'Unknown server error'}`);
+      }
+    } catch (e) {
+      setSyncNotification('❌ Failed to push to server. Check network connection.');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncNotification(null), 4000);
+    }
+  };
+
+  // 3. Auto-Sync: Pull server -> merge local -> Push server
+  const handleAutoSync = async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('toolip_auth_token') : null;
+    if (!token) {
+      alert('Please log in to auto-sync profile with MongoDB cloud storage.');
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const backendUrl = getApiBaseUrl();
+      // Step K: Pull server data
+      const res = await fetch(`${backendUrl}/api/form-filler/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+
+      let mergedFields = [...fields];
+      if (res.ok && json.success && Array.isArray(json.fields) && json.fields.length > 0) {
+        const serverFields: FormFieldItem[] = json.fields;
+        const localFieldMap = new Map(fields.map((f) => [f.id, f]));
+
+        mergedFields = serverFields.map((sf) => {
+          const lf = localFieldMap.get(sf.id);
+          return lf ? lf : sf;
+        });
+
+        const serverFieldIds = new Set(serverFields.map((sf) => sf.id));
+        fields.forEach((lf) => {
+          if (!serverFieldIds.has(lf.id)) {
+            mergedFields.push(lf);
+          }
+        });
+
+        setFields(mergedFields);
+      }
+
+      // Step L: Push merged result back to server
+      const pushRes = await fetch(`${backendUrl}/api/form-filler/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ fields: mergedFields }),
+      });
+      const pushJson = await pushRes.json();
+      if (pushRes.ok && pushJson.success) {
+        setSyncNotification('⚡ Auto-Sync Complete! Merged local & MongoDB cloud storage cleanly.');
+      } else {
+        setSyncNotification(`❌ Auto-sync push failed: ${pushJson.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      setSyncNotification('❌ Auto-sync failed. Check network connection.');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncNotification(null), 4000);
+    }
+  };
+
+  // Trigger login modal
+  const handleOpenAuthModal = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('toolip_open_auth'));
     }
   };
 
@@ -337,7 +520,17 @@ export const FormFiller: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 text-white max-w-6xl mx-auto">
+    <div className="space-y-6 text-white mx-auto">
+      {/* Sync Status Banner */}
+      {syncNotification && (
+        <div className="p-3 bg-halo-cyan/10 border border-halo-cyan/40 rounded-xl text-xs font-semibold text-halo-cyan flex items-center justify-between shadow-lg animate-fade-in">
+          <span>{syncNotification}</span>
+          <button onClick={() => setSyncNotification(null)} className="text-gray-400 hover:text-white">
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Top Header Card */}
       <div className="relative p-5 bg-gradient-to-r from-gunmetal-900 via-gray-900 to-gunmetal-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-halo-cyan/5 rounded-full blur-3xl pointer-events-none" />
@@ -353,6 +546,11 @@ export const FormFiller: React.FC = () => {
                 <span className="px-2 py-0.5 text-[10px] font-bold font-mono uppercase bg-halo-cyan/10 border border-halo-cyan/30 text-halo-cyan rounded-full">
                   1-Click Ready
                 </span>
+                {isModifiedFromDefault && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold font-mono uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> Modified
+                  </span>
+                )}
               </div>
               <p className="text-xs text-gray-400 mt-0.5">
                 Save personal info, custom fields, screening answers, and generic cover letters for instant 1-click auto-fill on job forms.
@@ -396,16 +594,82 @@ export const FormFiller: React.FC = () => {
 
             <button
               onClick={handleReset}
-              title="Reset to default sample profile"
-              className="p-2 rounded-xl bg-gray-800/80 hover:bg-rose-950/50 border border-white/10 text-gray-400 hover:text-rose-400 transition-colors"
+              title={isModifiedFromDefault ? 'Reset modified fields back to default' : 'Reset to default sample profile'}
+              className={`p-2 rounded-xl border transition-colors ${isModifiedFromDefault
+                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-400 hover:bg-amber-900/60'
+                  : 'bg-gray-800/80 border-white/10 text-gray-400 hover:text-rose-400'
+                }`}
             >
               <RotateCcw className="h-4 w-4" />
             </button>
           </div>
         </div>
 
+        {/* 3-Button Data Sync Control Bar */}
+        <div className="mt-4 p-3 bg-gray-950/80 border border-white/10 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-left">
+          <div className="flex items-center space-x-2.5">
+            <div className={`p-1.5 rounded-lg ${authUser ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-800 text-gray-400'}`}>
+              {authUser ? <CheckCircle2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <span>{authUser ? `Cloud Sync Active (${authUser.name || authUser.email})` : 'Device Storage Mode (LocalStorage Active)'}</span>
+              </div>
+              <p className="text-[11px] text-gray-400">
+                {authUser
+                  ? 'Use the 3 sync options below to transfer profile fields between Device Storage & MongoDB Atlas.'
+                  : 'Edits save locally on this device. Log in to sync profile fields across browsers & devices via MongoDB.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center flex-wrap gap-2">
+            {authUser ? (
+              <>
+                <button
+                  onClick={handlePullServerData}
+                  disabled={isSyncing}
+                  title="Pull: MongoDB → localStorage"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-halo-cyan/30 text-halo-cyan font-semibold text-xs transition-colors disabled:opacity-50"
+                >
+                  <CloudDownload className="h-3.5 w-3.5" />
+                  <span>Pull (MongoDB → Local)</span>
+                </button>
+
+                <button
+                  onClick={handlePushServerData}
+                  disabled={isSyncing}
+                  title="Push: localStorage → MongoDB"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-vice-pink/30 text-vice-pink font-semibold text-xs transition-colors disabled:opacity-50"
+                >
+                  <CloudUpload className="h-3.5 w-3.5" />
+                  <span>Push (Local → MongoDB)</span>
+                </button>
+
+                <button
+                  onClick={handleAutoSync}
+                  disabled={isSyncing}
+                  title="Auto-Sync: Pull server data, merge local edits, and push updated state"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-halo-cyan to-vice-pink text-black font-bold text-xs shadow-md hover:brightness-110 transition-all disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>Auto-Sync (Pull → Push)</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleOpenAuthModal}
+                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-halo-cyan/20 hover:bg-halo-cyan/30 border border-halo-cyan/50 text-halo-cyan font-bold text-xs transition-colors"
+              >
+                <Lock className="h-3.5 w-3.5" />
+                <span>Log In for MongoDB Cloud Sync</span>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Search Bar & Category Navigation */}
-        <div className="mt-5 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           {/* Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             {[
@@ -424,11 +688,10 @@ export const FormFiller: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                    isActive
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${isActive
                       ? 'bg-halo-cyan/20 border border-halo-cyan/50 text-halo-cyan shadow-[0_0_12px_rgba(0,242,254,0.2)]'
                       : 'bg-gray-800/60 hover:bg-gray-800 border border-white/5 text-gray-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                   <span>{tab.label}</span>
@@ -458,7 +721,7 @@ export const FormFiller: React.FC = () => {
 
       {/* Add Custom Field Modal / Drawer */}
       {isAddingField && (
-        <form onSubmit={handleAddCustomField} className="p-4 bg-gray-900 border border-halo-cyan/30 rounded-xl space-y-3 shadow-2xl animate-fade-in">
+        <form onSubmit={handleAddCustomField} className="p-4 bg-gray-900 border border-halo-cyan/30 rounded-xl space-y-3 shadow-2xl animate-fade-in text-left">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-halo-cyan flex items-center gap-1.5">
               <Plus className="h-4 w-4" /> Add New Field / Question
@@ -537,11 +800,10 @@ export const FormFiller: React.FC = () => {
 
             <button
               onClick={handleSimulateAutoFill}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all ${
-                testAutoFilled
+              className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all ${testAutoFilled
                   ? 'bg-emerald-500 text-white'
                   : 'bg-gradient-to-r from-halo-cyan to-vice-pink text-black hover:brightness-110'
-              }`}
+                }`}
             >
               <Zap className="h-4 w-4" />
               <span>{testAutoFilled ? '⚡ Form Auto-Filled!' : '⚡ 1-Click Auto-Fill Test Form'}</span>
@@ -729,9 +991,8 @@ export const FormFiller: React.FC = () => {
               return (
                 <div
                   key={field.id}
-                  className={`group relative p-4 bg-gray-900/80 hover:bg-gray-900 border border-white/10 hover:border-halo-cyan/40 rounded-xl transition-all duration-200 shadow-md space-y-2 ${
-                    field.category === 'cover_letter' ? 'md:col-span-2 border-emerald-500/30 bg-emerald-950/10' : ''
-                  }`}
+                  className={`group relative p-4 bg-gray-900/80 hover:bg-gray-900 border border-white/10 hover:border-halo-cyan/40 rounded-xl transition-all duration-200 shadow-md space-y-2 ${field.category === 'cover_letter' ? 'md:col-span-2 border-emerald-500/30 bg-emerald-950/10' : ''
+                    }`}
                 >
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center space-x-2">
@@ -755,11 +1016,10 @@ export const FormFiller: React.FC = () => {
                     <div className="flex items-center space-x-1.5">
                       <button
                         onClick={() => handleCopy(field.id, field.value)}
-                        className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                          isCopied
+                        className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${isCopied
                             ? 'bg-emerald-500 text-white shadow-md'
                             : 'bg-halo-cyan/10 hover:bg-halo-cyan/20 text-halo-cyan border border-halo-cyan/30'
-                        }`}
+                          }`}
                       >
                         {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                         <span>{isCopied ? 'Copied!' : '1-Click Copy'}</span>
