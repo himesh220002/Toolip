@@ -476,6 +476,62 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoInfo> = {
           'No. Toolip processes all image files, font rendering, HTML parsing, and PDF downloads locally inside your browser DOM memory with zero server uploads.'
       }
     ]
+  },
+  'ppt-generator': {
+    id: 'ppt-generator',
+    primaryKeyword: 'ai ppt generator online',
+    supportingKeywords: [
+      'ppt generator free',
+      'ai presentation maker',
+      'pitch deck builder online',
+      'pptx generator client-side',
+      'slides to pdf converter',
+      'editable presentation builder'
+    ],
+    metaTitle: 'Free AI PPT Generator — Describe, Edit Pixels & Export PPTX + PDF | Toolip',
+    metaDescription:
+      'Generate modern presentations from a prompt or Web/GitHub URLs with Gemini/Nvidia AI. Edit every text segment, swap images via URL, nudge by pixels, export real .pptx + PDF.',
+    articleContent: {
+      heading: 'Complete Guide to AI Presentation Generation with Pixel Editing',
+      paragraphs: [
+        'Creating investor pitches, class decks, and client reports usually means hours of blank-slide design. Toolip PPT Generator flips that: describe your topic and page types, optionally ground it with website or GitHub README text, and get a full modern deck in seconds.',
+        'Every slide is fully editable. Click any text segment to rewrite it, paste any image URL to replace photos, and move elements pixel-by-pixel from the properties panel (or arrow keys, Shift for 10px). Five pre-designed themes and eight modern layouts — title hero, bullets+image, 3 stats, team grid, timeline, data table, quote, closing — cover most startup, classroom, and business needs.',
+        'Export produces a real editable .pptx via pptxgenjs plus a print-ready landscape PDF. Drafts auto-save to your browser; AI keys (Gemini / Nvidia BYOK) never leave your device.'
+      ],
+      useCases: [
+        'Startup Pitches: Generate problem, solution, traction, business model, team, and ask slides then export PPTX.',
+        'GitHub to Deck: Fetch a repo README or docs site into context and turn it into a launch presentation.',
+        'Class & Client Reports: Build timeline, stats, and table slides with consistent modern theming.'
+      ],
+      howToSteps: [
+        'Describe the deck, set page count, toggle page types, and set per-slide structure + theme.',
+        'Optionally paste Web / GitHub URLs and fetch or paste context text.',
+        'Pick Gemini, Nvidia, or Ollama, paste your BYOK key, and click Generate.',
+        'Select any element to edit text, swap image URL, nudge X/Y by pixels, then download PPTX + PDF.'
+      ]
+    },
+    faqs: [
+      {
+        question: 'Do I need an API key to generate slides?',
+        answer:
+          'Yes for AI generation — paste your own Gemini (AIza...) or Nvidia (nvapi-...) key. It is stored only in your browser localStorage. You can also click Try demo to explore the editor with zero keys.'
+      },
+      {
+        question: 'Can I edit text and images after generation?',
+        answer:
+          'Yes. Every text block is individually selectable and editable, every image has a URL box plus upload (base64) replacement, and X/Y/W/H fields move elements by single pixels.'
+      },
+      {
+        question: 'Is the PPTX truly editable in PowerPoint?',
+        answer:
+          'Yes. Export uses pptxgenjs to emit native text boxes, shapes, and images on a 10 x 5.625 inch widescreen layout, so fonts, text, and positions stay editable in PowerPoint and Google Slides.'
+      },
+      {
+        question: 'Why did URL fetching fail?',
+        answer:
+          'Browsers block cross-origin reads on many sites (CORS). When fetch fails, copy the page or README text and paste it into the context box — generation then works identically.'
+      }
+    ]
   }
 };
 

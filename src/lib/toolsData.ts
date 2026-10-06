@@ -416,4 +416,16 @@ export const INITIAL_TOOLS: ToolItem[] = [
     updatedAt: '2026-09-05T00:00:00.000Z',
     seoKeywords: ['mind map editor', 'mindmap builder', 'graphml editor', 'interactive mind map', 'yfiles graphml viewer'],
   },
+  {
+    id: 'ppt-generator',
+    title: 'PPT Generator & Slide Editor',
+    category: 'Document & File Utilities',
+    description: 'Describe any topic or paste Web/GitHub URLs to generate a modern deck, then edit every text, image URL & pixel position before exporting PPTX + PDF.',
+    iconName: 'Presentation',
+    status: 'completed',
+    notes: 'AI deck generation via Gemini/Nvidia/Ollama BYOK with 5 themes, 8 modern layouts, pixel properties panel, image URL swap, and real .pptx export via pptxgenjs.',
+    features: ['AI Deck from Prompt / URL', '5 Themes & 8 Layouts', 'Pixel Properties Panel', 'Image URL Swap & PPTX+PDF Export'],
+    updatedAt: '2026-10-06T00:00:00.000Z',
+    seoKeywords: ['ppt generator online', 'ai presentation maker', 'free pptx generator', 'pitch deck builder', 'slides to pdf converter'],
+  },
 ];

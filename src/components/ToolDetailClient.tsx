@@ -45,6 +45,7 @@ import { TipCalculator } from '@/components/tools/TipCalculator';
 import { HtmlToPdf } from '@/components/tools/HtmlToPdf';
 import { LoanCalculator } from '@/components/tools/LoanCalculator';
 import { MindMapEditor } from '@/components/tools/MindMapEditor';
+import { PptGenerator } from '@/components/tools/PptGenerator';
 
 const STATUS_TAGS: { value: ToolStatus; label: string }[] = [
   { value: 'planned', label: 'Planned' },
@@ -231,6 +232,7 @@ export const ToolDetailClient: React.FC<Props> = ({ toolId, initialTool }) => {
       case 'mindmap':
       case 'tip-calculator':
       case 'mind-map-editor': return <MindMapEditor isExpanded={isWorkspaceExpanded} />;
+      case 'ppt-generator': return <PptGenerator />;
       case 'loan-calculator':
       case 'loan-emi-calculator': return <LoanCalculator />;
       default: return <div className="p-8 text-center font-mono text-sm text-white/40">Component loading — please wait.</div>;

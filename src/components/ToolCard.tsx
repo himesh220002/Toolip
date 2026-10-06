@@ -46,10 +46,12 @@ import {
   Hexagon,
   Shield,
   Network,
+  Presentation,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   Network: <Network className="h-5 w-5 text-halo-cyan" />,
+  Presentation: <Presentation className="h-5 w-5 text-vice-orange" />,
   Moon: <Moon className="h-5 w-5 text-halo-cyan" />,
   Camera: <Camera className="h-5 w-5 text-vice-pink" />,
   FileText: <FileText className="h-5 w-5 text-halo-cyan" />,
@@ -189,6 +191,8 @@ function getUsefulToolTag(tool: ToolItem): { text: string; icon: React.ReactNode
     case 'mindmap':
     case 'tip-calculator':
       return { text: 'GRAPHML AUTO-SAVE', icon: <Network className="h-2.5 w-2.5" /> };
+    case 'ppt-generator':
+      return { text: 'AI DECK • PPTX + PDF', icon: <Presentation className="h-2.5 w-2.5" /> };
     default:
       if (tool.status === 'upgraded') {
         return { text: '🔥 UPGRADED', icon: <Zap className="h-2.5 w-2.5" /> };
