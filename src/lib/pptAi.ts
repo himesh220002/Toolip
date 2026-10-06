@@ -39,7 +39,7 @@ export async function tryFetchUrlText(url: string): Promise<string> {
   }
 }
 
-const LAYOUT_LIST = 'title-hero, split-bullets, stats-3, team-grid, timeline, data-table, quote-image, closing';
+const LAYOUT_LIST = 'title-hero, split-bullets, stats-3, team-grid, timeline, data-table, quote-image, closing, mindmap, org-chart, tech-stack, mindmap-radial, sdlc, fullstack';
 
 const LAYOUT_NEEDS: Record<string, string> = {
   'title-hero': 'title (≤8 words), subtitle (≤16 words), kicker (2-3 words)',
@@ -50,6 +50,12 @@ const LAYOUT_NEEDS: Record<string, string> = {
   'data-table': 'title, subtitle, table (3 short headers + 4 rows of short cells)',
   'quote-image': 'kicker, quote (1-2 sentences), bullets (2-3 short)',
   'closing': 'title (≤6 words), subtitle (contact line)',
+  'mindmap': 'title (central idea ≤4 words), steps (exactly 4; label ≤3 words, desc ≤6 words)',
+  'org-chart': 'kicker, team (exactly 4: head + 3 reports, realistic names+roles)',
+  'tech-stack': 'title, subtitle, bullets (6 tool/platform names) or stats (6 label+value)',
+  'mindmap-radial': 'title (hub ≤3 words), subtitle (1 line), bullets (4 short intro lines), steps (exactly 4 branch labels ≤3 words)',
+  'sdlc': 'title, subtitle, steps (exactly 5 phases; label ≤2 words, desc ≤10 words)',
+  'fullstack': 'title, subtitle, steps (exactly 4 layers; label = layer name, desc = 3-4 techs comma-separated)',
 };
 
 function buildPrompt(inp: PptGenInput): { system: string; user: string } {
@@ -73,6 +79,7 @@ export async function generatePptContent(
   opts: { provider: PptAiProvider; apiKey?: string; modelId?: string; signal?: AbortSignal; onLog?: (m: string) => void }
 ): Promise<SlideContentItem[]> {
   const { system, user } = buildPrompt(inp);
+  const budget = inp.numPages > 10 ? 8000 : 5000; // 15-page decks carry far more JSON
   opts.onLog?.(`Composing ${inp.numPages}-slide outline with ${opts.provider}...`);
   let raw = '';
   if (opts.provider === 'gemini') {
@@ -81,7 +88,7 @@ export async function generatePptContent(
       modelId: opts.modelId || 'gemini-3.8-flash',
       messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       temperature: 0.7,
-      maxTokens: 5000,
+      maxTokens: budget,
       signal: opts.signal,
     });
   } else if (opts.provider === 'ollama') {
@@ -98,14 +105,14 @@ export async function generatePptContent(
       modelId: opts.modelId,
       messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       temperature: 0.7,
-      maxTokens: 5000,
+      maxTokens: budget,
       signal: opts.signal,
     });
   }
   const parsed = robustParseJson(raw);
   const arr: any[] = Array.isArray(parsed.slides) ? parsed.slides : Array.isArray(parsed.nodes) ? parsed.nodes : [];
   if (!arr.length) throw new Error('AI returned no slides. Try again with fewer pages.');
-  const valid: PptLayoutId[] = ['title-hero', 'split-bullets', 'stats-3', 'team-grid', 'timeline', 'data-table', 'quote-image', 'closing'];
+  const valid: PptLayoutId[] = ['title-hero', 'split-bullets', 'stats-3', 'team-grid', 'timeline', 'data-table', 'quote-image', 'closing', 'mindmap', 'org-chart', 'tech-stack', 'mindmap-radial', 'sdlc', 'fullstack'];
   const wantAt = (i: number): PptLayoutId => {
     const w = inp.pageTypes[i] || inp.pageTypes[inp.pageTypes.length - 1];
     if (valid.includes(w)) return w;

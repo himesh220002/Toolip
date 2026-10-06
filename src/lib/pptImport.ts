@@ -7,6 +7,51 @@ export interface PptImportResult {
   warnings: string[];
 }
 
+export function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result));
+    r.onerror = () => rej(new Error('Could not read file.'));
+    r.readAsDataURL(file);
+  });
+}
+
+// Render any loadable image URL (incl. SVG) into a PNG dataURL so canvas,
+// PDF and PPTX all treat it identically. Throws when the source taints.
+export async function rasterizeImageUrl(url: string, maxDim = 1200): Promise<string> {
+  const img = await new Promise<HTMLImageElement>((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error('Image failed to load.'));
+    im.src = url;
+  });
+  let w = img.naturalWidth || 800;
+  let h = img.naturalHeight || 600;
+  const k = Math.min(1, maxDim / Math.max(w, h));
+  w = Math.max(1, Math.round(w * k));
+  h = Math.max(1, Math.round(h * k));
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  c.getContext('2d')!.drawImage(img, 0, 0, w, h);
+  return c.toDataURL('image/png'); // throws if canvas is tainted
+}
+
+// Local files: SVGs become PNGs (PowerPoint/canvas <img> can't size raw SVG
+// reliably); png/jpg/webp/gif pass through as dataURLs.
+export async function fileToImageSrc(file: File): Promise<string> {
+  const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
+  if (!isSvg) return readFileAsDataUrl(file);
+  const text = await file.text();
+  const blob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  try {
+    return await rasterizeImageUrl(url, 1400);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 // ─── Deck JSON (our own prebuilt format) ───
 
 export async function importDeckJsonFile(file: File): Promise<PptImportResult> {
@@ -113,6 +158,11 @@ function mimeOf(path: string): string {
   return 'image/png';
 }
 
+function normMedia(target: string): string {
+  if (target.startsWith('../media/')) return 'ppt/media/' + target.slice('../media/'.length);
+  return 'ppt/slides/' + target.replace(/^\.\.\//, '').replace(/^slides\//, '');
+}
+
 async function mediaUrl(ctx: Ctx, pptPath: string): Promise<string | null> {
   if (ctx.mediaCache[pptPath]) return ctx.mediaCache[pptPath];
   const f = ctx.zip.file(pptPath);
@@ -206,9 +256,33 @@ async function parseSpTree(spTree: Element, ctx: Ctx, parent: Box, out: PptEleme
       const xfrm = spPr ? firstChild(spPr, 'xfrm') : null;
       const box = emuBox(xfrm ? firstChild(xfrm, 'off') : null, xfrm ? firstChild(xfrm, 'ext') : null, ctx.sldCx, ctx.sldCy, parent);
       const txBody = firstChild(child, 'txBody');
-      if (!txBody) continue;
-      const t = extractTextBody(txBody);
-      if (!t.text) continue;
+      const t = txBody ? extractTextBody(txBody) : { text: '', fontSize: 18, bold: false, italic: false, color: null, align: 'left' as const };
+      if (!t.text) {
+        // autoshape without text (rect/circle/triangle/...) — keep geometry + fill
+        const geom = spPr ? firstChild(spPr, 'prstGeom') : null;
+        const prst = geom?.getAttribute('prst') || '';
+        const kindMap: Record<string, string> = {
+          rect: 'rect', roundRect: 'pill', ellipse: 'circle', triangle: 'triangle',
+          pentagon: 'pentagon', hexagon: 'hexagon', star5: 'star', star4: 'star', star6: 'star', diamond: 'rect',
+        };
+        const kind = kindMap[prst];
+        if (!kind) continue; // textboxes/connectors without text are skipped
+        const fillHex = hexOfFill(spPr ? firstChild(spPr, 'solidFill') : null);
+        // PowerPoint picture-fill on the autoshape itself
+        let shapeSrc: string | undefined;
+        const spBlipFill = spPr ? firstChild(spPr, 'blipFill') : null;
+        const spBlip = spBlipFill ? firstChild(spBlipFill, 'blip') : null;
+        const spEmbed = spBlip?.getAttribute('r:embed') || spBlip?.getAttribute('embed');
+        const spTarget = spEmbed ? ctx.rels[spEmbed] : null;
+        if (spTarget) shapeSrc = (await mediaUrl(ctx, normMedia(spTarget))) || undefined;
+        out.push({
+          id: uid('box'), type: 'shape', shape: kind as any, bg: fillHex ? `#${fillHex}` : '#E5E5E5',
+          x: box?.x ?? 60, y: box?.y ?? 60, w: box?.w ?? 200, h: box?.h ?? 100,
+          borderRadius: kind === 'pill' ? 99 : 8,
+          ...(shapeSrc ? { src: shapeSrc } : {}),
+        });
+        continue;
+      }
       out.push({
         id: uid('t'), type: 'text',
         x: box?.x ?? 60, y: box?.y ?? 60, w: box?.w ?? 600, h: box?.h ?? 80,

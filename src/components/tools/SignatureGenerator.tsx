@@ -222,6 +222,8 @@ export const SignatureGenerator: React.FC = () => {
     'toolip_card_avatar',
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
   );
+  const [showLogo, setShowLogo, resetShowLogo] = useLocalStorage<boolean>('toolip_card_show_logo', true);
+  const [showPhoto, setShowPhoto, resetShowPhoto] = useLocalStorage<boolean>('toolip_card_show_photo', true);
 
   // Theme & Layout Options
   const [themeSyncMode, setThemeSyncMode] = useLocalStorage<'same' | 'different'>('toolip_card_theme_sync_mode', 'same');
@@ -719,6 +721,8 @@ export const SignatureGenerator: React.FC = () => {
     resetAddress();
     resetLogoUrl();
     resetAvatarUrl();
+    resetShowLogo();
+    resetShowPhoto();
   };
 
   // Get Contact Details Plain Text for 1-Click Copy
@@ -757,7 +761,7 @@ Generated via Toolip Premium Business Card Generator`;
     <div style="position: absolute; top: -50px; right: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(99, 102, 241, 0.15); filter: blur(25px); pointer-events: none;"></div>
     <div style="position: absolute; bottom: -50px; left: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(14, 165, 233, 0.15); filter: blur(25px); pointer-events: none;"></div>
     <div style="z-index: 10; display: flex; flex-direction: column; align-items: center;">
-      <img src="${cleanLogoUrl}" style="height: ${logoSize}px; width: ${logoSize}px; object-fit: contain; margin-bottom: 8px;" />
+      ${showLogo ? `<img src="${cleanLogoUrl}" style="height: ${logoSize}px; width: ${logoSize}px; object-fit: contain; margin-bottom: 8px;" />` : ''}
       <div>
         <div style="font-size: ${companyFontSize}px; font-weight: 900; letter-spacing: -0.02em; opacity: ${companyOpacity / 100}; line-height: 1.15;">${company}</div>
         <div style="font-size: ${taglineFontSize}px; color: ${frontTheme.hexSubTextColor}; font-weight: 700; margin-top: 4px; opacity: ${taglineOpacity / 100}; line-height: 1.15;">${tagline}</div>
@@ -771,7 +775,7 @@ Generated via Toolip Premium Business Card Generator`;
     <div style="position: absolute; bottom: -50px; left: -50px; width: 180px; height: 180px; border-radius: 50%; background: rgba(14, 165, 233, 0.15); filter: blur(25px); pointer-events: none;"></div>
     <div style="flex: 1; padding-right: 10px; z-index: 10; overflow: hidden; min-width: 0;">
       <div style="display: flex; ${avatarLayout === 'col' ? 'flex-direction: column; align-items: flex-start; gap: 6px;' : 'align-items: center; gap: 10px;'} margin-bottom: 8px;">
-        <img src="${cleanAvatarUrl}" style="height: ${avatarSize}px; width: ${avatarSize}px; border-radius: 50%; object-fit: cover; border: 2px solid ${backKey === 'minimal' ? '#cbd5e1' : 'rgba(255,255,255,0.2)'};" />
+        ${showPhoto ? `<img src="${cleanAvatarUrl}" style="height: ${avatarSize}px; width: ${avatarSize}px; border-radius: 50%; object-fit: cover; border: 2px solid ${backKey === 'minimal' ? '#cbd5e1' : 'rgba(255,255,255,0.2)'};" />` : ''}
         <div style="min-width: 0;">
           <div style="font-size: ${nameFontSize}px; font-weight: 900; line-height: 1.2; color: ${backTheme.hexTextColor};">${fullName}</div>
           <div style="font-size: ${roleFontSize}px; color: ${backTheme.hexSubTextColor}; font-weight: 700; line-height: 1.25; margin-top: 2px; word-break: break-word;">${role}</div>
@@ -1067,7 +1071,7 @@ Generated via Toolip Premium Business Card Generator`;
               <div class="glow-bg-1"></div>
               <div class="glow-bg-2"></div>
               <div class="content-layer" style="display: flex; flex-direction: column; align-items: center;">
-                <img src="${cleanLogoUrl}" class="front-logo" />
+                ${showLogo ? `<img src="${cleanLogoUrl}" class="front-logo" />` : ''}
                 <div>
                   <div class="company-title">${company}</div>
                   <div class="company-tagline">${tagline}</div>
@@ -1093,7 +1097,7 @@ Generated via Toolip Premium Business Card Generator`;
               <div class="glow-bg-2"></div>
               <div class="content-layer" style="flex: 1; padding-right: 10px; overflow: hidden; min-width: 0;">
                 <div style="display: flex; ${avatarLayout === 'col' ? 'flex-direction: column; align-items: flex-start; gap: 6px;' : 'align-items: center; gap: 10px;'} margin-bottom: 8px;">
-                  <img src="${cleanAvatarUrl}" class="avatar-img" />
+                  ${showPhoto ? `<img src="${cleanAvatarUrl}" class="avatar-img" />` : ''}
                   <div style="min-width: 0;">
                     <div class="person-name">${fullName}</div>
                     <div class="person-role">${role}</div>
@@ -1973,7 +1977,18 @@ Generated via Toolip Premium Business Card Generator`;
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-bold text-gray-200">Logo Image URL (HTTP/HTTPS):</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-200">Logo Image URL (HTTP/HTTPS):</label>
+                  <label className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-sky-950/60 border border-sky-500/30 text-sky-300 text-[11px] font-bold cursor-pointer select-none hover:bg-sky-900/60 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={showLogo}
+                      onChange={(e) => setShowLogo(e.target.checked)}
+                      className="h-3.5 w-3.5 accent-sky-500 cursor-pointer"
+                    />
+                    <span>Show logo on card</span>
+                  </label>
+                </div>
                 <input
                   type="text"
                   value={logoUrl}
@@ -2050,7 +2065,18 @@ Generated via Toolip Premium Business Card Generator`;
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-bold text-gray-200">Headshot / Photo URL:</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-200">Headshot / Photo URL:</label>
+                  <label className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold cursor-pointer select-none hover:bg-emerald-900/60 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={showPhoto}
+                      onChange={(e) => setShowPhoto(e.target.checked)}
+                      className="h-3.5 w-3.5 accent-emerald-500 cursor-pointer"
+                    />
+                    <span>Show photo on card</span>
+                  </label>
+                </div>
                 <input
                   type="text"
                   value={avatarUrl}
@@ -2403,7 +2429,9 @@ Generated via Toolip Premium Business Card Generator`;
                 <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-sky-500/10 blur-2xl pointer-events-none" />
 
                 <div className="z-10 flex flex-col items-center justify-center space-y-3">
-                  <img src={sanitizeImageUrl(logoUrl)} crossOrigin="anonymous" alt="Logo" className="object-contain mb-1" style={{ width: `${logoSize}px`, height: `${logoSize}px` }} />
+                  {showLogo && (
+                    <img src={sanitizeImageUrl(logoUrl)} crossOrigin="anonymous" alt="Logo" className="object-contain mb-1" style={{ width: `${logoSize}px`, height: `${logoSize}px` }} />
+                  )}
                   <div className="space-y-1">
                     <h2 className={`font-black tracking-tight ${currentFrontTheme.textColor}`} style={{ fontSize: `${companyFontSize}px`, opacity: companyOpacity / 100, fontFamily: 'inherit' }}>{company}</h2>
                     <p className={`font-bold ${currentFrontTheme.subTextColor}`} style={{ fontSize: `${taglineFontSize}px`, opacity: taglineOpacity / 100, fontFamily: 'inherit' }}>{tagline}</p>
@@ -2428,7 +2456,9 @@ Generated via Toolip Premium Business Card Generator`;
                 {/* Left Side: Photo + Contact Info */}
                 <div className="flex-1 pr-3 space-y-2 z-10 min-w-0">
                   <div className={`flex ${avatarLayout === 'col' ? 'flex-col gap-2 items-start' : 'items-center space-x-3'} mb-2`}>
-                    <img src={sanitizeImageUrl(avatarUrl)} crossOrigin="anonymous" alt={fullName} className={`rounded-full object-cover border-2 ${effectiveBackKey === 'minimal' ? 'border-slate-300' : 'border-white/20'} shadow-md shrink-0`} style={{ width: `${avatarSize}px`, height: `${avatarSize}px` }} />
+                    {showPhoto && (
+                      <img src={sanitizeImageUrl(avatarUrl)} crossOrigin="anonymous" alt={fullName} className={`rounded-full object-cover border-2 ${effectiveBackKey === 'minimal' ? 'border-slate-300' : 'border-white/20'} shadow-md shrink-0`} style={{ width: `${avatarSize}px`, height: `${avatarSize}px` }} />
+                    )}
                     <div className="min-w-0">
                       <h3 className={`font-black tracking-tight leading-tight ${currentBackTheme.textColor}`} style={{ fontSize: `${nameFontSize}px`, fontFamily: 'inherit' }}>{fullName}</h3>
                       <p className={`font-bold leading-tight ${currentBackTheme.subTextColor}`} style={{ fontSize: `${roleFontSize}px`, fontFamily: 'inherit' }}>{role}</p>

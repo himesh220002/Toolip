@@ -27,7 +27,8 @@ export interface PptElement {
   borderRadius?: number;
   borderColor?: string;
   borderWidth?: number;
-  shape?: 'rect' | 'circle' | 'pill' | 'line';
+  shape?: 'rect' | 'circle' | 'pill' | 'line' | 'triangle' | 'pentagon' | 'hexagon' | 'star';
+  rotation?: number; // degrees clockwise
   letterSpacing?: number;
 }
 
@@ -39,7 +40,13 @@ export type PptLayoutId =
   | 'timeline'
   | 'data-table'
   | 'quote-image'
-  | 'closing';
+  | 'closing'
+  | 'mindmap'
+  | 'org-chart'
+  | 'tech-stack'
+  | 'mindmap-radial'
+  | 'sdlc'
+  | 'fullstack';
 
 export interface PptSlide {
   id: string;
